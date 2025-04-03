@@ -1,0 +1,37 @@
+# Definiere Variablen
+NASM = nasm
+QEMU = qemu-system-x86_64
+BOOTLOADER_SRC = bootloader.asm
+BOOTLOADER_BIN = output\bootloader.bin
+KERNEL_SRC = kernel.asm
+KERNEL_BIN = output\kernel.bin
+OUTPUT_IMG = output\output.img
+
+# Standardziel
+all: $(BOOTLOADER_BIN) $(KERNEL_BIN) $(OUTPUT_IMG)
+
+# Erstelle das output-Verzeichnis
+$(shell mkdir output)
+
+# Erstelle den Bootloader
+$(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
+	$(NASM) -f bin $(BOOTLOADER_SRC) -o $(BOOTLOADER_BIN)
+
+# Erstelle den Kernel (Optional, falls du einen Kernel hinzufügen möchtest)
+$(KERNEL_BIN): $(KERNEL_SRC)
+	$(NASM) -f bin $(KERNEL_SRC) -o $(KERNEL_BIN)
+
+# Erstelle die Festplatten-Image-Datei
+$(OUTPUT_IMG): $(BOOTLOADER_BIN) $(KERNEL_BIN)
+	copy /b $(BOOTLOADER_BIN) + $(KERNEL_BIN) $(OUTPUT_IMG)
+
+# Starte das OS in QEMU
+run: $(OUTPUT_IMG)
+	$(QEMU) -drive format=raw,file=$(OUTPUT_IMG)
+
+# Bereinigen
+clean:
+	del /q output\*
+
+# Phony Ziele
+.PHONY: all run clean
