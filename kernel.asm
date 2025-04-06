@@ -1,15 +1,12 @@
-[BITS 16]
-[ORG 0x1000]      ; Setzt den Startpunkt des Codes auf 0x1000, der von deinem Bootloader geladen wird.
+[bits 16]
+[org 0x1000]
 
 start:
-    ; --- Einfacher Video-Mode ändern (Textmodus) ---
+    ; Ausgabe einer Nachricht, um zu zeigen, dass der Kernel läuft
     mov ah, 0x0E
-    mov al, 'K'        ; Ein Buchstabe anzeigen
-    int 0x10           ; BIOS-Interrupt für Video
-
-    ; --- Nachricht ausgeben ---
-    mov ah, 0x0E
-    mov al, 'e'        ; Nächster Buchstabe
+    mov al, 'K'
+    int 0x10
+    mov al, 'e'
     int 0x10
     mov al, 'r'
     int 0x10
@@ -20,7 +17,6 @@ start:
     mov al, 'l'
     int 0x10
 
-    ; --- Endlosschleife (bis der Benutzer den Rechner ausschaltet) ---
-.loop:
-    jmp .loop
+    ; Endlosschleife im Kernel
+    jmp $
 
