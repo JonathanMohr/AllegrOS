@@ -5,7 +5,8 @@ BOOTLOADER_SRC = bootloader.asm
 BOOTLOADER_BIN = output\bootloader.bin
 KERNEL_SRC = kernel.asm
 KERNEL_BIN = output\kernel.bin
-OUTPUT_IMG = output\output.img
+OUTPUT_IMG = output\disk.img
+TEMP_IMG = output\temp.img
 
 # Standardziel
 all: $(BOOTLOADER_BIN) $(KERNEL_BIN) $(OUTPUT_IMG)
@@ -23,7 +24,9 @@ $(KERNEL_BIN): $(KERNEL_SRC)
 
 # Erstelle die Festplatten-Image-Datei
 $(OUTPUT_IMG): $(BOOTLOADER_BIN) $(KERNEL_BIN)
-	copy /b $(BOOTLOADER_BIN) + $(KERNEL_BIN) $(OUTPUT_IMG)
+	fsutil file createnew output/disk.img 1474560
+	mformat -i output/disk.img -f 1440 -v "MYOS" -B $(BOOTLOADER_BIN) ::
+	mcopy -i output/disk.img output/kernel.bin ::/kernel.bin
 
 # Starte das OS in QEMU
 run: $(OUTPUT_IMG)
