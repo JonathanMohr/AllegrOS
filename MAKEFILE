@@ -16,16 +16,24 @@ os_image: $(BUILD_DIR)/os.img
 
 $(BUILD_DIR)/os.img: bootloader kernel
 	fsutil file createnew $(BUILD_DIR)/os.img 1474560
-	mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/bootloader.bin ::
+	mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/stage1.bin ::
+	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin ::/stage2.bin
 	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin ::/kernel.bin
 
 #
 # Bootloader
 #
-bootloader: $(BUILD_DIR)/bootloader.bin
+bootloader: stage1 stage2
 
-$(BUILD_DIR)/bootloader.bin: always
-	$(ASM) -f bin $(SRC_DIR)/bootloader.asm -o $(BUILD_DIR)/bootloader.bin
+stage1: $(BUILD_DIR)/stage1.bin
+
+$(BUILD_DIR)/stage1.bin: always
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
+
+stage2: $(BUILD_DIR)/stage2.bin
+
+$(BUILD_DIR)/stage2.bin: always
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
@@ -33,7 +41,7 @@ $(BUILD_DIR)/bootloader.bin: always
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: always
-	$(ASM) -f bin $(SRC_DIR)/kernel.asm -o $(BUILD_DIR)/kernel.bin
+	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
@@ -45,4 +53,5 @@ always:
 # Clean
 #
 clean:
+	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	del /q $(BUILD_DIR)\*
