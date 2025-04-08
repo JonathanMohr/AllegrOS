@@ -27,6 +27,7 @@ $(OUTPUT_IMG): $(BOOTLOADER_BIN) $(KERNEL_BIN)
 	fsutil file createnew output/disk.img 1474560
 	mformat -i output/disk.img -f 1440 -v "MYOS" -B $(BOOTLOADER_BIN) ::
 	mcopy -i output/disk.img output/kernel.bin ::/kernel.bin
+	mcopy -i output/disk.img text.txt ::/text.txt
 
 # Starte das OS in QEMU
 run: $(OUTPUT_IMG)
