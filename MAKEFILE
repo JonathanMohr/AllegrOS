@@ -1,41 +1,48 @@
 # Definiere Variablen
-NASM = nasm
-QEMU = qemu-system-x86_64
-BOOTLOADER_SRC = bootloader.asm
-BOOTLOADER_BIN = output\bootloader.bin
-KERNEL_SRC = kernel.asm
-KERNEL_BIN = output\kernel.bin
-OUTPUT_IMG = output\disk.img
-TEMP_IMG = output\temp.img
+ASM = nasm
+CC = gcc
 
-# Standardziel
-all: $(BOOTLOADER_BIN) $(KERNEL_BIN) $(OUTPUT_IMG)
+SRC_DIR = src
+BUILD_DIR = build
 
-# Erstelle das output-Verzeichnis
-$(shell mkdir output)
+.PHONY: all os_image bootloader kernel clean always
 
-# Erstelle den Bootloader
-$(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
-	$(NASM) -f bin $(BOOTLOADER_SRC) -o $(BOOTLOADER_BIN)
+all: bootloader kernel os_image
 
-# Erstelle den Kernel (Optional, falls du einen Kernel hinzufügen möchtest)
-$(KERNEL_BIN): $(KERNEL_SRC)
-	$(NASM) -f bin $(KERNEL_SRC) -o $(KERNEL_BIN)
+#
+# OS image
+#
+os_image: $(BUILD_DIR)/os.img
 
-# Erstelle die Festplatten-Image-Datei
-$(OUTPUT_IMG): $(BOOTLOADER_BIN) $(KERNEL_BIN)
-	fsutil file createnew output/disk.img 1474560
-	mformat -i output/disk.img -f 1440 -v "MYOS" -B $(BOOTLOADER_BIN) ::
-	mcopy -i output/disk.img output/kernel.bin ::/kernel.bin
-	mcopy -i output/disk.img text.txt ::/text.txt
+$(BUILD_DIR)/os.img: bootloader kernel
+	fsutil file createnew $(BUILD_DIR)/os.img 1474560
+	mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/bootloader.bin ::
+	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin ::/kernel.bin
 
-# Starte das OS in QEMU
-run: $(OUTPUT_IMG)
-	$(QEMU) -drive format=raw,file=$(OUTPUT_IMG)
+#
+# Bootloader
+#
+bootloader: $(BUILD_DIR)/bootloader.bin
 
-# Bereinigen
+$(BUILD_DIR)/bootloader.bin: always
+	$(ASM) -f bin $(SRC_DIR)/bootloader.asm -o $(BUILD_DIR)/bootloader.bin
+
+#
+# Kernel
+#
+kernel: $(BUILD_DIR)/kernel.bin
+
+$(BUILD_DIR)/kernel.bin: always
+	$(ASM) -f bin $(SRC_DIR)/kernel.asm -o $(BUILD_DIR)/kernel.bin
+
+#
+# Always
+#
+always:
+	$(shell mkdir $(BUILD_DIR))
+
+#
+# Clean
+#
 clean:
-	del /q output\*
-
-# Phony Ziele
-.PHONY: all run clean
+	del /q $(BUILD_DIR)\*
