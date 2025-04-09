@@ -19,8 +19,9 @@ os_image: $(BUILD_DIR)/os.img
 $(BUILD_DIR)/os.img: bootloader kernel
 	fsutil file createnew $(BUILD_DIR)/os.img 1474560
 	mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/stage1.bin ::
-	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin ::/stage2.bin
-	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin ::/kernel.bin
+	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin "::/stage2.bin"
+	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin "::/kernel.bin"
+	mcopy -i $(BUILD_DIR)/os.img test.txt "::/test.txt"
 
 #
 # Bootloader
