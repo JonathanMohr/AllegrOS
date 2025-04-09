@@ -1,0 +1,87 @@
+Open Watcom Linker Version 2.0 beta Apr  3 2025 02:26:01 (32-bit)
+Copyright (c) 2002-2025 The Open Watcom Contributors. All Rights Reserved.
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Created on:       25/04/09 15:01:44
+Executable Image: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2.bin
+creating a RAW Binary Image executable
+
+
+                        +------------+
+                        |   Groups   |
+                        +------------+
+
+Group                           Address              Size
+=====                           =======              ====
+
+DGROUP                          0000009e             00000014
+
+
+
+                        +--------------+
+                        |   Segments   |
+                        +--------------+
+
+Segment                Class          Group          Address         Size
+=======                =====          =====          =======         ====
+
+_ENTRY                 CODE           AUTO           00000000        00000013
+_TEXT                  CODE           AUTO           00000013        0000008b
+CONST                  DATA           DGROUP         0000009e        00000014
+CONST2                 DATA           DGROUP         000000b2        00000000
+_DATA                  DATA           DGROUP         000000b2        00000000
+
+
+                        +----------------+
+                        |   Memory Map   |
+                        +----------------+
+
+* = unreferenced symbol
++ = symbol only referenced locally
+
+Address        Symbol
+=======        ======
+
+Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/main.obj(main.asm)
+00000000       entry
+Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/x86.obj(x86.asm)
+00000013       _x86_Video_WriteCharTeletype
+Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c)
+00000026       _cstart_
+Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c)
+00000040+      putc_
+00000067       puts_
+
+
+                        +---------------------+
+                        |   Module Segments   |
+                        +---------------------+
+
+! = 32-bit segment
+c = initialized communal data
+
+Module          Segment               Class           Address         Size
+======          =======               =====           =======         ====
+
+main.asm        _ENTRY                CODE           00000000         00000013
+x86.asm         _TEXT                 CODE           00000013         00000013
+C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c
+                _TEXT                 CODE           00000026         0000001a
+                CONST                 DATA           0000009e         00000014
+                CONST2                DATA           000000b2         00000000
+                _DATA                 DATA           000000b2         00000000
+C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c
+                _TEXT                 CODE           00000040         0000005e
+                CONST                 DATA           000000b2         00000000
+                CONST2                DATA           000000b2         00000000
+                _DATA                 DATA           000000b2         00000000
+Warning! W1014: stack segment not found
+
+
+                        +-----------------------+
+                        |   Linker Statistics   |
+                        +-----------------------+
+
+Stack size:  0200 (512.)
+Memory size:  00b2 (178.)
+Entry point address: 00000000
+Link time: 00:00.00
