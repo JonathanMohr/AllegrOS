@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(__WATCOMC__) && defined(__INTELLISENSE__)
+#define far
+#endif
+
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef signed short int16_t;
