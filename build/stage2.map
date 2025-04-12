@@ -1,7 +1,7 @@
 Open Watcom Linker Version 2.0 beta Apr  3 2025 02:26:01 (32-bit)
 Copyright (c) 2002-2025 The Open Watcom Contributors. All Rights Reserved.
 Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       25/04/10 14:21:03
+Created on:       25/04/12 16:47:31
 Executable Image: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2.bin
 creating a RAW Binary Image executable
 
@@ -13,7 +13,7 @@ creating a RAW Binary Image executable
 Group                           Address              Size
 =====                           =======              ====
 
-DGROUP                          000019ac             0000015a
+DGROUP                          00001a74             00000168
 
 
 
@@ -25,11 +25,11 @@ Segment                Class          Group          Address         Size
 =======                =====          =====          =======         ====
 
 _ENTRY                 CODE           AUTO           00000000        00000013
-_TEXT                  CODE           AUTO           00000013        00001998
-CONST                  DATA           DGROUP         000019ac        00000137
-CONST2                 DATA           DGROUP         00001ae4        00000011
-_DATA                  DATA           DGROUP         00001af6        00000008
-_BSS                   BSS            DGROUP         00001afe        00000008
+_TEXT                  CODE           AUTO           00000013        00001a60
+CONST                  DATA           DGROUP         00001a74        00000145
+CONST2                 DATA           DGROUP         00001bba        00000011
+_DATA                  DATA           DGROUP         00001bcc        00000008
+_BSS                   BSS            DGROUP         00001bd4        00000008
 
 
                         +----------------+
@@ -50,48 +50,49 @@ Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/x86.obj(x86.asm)
 00000054       _x86_div64_32
 00000082       _x86_Video_WriteCharTeletype
 00000095       _x86_Disk_Reset
-000000aa       _x86_Disk_Read
-000000e1       _x86_Disk_GetDriveParams
+000000aa       _x86_Disk_Read_Floppy
+000000e1*      _x86_Disk_Read_LBA
+000000e8       _x86_Disk_GetDriveParams
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\ctype.c)
-00000125+      islower_
-00000163       toupper_
+0000012c+      islower_
+0000016a       toupper_
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\disk.c)
-000001ab       DISK_Initialize_
-00000221+      DISK_LBA2CHS_
-000002d4       DISK_ReadSectors_
+000001b2       DISK_Initialize_
+00000228+      DISK_LBA2CHS_
+000002db       DISK_ReadSectors_
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\fat.c)
-00000371+      FAT_ReadBootSector_
-000003a5+      FAT_ReadFat_
-000003e9       FAT_Initialize_
-0000062f+      FAT_ClusterToLba_
-00000685+      FAT_OpenEntry_
-0000084f+      FAT_NextCluster_
-000008d8+      FAT_Read_
-00000c3c       FAT_ReadEntry_
-00000c95       FAT_Close_
-00000d0c+      FAT_FindFile_
-00000e46       FAT_Open_
+00000378+      FAT_ReadBootSector_
+000003ac+      FAT_ReadFat_
+000003f0       FAT_Initialize_
+00000636+      FAT_ClusterToLba_
+0000068c+      FAT_OpenEntry_
+00000856+      FAT_NextCluster_
+000008df       FAT_Read_
+00000c43       FAT_ReadEntry_
+00000c9c       FAT_Close_
+00000d13+      FAT_FindFile_
+00000e4d       FAT_Open_
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c)
-00000fc0       _cstart_
-00001afa+      _g_data
+00000fc7       _cstart_
+00001bd0+      _g_data
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\memory.c)
-000010ae       memcpy_
-00001122       memset_
-00001181       memcmp_
+00001176       memcpy_
+000011ea       memset_
+00001249       memcmp_
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c)
-000011fa       putc_
-00001221+      puts_
-00001258+      puts_f_
-00001295       _printf
-00001518+      printf_number_
-0000178c+      print_buffer_
-00001ae4+      _g_HexChars
+000012c2       putc_
+000012e9+      puts_
+00001320+      puts_f_
+0000135d       _printf
+000015e0+      printf_number_
+00001854+      print_buffer_
+00001bba+      _g_HexChars
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\string.c)
-00001808       strchr_
-00001863+      strcpy_
-000018d7       strlen_
+000018d0       strchr_
+0000192b+      strcpy_
+0000199f       strlen_
 Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/utility.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\utility.c)
-00001912+      align_
+000019da+      align_
 
 
                         +---------------------+
@@ -105,48 +106,48 @@ Module          Segment               Class           Address         Size
 ======          =======               =====           =======         ====
 
 main.asm        _ENTRY                CODE           00000000         00000013
-x86.asm         _TEXT                 CODE           00000013         00000112
+x86.asm         _TEXT                 CODE           00000013         00000119
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\ctype.c
-                _TEXT                 CODE           00000125         00000086
-                CONST                 DATA           000019ac         00000000
-                CONST2                DATA           00001ae4         00000000
-                _DATA                 DATA           00001af6         00000000
+                _TEXT                 CODE           0000012c         00000086
+                CONST                 DATA           00001a74         00000000
+                CONST2                DATA           00001bba         00000000
+                _DATA                 DATA           00001bcc         00000000
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\disk.c
-                _TEXT                 CODE           000001ab         000001c6
-                CONST                 DATA           000019ac         00000000
-                CONST2                DATA           00001ae4         00000000
-                _DATA                 DATA           00001af6         00000000
+                _TEXT                 CODE           000001b2         000001c6
+                CONST                 DATA           00001a74         00000000
+                CONST2                DATA           00001bba         00000000
+                _DATA                 DATA           00001bcc         00000000
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\fat.c
-                _TEXT                 CODE           00000371         00000c4f
-                CONST                 DATA           000019ac         00000107
-                CONST2                DATA           00001ae4         00000000
-                _DATA                 DATA           00001af6         00000004
-                _BSS                  BSS            00001afe         00000008
+                _TEXT                 CODE           00000378         00000c4f
+                CONST                 DATA           00001a74         00000107
+                CONST2                DATA           00001bba         00000000
+                _DATA                 DATA           00001bcc         00000004
+                _BSS                  BSS            00001bd4         00000008
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c
-                _TEXT                 CODE           00000fc0         000000ee
-                CONST                 DATA           00001ab4         0000002b
-                CONST2                DATA           00001ae4         00000000
-                _DATA                 DATA           00001afa         00000004
+                _TEXT                 CODE           00000fc7         000001af
+                CONST                 DATA           00001b7c         0000003a
+                CONST2                DATA           00001bba         00000000
+                _DATA                 DATA           00001bd0         00000004
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\memory.c
-                _TEXT                 CODE           000010ae         0000014c
-                CONST                 DATA           00001ae0         00000000
-                CONST2                DATA           00001ae4         00000000
-                _DATA                 DATA           00001afe         00000000
+                _TEXT                 CODE           00001176         0000014c
+                CONST                 DATA           00001bb6         00000000
+                CONST2                DATA           00001bba         00000000
+                _DATA                 DATA           00001bd4         00000000
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c
-                _TEXT                 CODE           000011fa         0000060e
-                CONST                 DATA           00001ae0         00000003
-                CONST2                DATA           00001ae4         00000011
-                _DATA                 DATA           00001afe         00000000
+                _TEXT                 CODE           000012c2         0000060e
+                CONST                 DATA           00001bb6         00000003
+                CONST2                DATA           00001bba         00000011
+                _DATA                 DATA           00001bd4         00000000
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\string.c
-                _TEXT                 CODE           00001808         0000010a
-                CONST                 DATA           00001ae4         00000000
-                CONST2                DATA           00001af6         00000000
-                _DATA                 DATA           00001afe         00000000
+                _TEXT                 CODE           000018d0         0000010a
+                CONST                 DATA           00001bba         00000000
+                CONST2                DATA           00001bcc         00000000
+                _DATA                 DATA           00001bd4         00000000
 C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\utility.c
-                _TEXT                 CODE           00001912         00000099
-                CONST                 DATA           00001ae4         00000000
-                CONST2                DATA           00001af6         00000000
-                _DATA                 DATA           00001afe         00000000
+                _TEXT                 CODE           000019da         00000099
+                CONST                 DATA           00001bba         00000000
+                CONST2                DATA           00001bcc         00000000
+                _DATA                 DATA           00001bd4         00000000
 Warning! W1014: stack segment not found
 
 
@@ -155,6 +156,6 @@ Warning! W1014: stack segment not found
                         +-----------------------+
 
 Stack size:  0200 (512.)
-Memory size:  1b06 (6918.)
+Memory size:  1bdc (7132.)
 Entry point address: 00000000
 Link time: 00:00.00

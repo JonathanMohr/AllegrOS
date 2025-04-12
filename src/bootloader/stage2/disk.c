@@ -38,8 +38,11 @@ bool DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, void far* dataO
 
     for (int i = 0; i < 3; i++)
     {
-        if (x86_Disk_Read(disk->id, cylinder, sector, head, sectors, dataOut))
+        
+        if (x86_Disk_Read_Floppy(disk->id, cylinder, sector, head, sectors, dataOut))
             return true;
+        
+        
 
         x86_Disk_Reset(disk->id);
     }

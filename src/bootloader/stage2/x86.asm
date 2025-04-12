@@ -155,15 +155,15 @@ _x86_Disk_Reset:
 
 
 ;
-; bool _cdecl x86_Disk_Read(uint8_t drive,
+; bool _cdecl x86_Disk_Read_Floppy(uint8_t drive,
 ;                           uint16_t cylinder,
 ;                           uint16_t sector,
 ;                           uint16_t head,
 ;                           uint8_t count,
 ;                           void far * dataOut);
 ;
-global _x86_Disk_Read
-_x86_Disk_Read:
+global _x86_Disk_Read_Floppy
+_x86_Disk_Read_Floppy:
 
     ; make new call frame
     push bp             ; save old call frame
@@ -210,6 +210,37 @@ _x86_Disk_Read:
     pop bp
     ret
 
+;
+;bool _cdecl x86_Disk_Read_LBA(uint8_t drive,
+;                              uint64_t lba,
+;                              uint16_t count,
+;                              void far * dataOut);
+;
+global _x86_Disk_Read_LBA
+_x86_Disk_Read_LBA:
+    ; make new call frame
+    push bp             ; save old call frame
+    mov bp, sp          ; initialize new call frame
+
+    ; save modified regs
+
+    ; setup args
+
+    ; drive     -> [bp+4]
+    ; lba       -> [bp+5]
+    ; count     -> [bp+13]
+    ; dataOut   -> [bp+15]
+
+    ; call int13h
+
+    ; set return value
+
+    ; restore regs
+
+    ; restore old call frame
+    mov sp, bp
+    pop bp
+    ret
 
 ;
 ; bool _cdecl x86_Disk_GetDriveParams(uint8_t drive,
