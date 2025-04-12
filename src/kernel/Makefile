@@ -11,14 +11,16 @@ HEADERS_C = $(wildcard *.h) \
 SOURCES_C = $(wildcard *.c) \
 			$(wildcard */*.c) \
 			$(wildcard */*/*.c) \
-			$(wildcard */*/*/*.c)
+			$(wildcard */*/*/*.c) \
+			arch/i686/isrs_gen.c
 
 OBJECTS_C = $(patsubst %.c, $(BUILD_DIR)/kernel/c/%.obj, $(SOURCES_C))
 
 HEADERS_ASM = $(wildcard *.inc) \
 			$(wildcard */*.inc) \
 			$(wildcard */*/*.inc) \
-			$(wildcard */*/*/*.inc)
+			$(wildcard */*/*/*.inc) \
+			arch/i686/isrs_gen.inc
 
 SOURCES_ASM = $(wildcard *.asm) \
 			$(wildcard */*.asm) \
@@ -46,6 +48,9 @@ $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
 	if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
+
+arch/i686/isrs_gen.c arch/i686/isrs_gen.inc:
+	@python ../../build_scripts/generate_isrs.py arch/i686/isrs_gen.c arch/i686/isrs_gen.inc
 
 clean:
 	del /f /q $(subst /,\,$(BUILD_DIR)\kernel.bin)

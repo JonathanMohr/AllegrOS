@@ -19,6 +19,7 @@
         "limits": "cpp",
         "locale": "cpp",
         "vector": "cpp",
-        "stdarg.h": "c"
+        "stdarg.h": "c",
+        "gdt.h": "c"
     }
 }

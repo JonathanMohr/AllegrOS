@@ -17,140 +17,415 @@ Linker script and memory map
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/gdt.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/idt.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/io.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/isr.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
 LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
 LOAD C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a
                 0x00100000                        phys = 0x100000
                 0x00100000                        . = phys
 
-.entry          0x00100000       0x49
+.entry          0x00100000       0x6e
                 0x00100000                        __entry_start = .
  *(.entry)
- .entry         0x00100000       0x49 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .entry         0x00100000       0x6e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
                 0x00100000                start
 
-.text           0x00100050      0xd16
-                0x00100050                        __text_start = .
+.text           0x00100070     0x2c66
+                0x00100070                        __text_start = .
  *(.text)
- .text          0x00100050       0x25 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/gdt.obj
-                0x00100050                i686_GDT_Load
- *fill*         0x00100075        0xb 
- .text          0x00100080        0xd C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/idt.obj
-                0x00100080                i686_IDT_Load
- *fill*         0x0010008d        0x3 
- .text          0x00100090       0x14 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/io.obj
-                0x00100090                x86_outb
-                0x0010009b                x86_inb
- .text          0x001000a4        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- .text          0x001000a4       0xf5 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
-                0x001000a4                memcpy
-                0x001000f6                memset
-                0x00100139                memcmp
- .text          0x00100199      0x883 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
-                0x00100199                putchr
-                0x001001c8                putcolor
-                0x001001fa                getchr
-                0x0010021c                getcolor
-                0x00100241                setcursor
-                0x001002b2                clrscr
-                0x00100340                scrollback
-                0x0010042e                putc
-                0x0010053e                puts
-                0x0010056d                printf_unsigned
-                0x00100611                printf_signed
-                0x0010066e                printf
-                0x00100983                print_buffer
- .text          0x00100a1c       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
-                0x00100a1c                HAL_Initialize
- .text          0x00100a2f       0x1d C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
-                0x00100a2f                i686_GDT_Initialize
- .text          0x00100a4c       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
-                0x00100a4c                i686_IDT_SetGate
-                0x00100aad                i686_IDT_EnableGate
-                0x00100acd                i686_IDT_DisableGate
-                0x00100aed                i686_IDT_Initialize
- *fill*         0x00100b06        0xa 
- .text          0x00100b10      0x11a C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
-                0x00100b10                __udivdi3
- *fill*         0x00100c2a        0x6 
- .text          0x00100c30      0x136 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
-                0x00100c30                __umoddi3
+ .text          0x00100070       0x25 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/gdt.obj
+                0x00100070                i686_GDT_Load
+ *fill*         0x00100095        0xb 
+ .text          0x001000a0        0xd C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/idt.obj
+                0x001000a0                i686_IDT_Load
+ *fill*         0x001000ad        0x3 
+ .text          0x001000b0       0x14 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/io.obj
+                0x001000b0                x86_outb
+                0x001000bb                x86_inb
+ *fill*         0x001000c4        0xc 
+ .text          0x001000d0      0xa69 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/asm/arch/i686/isr.obj
+                0x001000d0                i686_ISR0
+                0x001000d9                i686_ISR1
+                0x001000e2                i686_ISR2
+                0x001000eb                i686_ISR3
+                0x001000f4                i686_ISR4
+                0x001000fd                i686_ISR5
+                0x00100106                i686_ISR6
+                0x0010010f                i686_ISR7
+                0x00100118                i686_ISR8
+                0x0010011f                i686_ISR9
+                0x00100128                i686_ISR10
+                0x0010012f                i686_ISR11
+                0x00100136                i686_ISR12
+                0x0010013d                i686_ISR13
+                0x00100144                i686_ISR14
+                0x0010014b                i686_ISR15
+                0x00100154                i686_ISR16
+                0x0010015d                i686_ISR17
+                0x00100164                i686_ISR18
+                0x0010016d                i686_ISR19
+                0x00100176                i686_ISR20
+                0x0010017f                i686_ISR21
+                0x00100186                i686_ISR22
+                0x0010018f                i686_ISR23
+                0x00100198                i686_ISR24
+                0x001001a1                i686_ISR25
+                0x001001aa                i686_ISR26
+                0x001001b3                i686_ISR27
+                0x001001bc                i686_ISR28
+                0x001001c5                i686_ISR29
+                0x001001cc                i686_ISR30
+                0x001001d3                i686_ISR31
+                0x001001dc                i686_ISR32
+                0x001001e5                i686_ISR33
+                0x001001ee                i686_ISR34
+                0x001001f7                i686_ISR35
+                0x00100200                i686_ISR36
+                0x00100209                i686_ISR37
+                0x00100212                i686_ISR38
+                0x0010021b                i686_ISR39
+                0x00100224                i686_ISR40
+                0x0010022d                i686_ISR41
+                0x00100236                i686_ISR42
+                0x0010023f                i686_ISR43
+                0x00100248                i686_ISR44
+                0x00100251                i686_ISR45
+                0x0010025a                i686_ISR46
+                0x00100263                i686_ISR47
+                0x0010026c                i686_ISR48
+                0x00100275                i686_ISR49
+                0x0010027e                i686_ISR50
+                0x00100287                i686_ISR51
+                0x00100290                i686_ISR52
+                0x00100299                i686_ISR53
+                0x001002a2                i686_ISR54
+                0x001002ab                i686_ISR55
+                0x001002b4                i686_ISR56
+                0x001002bd                i686_ISR57
+                0x001002c6                i686_ISR58
+                0x001002cf                i686_ISR59
+                0x001002d8                i686_ISR60
+                0x001002e1                i686_ISR61
+                0x001002ea                i686_ISR62
+                0x001002f3                i686_ISR63
+                0x001002fc                i686_ISR64
+                0x00100305                i686_ISR65
+                0x0010030e                i686_ISR66
+                0x00100317                i686_ISR67
+                0x00100320                i686_ISR68
+                0x00100329                i686_ISR69
+                0x00100332                i686_ISR70
+                0x0010033b                i686_ISR71
+                0x00100344                i686_ISR72
+                0x0010034d                i686_ISR73
+                0x00100356                i686_ISR74
+                0x0010035f                i686_ISR75
+                0x00100368                i686_ISR76
+                0x00100371                i686_ISR77
+                0x0010037a                i686_ISR78
+                0x00100383                i686_ISR79
+                0x0010038c                i686_ISR80
+                0x00100395                i686_ISR81
+                0x0010039e                i686_ISR82
+                0x001003a7                i686_ISR83
+                0x001003b0                i686_ISR84
+                0x001003b9                i686_ISR85
+                0x001003c2                i686_ISR86
+                0x001003cb                i686_ISR87
+                0x001003d4                i686_ISR88
+                0x001003dd                i686_ISR89
+                0x001003e6                i686_ISR90
+                0x001003ef                i686_ISR91
+                0x001003f8                i686_ISR92
+                0x00100401                i686_ISR93
+                0x0010040a                i686_ISR94
+                0x00100413                i686_ISR95
+                0x0010041c                i686_ISR96
+                0x00100425                i686_ISR97
+                0x0010042e                i686_ISR98
+                0x00100437                i686_ISR99
+                0x00100440                i686_ISR100
+                0x00100449                i686_ISR101
+                0x00100452                i686_ISR102
+                0x0010045b                i686_ISR103
+                0x00100464                i686_ISR104
+                0x0010046d                i686_ISR105
+                0x00100476                i686_ISR106
+                0x0010047f                i686_ISR107
+                0x00100488                i686_ISR108
+                0x00100491                i686_ISR109
+                0x0010049a                i686_ISR110
+                0x001004a3                i686_ISR111
+                0x001004ac                i686_ISR112
+                0x001004b5                i686_ISR113
+                0x001004be                i686_ISR114
+                0x001004c7                i686_ISR115
+                0x001004d0                i686_ISR116
+                0x001004d9                i686_ISR117
+                0x001004e2                i686_ISR118
+                0x001004eb                i686_ISR119
+                0x001004f4                i686_ISR120
+                0x001004fd                i686_ISR121
+                0x00100506                i686_ISR122
+                0x0010050f                i686_ISR123
+                0x00100518                i686_ISR124
+                0x00100521                i686_ISR125
+                0x0010052a                i686_ISR126
+                0x00100533                i686_ISR127
+                0x0010053c                i686_ISR128
+                0x00100548                i686_ISR129
+                0x00100554                i686_ISR130
+                0x00100560                i686_ISR131
+                0x0010056c                i686_ISR132
+                0x00100578                i686_ISR133
+                0x00100584                i686_ISR134
+                0x00100590                i686_ISR135
+                0x0010059c                i686_ISR136
+                0x001005a8                i686_ISR137
+                0x001005b4                i686_ISR138
+                0x001005c0                i686_ISR139
+                0x001005cc                i686_ISR140
+                0x001005d8                i686_ISR141
+                0x001005e4                i686_ISR142
+                0x001005f0                i686_ISR143
+                0x001005fc                i686_ISR144
+                0x00100608                i686_ISR145
+                0x00100614                i686_ISR146
+                0x00100620                i686_ISR147
+                0x0010062c                i686_ISR148
+                0x00100638                i686_ISR149
+                0x00100644                i686_ISR150
+                0x00100650                i686_ISR151
+                0x0010065c                i686_ISR152
+                0x00100668                i686_ISR153
+                0x00100674                i686_ISR154
+                0x00100680                i686_ISR155
+                0x0010068c                i686_ISR156
+                0x00100698                i686_ISR157
+                0x001006a4                i686_ISR158
+                0x001006b0                i686_ISR159
+                0x001006bc                i686_ISR160
+                0x001006c8                i686_ISR161
+                0x001006d4                i686_ISR162
+                0x001006e0                i686_ISR163
+                0x001006ec                i686_ISR164
+                0x001006f8                i686_ISR165
+                0x00100704                i686_ISR166
+                0x00100710                i686_ISR167
+                0x0010071c                i686_ISR168
+                0x00100728                i686_ISR169
+                0x00100734                i686_ISR170
+                0x00100740                i686_ISR171
+                0x0010074c                i686_ISR172
+                0x00100758                i686_ISR173
+                0x00100764                i686_ISR174
+                0x00100770                i686_ISR175
+                0x0010077c                i686_ISR176
+                0x00100788                i686_ISR177
+                0x00100794                i686_ISR178
+                0x001007a0                i686_ISR179
+                0x001007ac                i686_ISR180
+                0x001007b8                i686_ISR181
+                0x001007c4                i686_ISR182
+                0x001007d0                i686_ISR183
+                0x001007dc                i686_ISR184
+                0x001007e8                i686_ISR185
+                0x001007f4                i686_ISR186
+                0x00100800                i686_ISR187
+                0x0010080c                i686_ISR188
+                0x00100818                i686_ISR189
+                0x00100824                i686_ISR190
+                0x00100830                i686_ISR191
+                0x0010083c                i686_ISR192
+                0x00100848                i686_ISR193
+                0x00100854                i686_ISR194
+                0x00100860                i686_ISR195
+                0x0010086c                i686_ISR196
+                0x00100878                i686_ISR197
+                0x00100884                i686_ISR198
+                0x00100890                i686_ISR199
+                0x0010089c                i686_ISR200
+                0x001008a8                i686_ISR201
+                0x001008b4                i686_ISR202
+                0x001008c0                i686_ISR203
+                0x001008cc                i686_ISR204
+                0x001008d8                i686_ISR205
+                0x001008e4                i686_ISR206
+                0x001008f0                i686_ISR207
+                0x001008fc                i686_ISR208
+                0x00100908                i686_ISR209
+                0x00100914                i686_ISR210
+                0x00100920                i686_ISR211
+                0x0010092c                i686_ISR212
+                0x00100938                i686_ISR213
+                0x00100944                i686_ISR214
+                0x00100950                i686_ISR215
+                0x0010095c                i686_ISR216
+                0x00100968                i686_ISR217
+                0x00100974                i686_ISR218
+                0x00100980                i686_ISR219
+                0x0010098c                i686_ISR220
+                0x00100998                i686_ISR221
+                0x001009a4                i686_ISR222
+                0x001009b0                i686_ISR223
+                0x001009bc                i686_ISR224
+                0x001009c8                i686_ISR225
+                0x001009d4                i686_ISR226
+                0x001009e0                i686_ISR227
+                0x001009ec                i686_ISR228
+                0x001009f8                i686_ISR229
+                0x00100a04                i686_ISR230
+                0x00100a10                i686_ISR231
+                0x00100a1c                i686_ISR232
+                0x00100a28                i686_ISR233
+                0x00100a34                i686_ISR234
+                0x00100a40                i686_ISR235
+                0x00100a4c                i686_ISR236
+                0x00100a58                i686_ISR237
+                0x00100a64                i686_ISR238
+                0x00100a70                i686_ISR239
+                0x00100a7c                i686_ISR240
+                0x00100a88                i686_ISR241
+                0x00100a91                i686_ISR242
+                0x00100a9a                i686_ISR243
+                0x00100aa3                i686_ISR244
+                0x00100aac                i686_ISR245
+                0x00100ab5                i686_ISR246
+                0x00100abe                i686_ISR247
+                0x00100ac7                i686_ISR248
+                0x00100ad0                i686_ISR249
+                0x00100ad9                i686_ISR250
+                0x00100ae2                i686_ISR251
+                0x00100aeb                i686_ISR252
+                0x00100af4                i686_ISR253
+                0x00100afd                i686_ISR254
+                0x00100b06                i686_ISR255
+ .text          0x00100b39        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .text          0x00100b39       0xf5 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
+                0x00100b39                memcpy
+                0x00100b8b                memset
+                0x00100bce                memcmp
+ .text          0x00100c2e      0x883 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+                0x00100c2e                putchr
+                0x00100c5d                putcolor
+                0x00100c8f                getchr
+                0x00100cb1                getcolor
+                0x00100cd6                setcursor
+                0x00100d47                clrscr
+                0x00100dd5                scrollback
+                0x00100ec3                putc
+                0x00100fd3                puts
+                0x00101002                printf_unsigned
+                0x001010a6                printf_signed
+                0x00101103                printf
+                0x00101418                print_buffer
+ .text          0x001014b1       0x18 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+                0x001014b1                HAL_Initialize
+ .text          0x001014c9       0x1d C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+                0x001014c9                i686_GDT_Initialize
+ .text          0x001014e6       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+                0x001014e6                i686_IDT_SetGate
+                0x00101547                i686_IDT_EnableGate
+                0x00101567                i686_IDT_DisableGate
+                0x00101587                i686_IDT_Initialize
+ .text          0x001015a0       0x53 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+                0x001015a0                i686_ISR_Initialize
+                0x001015d3                i686_ISR_Handler
+ .text          0x001015f3     0x1489 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+                0x001015f3                i686_ISR_InitializeGates
+ *fill*         0x00102a7c        0x4 
+ .text          0x00102a80      0x11a C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+                0x00102a80                __udivdi3
+ *fill*         0x00102b9a        0x6 
+ .text          0x00102ba0      0x136 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x00102ba0                __umoddi3
 
-.data           0x00100d68       0x2a
-                0x00100d68                        __data_start = .
+.data           0x00102cd8       0x2a
+                0x00102cd8                        __data_start = .
  *(.data)
- .data          0x00100d68        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- .data          0x00100d68        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
- .data          0x00100d68        0x4 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
-                0x00100d68                g_ScreenBuffer
- .data          0x00100d6c        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
- .data          0x00100d6c       0x1e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
-                0x00100d6c                g_GDT
-                0x00100d84                g_GDTDescriptor
- *fill*         0x00100d8a        0x2 
- .data          0x00100d8c        0x6 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
-                0x00100d8c                g_IDTDescriptor
- .data          0x00100d92        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .data          0x00100d92        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+ .data          0x00102cd8        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .data          0x00102cd8        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
+ .data          0x00102cd8        0x4 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+                0x00102cd8                g_ScreenBuffer
+ .data          0x00102cdc        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+ .data          0x00102cdc       0x1e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+                0x00102cdc                g_GDT
+                0x00102cf4                g_GDTDescriptor
+ *fill*         0x00102cfa        0x2 
+ .data          0x00102cfc        0x6 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+                0x00102cfc                g_IDTDescriptor
+ .data          0x00102d02        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .data          0x00102d02        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .data          0x00102d02        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .data          0x00102d02        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.rodata         0x00100d94       0xd6
-                0x00100d94                        __rodata_start = .
+.rodata         0x00102d04       0xe4
+                0x00102d04                        __rodata_start = .
  *(.rodata)
- .rodata        0x00100d94       0x1a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- *fill*         0x00100dae        0x2 
- .rodata        0x00100db0       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
-                0x00100db0                SCREEN_WIDTH
-                0x00100db4                SCREEN_HEIGHT
-                0x00100db8                DEFAULT_COLOR
-                0x00100dbc                g_HexChars
+ .rodata        0x00102d04       0x1a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ *fill*         0x00102d1e        0x2 
+ .rodata        0x00102d20       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+                0x00102d20                SCREEN_WIDTH
+                0x00102d24                SCREEN_HEIGHT
+                0x00102d28                DEFAULT_COLOR
+                0x00102d2c                g_HexChars
+ .rodata        0x00102dda        0xe C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
 
-.eh_frame       0x00100e6c       0xd8
- .eh_frame      0x00100e6c       0x64 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .eh_frame      0x00100ed0       0x74 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+.eh_frame       0x00102de8       0xd8
+ .eh_frame      0x00102de8       0x64 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .eh_frame      0x00102e4c       0x74 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.bss            0x00100f60      0x820
-                0x00100f60                        __bss_start = .
+.bss            0x00102ec0      0x820
+                0x00102ec0                        __bss_start = .
  *(.bss)
- .bss           0x00100f60        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- .bss           0x00100f60        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
- .bss           0x00100f60        0x8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
-                0x00100f60                g_ScreenX
-                0x00100f64                g_ScreenY
- .bss           0x00100f68        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
- .bss           0x00100f68        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
- *fill*         0x00100f68       0x18 
- .bss           0x00100f80      0x800 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
-                0x00100f80                g_IDT
- .bss           0x00101780        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .bss           0x00101780        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
-                0x00101780                        __end = .
+ .bss           0x00102ec0        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .bss           0x00102ec0        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
+ .bss           0x00102ec0        0x8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+                0x00102ec0                g_ScreenX
+                0x00102ec4                g_ScreenY
+ .bss           0x00102ec8        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+ .bss           0x00102ec8        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+ *fill*         0x00102ec8       0x18 
+ .bss           0x00102ee0      0x800 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+                0x00102ee0                g_IDT
+ .bss           0x001036e0        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .bss           0x001036e0        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .bss           0x001036e0        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .bss           0x001036e0        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x001036e0                        __end = .
 OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/kernel.bin binary)
 
-.debug_info     0x00000000     0x13aa
+.debug_info     0x00000000     0x22a3
  .debug_info    0x00000000      0x126 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_info    0x00000126      0x1e8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
  .debug_info    0x0000030e      0x54c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
- .debug_info    0x0000085a       0x99 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
- .debug_info    0x000008f3      0x1fa C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
- .debug_info    0x00000aed      0x24e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
- .debug_info    0x00000d3b      0x32c C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .debug_info    0x00001067      0x343 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+ .debug_info    0x0000085a       0xa6 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+ .debug_info    0x00000900      0x1fa C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+ .debug_info    0x00000afa      0x24e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+ .debug_info    0x00000d48      0x1e3 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .debug_info    0x00000f2b      0xd09 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_info    0x00001c34      0x32c C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_info    0x00001f60      0x343 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_abbrev   0x00000000      0x8fb
+.debug_abbrev   0x00000000      0xac9
  .debug_abbrev  0x00000000       0xeb C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_abbrev  0x000000eb       0xe2 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
  .debug_abbrev  0x000001cd      0x1f6 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
  .debug_abbrev  0x000003c3       0x5a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
  .debug_abbrev  0x0000041d       0xf0 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
  .debug_abbrev  0x0000050d      0x122 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
- .debug_abbrev  0x0000062f      0x15b C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .debug_abbrev  0x0000078a      0x171 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+ .debug_abbrev  0x0000062f      0x10f C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .debug_abbrev  0x0000073e       0xbf C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_abbrev  0x000007fd      0x15b C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_abbrev  0x00000958      0x171 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_aranges  0x00000000      0x100
+.debug_aranges  0x00000000      0x140
  .debug_aranges
                 0x00000000       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_aranges
@@ -164,9 +439,13 @@ OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/kernel.bin binary)
  .debug_aranges
                 0x000000a0       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
  .debug_aranges
-                0x000000c0       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+                0x000000c0       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
  .debug_aranges
-                0x000000e0       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x000000e0       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_aranges
+                0x00000100       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_aranges
+                0x00000120       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
 .debug_rnglists
                 0x00000000       0x5c
@@ -177,28 +456,32 @@ OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/kernel.bin binary)
  .debug_rnglists
                 0x0000003d       0x1f C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_line     0x00000000      0x964
- .debug_line    0x00000000       0x6e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- .debug_line    0x0000006e       0xcc C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
- .debug_line    0x0000013a      0x396 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
- .debug_line    0x000004d0       0x5e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
- .debug_line    0x0000052e       0x5c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
- .debug_line    0x0000058a       0x89 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
- .debug_line    0x00000613      0x180 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .debug_line    0x00000793      0x1d1 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+.debug_line     0x00000000      0xc54
+ .debug_line    0x00000000       0x73 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .debug_line    0x00000073       0xcc C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
+ .debug_line    0x0000013f      0x396 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+ .debug_line    0x000004d5       0x64 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+ .debug_line    0x00000539       0x5c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+ .debug_line    0x00000595       0x89 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+ .debug_line    0x0000061e       0x86 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .debug_line    0x000006a4      0x25f C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_line    0x00000903      0x180 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_line    0x00000a83      0x1d1 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_str      0x00000000      0xef5
+.debug_str      0x00000000     0x1dcb
  .debug_str     0x00000000      0x12b C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_str     0x0000012b      0x125 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
  .debug_str     0x00000250      0x24e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
- .debug_str     0x0000049e      0x106 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
- .debug_str     0x000005a4      0x2fa C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
- .debug_str     0x0000089e      0x291 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
- .debug_str     0x00000b2f      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .debug_str     0x00000d12      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+ .debug_str     0x0000049e      0x11a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+ .debug_str     0x000005b8      0x2fa C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+ .debug_str     0x000008b2      0x291 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+ .debug_str     0x00000b43      0x164 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .debug_str     0x00000ca7      0xd5e C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_str     0x00001a05      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_str     0x00001be8      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
 .debug_line_str
-                0x00000000      0x6b7
+                0x00000000      0x8ac
  .debug_line_str
                 0x00000000       0xec C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_line_str
@@ -206,33 +489,41 @@ OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/kernel.bin binary)
  .debug_line_str
                 0x000001c3       0xec C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
  .debug_line_str
-                0x000002af       0x8a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
+                0x000002af       0x90 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
  .debug_line_str
-                0x00000339       0xe2 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
+                0x0000033f       0xe2 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
  .debug_line_str
-                0x0000041b       0xe8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+                0x00000421       0xe8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
  .debug_line_str
-                0x00000503       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+                0x00000509       0xf8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
  .debug_line_str
-                0x000005dd       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x00000601       0xf7 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .debug_line_str
+                0x000006f8       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_line_str
+                0x000007d2       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.comment        0x00000000       0x98
+.comment        0x00000000       0xbe
  .comment       0x00000000       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .comment       0x00000013       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
  .comment       0x00000026       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
  .comment       0x00000039       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
  .comment       0x0000004c       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
  .comment       0x0000005f       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
- .comment       0x00000072       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .comment       0x00000085       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+ .comment       0x00000072       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .comment       0x00000085       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
+ .comment       0x00000098       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .comment       0x000000ab       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_frame    0x00000000      0x354
+.debug_frame    0x00000000      0x3dc
  .debug_frame   0x00000000       0x2c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
  .debug_frame   0x0000002c       0x74 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
  .debug_frame   0x000000a0      0x1b8 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
  .debug_frame   0x00000258       0x34 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/hal/hal.obj
  .debug_frame   0x0000028c       0x34 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/gdt.obj
  .debug_frame   0x000002c0       0x94 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/idt.obj
+ .debug_frame   0x00000354       0x54 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isr.obj
+ .debug_frame   0x000003a8       0x34 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/arch/i686/isrs_gen.obj
 
 .debug_loclists
                 0x00000000      0x978
