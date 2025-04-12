@@ -36,8 +36,6 @@ bool DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, void* dataOut)
 
     DISK_LBA2CHS(disk, lba, &cylinder, &sector, &head);
 
-    printf("Cylinders: %d, Heads: %d, Sectors: %d\r\n", disk->cylinders, disk->heads, disk->sectors);
-
     for (int i = 0; i < 3; i++)
     {
         
