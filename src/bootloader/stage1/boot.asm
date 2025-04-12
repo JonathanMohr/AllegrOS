@@ -1,5 +1,5 @@
-[org 0x7c00]
-[bits 16]
+org 0x7C00
+bits 16
 
 
 %define ENDL 0x0D, 0x0A
@@ -7,7 +7,7 @@
 
 ;
 ; FAT12 header
-;
+; 
 jmp short start
 nop
 
@@ -16,7 +16,7 @@ bdb_bytes_per_sector:       dw 512
 bdb_sectors_per_cluster:    db 1
 bdb_reserved_sectors:       dw 1
 bdb_fat_count:              db 2
-bdb_dir_entries_count:      dw 0E0h                 ; 224 entries in root dir
+bdb_dir_entries_count:      dw 0E0h
 bdb_total_sectors:          dw 2880                 ; 2880 * 512 = 1.44MB
 bdb_media_descriptor_type:  db 0F0h                 ; F0 = 3.5" floppy disk
 bdb_sectors_per_fat:        dw 9                    ; 9 sectors/fat
@@ -26,12 +26,16 @@ bdb_hidden_sectors:         dd 0
 bdb_large_sector_count:     dd 0
 
 ; extended boot record
-ebr_drive_number:           db 0x80                 ; 0x00 floppy, 0x80 hdd, useless
+ebr_drive_number:           db 0                    ; 0x00 floppy, 0x80 hdd, useless
                             db 0                    ; reserved
 ebr_signature:              db 29h
 ebr_volume_id:              db 12h, 34h, 56h, 78h   ; serial number, value doesn't matter
-ebr_volume_label:           db 'MYOS       '        ; 11 bytes, padded with spaces
+ebr_volume_label:           db 'NANOBYTE OS'        ; 11 bytes, padded with spaces
 ebr_system_id:              db 'FAT12   '           ; 8 bytes
+
+;
+; Code goes here
+;
 
 start:
     ; setup data segments
@@ -64,7 +68,7 @@ start:
     push es
     mov ah, 08h
     int 13h
-    jc disk_error
+    jc floppy_error
     pop es
 
     and cl, 0x3F                        ; remove top 2 bits
@@ -93,23 +97,22 @@ start:
     jz .root_dir_after
     inc ax                              ; division remainder != 0, add 1
                                         ; this means we have a sector only partially filled with entries
-
 .root_dir_after:
 
     ; read root directory
-    mov cl, al
-    pop ax
-    mov dl, [ebr_drive_number]
-    mov bx, buffer
+    mov cl, al                          ; cl = number of sectors to read = size of root directory
+    pop ax                              ; ax = LBA of root directory
+    mov dl, [ebr_drive_number]          ; dl = drive number (we saved it previously)
+    mov bx, buffer                      ; es:bx = buffer
     call disk_read
 
-    ; search for stage2.bin
+    ; search for kernel.bin
     xor bx, bx
     mov di, buffer
 
 .search_kernel:
     mov si, file_stage2_bin
-    mov cx, 11
+    mov cx, 11                          ; compare up to 11 characters
     push di
     repe cmpsb
     pop di
@@ -120,35 +123,35 @@ start:
     cmp bx, [bdb_dir_entries_count]
     jl .search_kernel
 
-    ; stage2 not found
+    ; kernel not found
     jmp kernel_not_found_error
 
 .found_kernel:
-    
+
     ; di should have the address to the entry
-    mov ax, [di + 26]           ; first logical cluster field (offset 26)
+    mov ax, [di + 26]                   ; first logical cluster field (offset 26)
     mov [stage2_cluster], ax
 
-    ; load FAT from disk to memory
+    ; load FAT from disk into memory
     mov ax, [bdb_reserved_sectors]
     mov bx, buffer
     mov cl, [bdb_sectors_per_fat]
     mov dl, [ebr_drive_number]
     call disk_read
 
-    ; read stage2 and process FAT chain
-    mov bx, KERNEL_LOAD_SEGMENT
+    ; read kernel and process FAT chain
+    mov bx, STAGE2_LOAD_SEGMENT
     mov es, bx
-    mov bx, KERNEL_LOAD_OFFSET
+    mov bx, STAGE2_LOAD_OFFSET
 
 .load_kernel_loop:
-
+    
     ; Read next cluster
     mov ax, [stage2_cluster]
-
-    ; hardcoded value :(
-    add ax, 31                  ; first cluster = (stage2_cluster - 2) * sectors_per_cluster + start_sector
-                                ; start sector = reserved + fats + root directory size = 1 + 18 + 134 = 33
+    
+    ; not nice :( hardcoded value
+    add ax, 31                          ; first cluster = (stage2_cluster - 2) * sectors_per_cluster + start_sector
+                                        ; start sector = reserved + fats + root directory size = 1 + 18 + 134 = 33
     mov cl, 1
     mov dl, [ebr_drive_number]
     call disk_read
@@ -160,11 +163,11 @@ start:
     mov cx, 3
     mul cx
     mov cx, 2
-    div cx
+    div cx                              ; ax = index of entry in FAT, dx = cluster mod 2
 
     mov si, buffer
     add si, ax
-    mov ax, [ds:si]
+    mov ax, [ds:si]                     ; read entry from FAT table at index ax
 
     or dx, dx
     jz .even
@@ -177,34 +180,34 @@ start:
     and ax, 0x0FFF
 
 .next_cluster_after:
-    cmp ax, 0x0FF8              ; check for end of cluster chain
+    cmp ax, 0x0FF8                      ; end of chain
     jae .read_finish
 
     mov [stage2_cluster], ax
     jmp .load_kernel_loop
 
 .read_finish:
+    
+    ; jump to our kernel
+    mov dl, [ebr_drive_number]          ; boot device in dl
 
-    ; jump to stage2
-    mov dl, [ebr_drive_number]  ; boot device in dl
-
-    mov ax, KERNEL_LOAD_SEGMENT ; set segment registers
+    mov ax, STAGE2_LOAD_SEGMENT         ; set segment registers
     mov ds, ax
     mov es, ax
 
-    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+    jmp STAGE2_LOAD_SEGMENT:STAGE2_LOAD_OFFSET
 
-    ; should never happen
-    jmp wait_key_and_reboot
+    jmp wait_key_and_reboot             ; should never happen
 
-    cli                         ; disable interrupts, this way CPU can't get out of "halt" state
+    cli                                 ; disable interrupts, this way CPU can't get out of "halt" state
     hlt
+
 
 ;
 ; Error handlers
 ;
 
-disk_error:
+floppy_error:
     mov si, msg_read_failed
     call puts
     jmp wait_key_and_reboot
@@ -291,6 +294,7 @@ lba_to_chs:
     pop ax
     ret
 
+
 ;
 ; Reads sectors from a disk
 ; Parameters:
@@ -330,7 +334,7 @@ disk_read:
 
 .fail:
     ; all attempts are exhausted
-    jmp disk_error
+    jmp floppy_error
 
 .done:
     popa
@@ -342,6 +346,7 @@ disk_read:
     pop ax                             ; restore registers modified
     ret
 
+
 ;
 ; Resets disk controller
 ; Parameters:
@@ -352,7 +357,7 @@ disk_reset:
     mov ah, 0
     stc
     int 13h
-    jc disk_error
+    jc floppy_error
     popa
     ret
 
@@ -363,10 +368,11 @@ msg_stage2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
 file_stage2_bin:        db 'STAGE2  BIN'
 stage2_cluster:         dw 0
 
-KERNEL_LOAD_SEGMENT     equ 0x2000
-KERNEL_LOAD_OFFSET      equ 0
+STAGE2_LOAD_SEGMENT     equ 0x0
+STAGE2_LOAD_OFFSET      equ 0x500
 
-times 510 - ($ - $$) db 0    ; Fill the remaining space up to 510 bytes
-dw 0xAA55                    ; Bootloader signature (0xAA55)
+
+times 510-($-$$) db 0
+dw 0AA55h
 
 buffer:

@@ -1,161 +1,261 @@
-Open Watcom Linker Version 2.0 beta Apr  3 2025 02:26:01 (32-bit)
-Copyright (c) 2002-2025 The Open Watcom Contributors. All Rights Reserved.
-Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       25/04/12 16:47:31
-Executable Image: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2.bin
-creating a RAW Binary Image executable
+Archive member included to satisfy reference by file (symbol)
 
+C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+                              C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj (__udivdi3)
+C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                              C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj (__umoddi3)
 
-                        +------------+
-                        |   Groups   |
-                        +------------+
+There are no discarded input sections
 
-Group                           Address              Size
-=====                           =======              ====
+Memory Configuration
 
-DGROUP                          00001a74             00000168
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
 
+Linker script and memory map
 
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/entry.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/x86.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+LOAD C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+LOAD C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a
+                0x00000500                        phys = 0x500
+                0x00000500                        . = phys
 
-                        +--------------+
-                        |   Segments   |
-                        +--------------+
+.entry          0x00000500       0xc0
+                0x00000500                        __entry_start = .
+ *(.entry)
+ .entry         0x00000500       0xc0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/entry.obj
+                0x00000500                entry
 
-Segment                Class          Group          Address         Size
-=======                =====          =====          =======         ====
+.text           0x000005c0     0x1b46
+                0x000005c0                        __text_start = .
+ *(.text)
+ .text          0x000005c0      0x1a5 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/x86.obj
+                0x000005c0                x86_outb
+                0x000005cb                x86_inb
+                0x000005d4                x86_Disk_GetDriveParams
+                0x00000697                x86_Disk_Reset
+                0x000006e7                x86_Disk_Read
+ .text          0x00000765       0x55 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+                0x00000765                islower
+                0x0000078e                toupper
+ .text          0x000007ba      0x19f C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+                0x000007ba                DISK_Initialize
+                0x00000830                DISK_LBA2CHS
+                0x000008bd                DISK_ReadSectors
+ .text          0x00000959      0xa30 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+                0x00000959                FAT_ReadBootSector
+                0x00000976                FAT_ReadFat
+                0x000009aa                FAT_Initialize
+                0x00000bde                FAT_ClusterToLba
+                0x00000bff                FAT_OpenEntry
+                0x00000dc7                FAT_NextCluster
+                0x00000e14                FAT_Read
+                0x00001068                FAT_ReadEntry
+                0x00001089                FAT_Close
+                0x000010d7                FAT_FindFile
+                0x0000123c                FAT_Open
+ .text          0x00001389       0xf2 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+                0x00001389                start
+ .text          0x0000147b       0xf5 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+                0x0000147b                memcpy
+                0x000014cd                memset
+                0x00001510                memcmp
+ .text          0x00001570      0x87f C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+                0x00001570                putchr
+                0x0000159f                putcolor
+                0x000015d1                getchr
+                0x000015f3                getcolor
+                0x00001618                setcursor
+                0x00001689                clrscr
+                0x00001717                scrollback
+                0x00001805                putc
+                0x00001915                puts
+                0x00001944                printf_unsigned
+                0x000019e8                printf_signed
+                0x00001a45                printf
+                0x00001d56                print_buffer
+ .text          0x00001def       0xb6 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+                0x00001def                strchr
+                0x00001e2d                strcpy
+                0x00001e7f                strlen
+ *fill*         0x00001ea5        0xb 
+ .text          0x00001eb0      0x11a C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+                0x00001eb0                __udivdi3
+ *fill*         0x00001fca        0x6 
+ .text          0x00001fd0      0x136 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x00001fd0                __umoddi3
 
-_ENTRY                 CODE           AUTO           00000000        00000013
-_TEXT                  CODE           AUTO           00000013        00001a60
-CONST                  DATA           DGROUP         00001a74        00000145
-CONST2                 DATA           DGROUP         00001bba        00000011
-_DATA                  DATA           DGROUP         00001bcc        00000008
-_BSS                   BSS            DGROUP         00001bd4        00000008
+.data           0x00002108        0xc
+                0x00002108                        __data_start = .
+ *(.data)
+ .data          0x00002108        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .data          0x00002108        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .data          0x00002108        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .data          0x00002108        0x8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+                0x00002108                KernelLoadBuffer
+                0x0000210c                Kernel
+ .data          0x00002110        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .data          0x00002110        0x4 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+                0x00002110                g_ScreenBuffer
+ .data          0x00002114        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .data          0x00002114        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .data          0x00002114        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
+.rodata         0x00002114      0x206
+                0x00002114                        __rodata_start = .
+ *(.rodata)
+ .rodata        0x00002114      0x11b C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .rodata        0x0000222f       0x2f C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ *fill*         0x0000225e        0x2 
+ .rodata        0x00002260       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+                0x00002260                SCREEN_WIDTH
+                0x00002264                SCREEN_HEIGHT
+                0x00002268                DEFAULT_COLOR
+                0x0000226c                g_HexChars
 
-                        +----------------+
-                        |   Memory Map   |
-                        +----------------+
+.eh_frame       0x0000231c       0xd8
+ .eh_frame      0x0000231c       0x64 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .eh_frame      0x00002380       0x74 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-* = unreferenced symbol
-+ = symbol only referenced locally
+.bss            0x000023f4       0x14
+                0x000023f4                        __bss_start = .
+ *(.bss)
+ .bss           0x000023f4        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .bss           0x000023f4        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .bss           0x000023f4        0xc C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .bss           0x00002400        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .bss           0x00002400        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .bss           0x00002400        0x8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+                0x00002400                g_ScreenX
+                0x00002404                g_ScreenY
+ .bss           0x00002408        0x0 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .bss           0x00002408        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .bss           0x00002408        0x0 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+                0x00002408                        __end = .
+OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/stage2.bin binary)
 
-Address        Symbol
-=======        ======
+.debug_info     0x00000000     0x1eb9
+ .debug_info    0x00000000       0xcb C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_info    0x000000cb      0x2b1 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_info    0x0000037c      0x9a9 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_info    0x00000d25      0x2bf C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_info    0x00000fe4      0x1e8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_info    0x000011cc      0x54c C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_info    0x00001718      0x132 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_info    0x0000184a      0x32c C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_info    0x00001b76      0x343 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/main.obj(main.asm)
-00000000       entry
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/asm/x86.obj(x86.asm)
-00000013       __U4D
-0000003a       __U4M
-00000054       _x86_div64_32
-00000082       _x86_Video_WriteCharTeletype
-00000095       _x86_Disk_Reset
-000000aa       _x86_Disk_Read_Floppy
-000000e1*      _x86_Disk_Read_LBA
-000000e8       _x86_Disk_GetDriveParams
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\ctype.c)
-0000012c+      islower_
-0000016a       toupper_
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\disk.c)
-000001b2       DISK_Initialize_
-00000228+      DISK_LBA2CHS_
-000002db       DISK_ReadSectors_
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\fat.c)
-00000378+      FAT_ReadBootSector_
-000003ac+      FAT_ReadFat_
-000003f0       FAT_Initialize_
-00000636+      FAT_ClusterToLba_
-0000068c+      FAT_OpenEntry_
-00000856+      FAT_NextCluster_
-000008df       FAT_Read_
-00000c43       FAT_ReadEntry_
-00000c9c       FAT_Close_
-00000d13+      FAT_FindFile_
-00000e4d       FAT_Open_
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c)
-00000fc7       _cstart_
-00001bd0+      _g_data
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\memory.c)
-00001176       memcpy_
-000011ea       memset_
-00001249       memcmp_
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c)
-000012c2       putc_
-000012e9+      puts_
-00001320+      puts_f_
-0000135d       _printf
-000015e0+      printf_number_
-00001854+      print_buffer_
-00001bba+      _g_HexChars
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\string.c)
-000018d0       strchr_
-0000192b+      strcpy_
-0000199f       strlen_
-Module: C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/utility.obj(C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\utility.c)
-000019da+      align_
+.debug_abbrev   0x00000000      0xb9c
+ .debug_abbrev  0x00000000       0x77 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_abbrev  0x00000077      0x140 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_abbrev  0x000001b7      0x24d C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_abbrev  0x00000404      0x14c C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_abbrev  0x00000550       0xe2 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_abbrev  0x00000632      0x1f6 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_abbrev  0x00000828       0xa8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_abbrev  0x000008d0      0x15b C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_abbrev  0x00000a2b      0x171 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
+.debug_aranges  0x00000000      0x120
+ .debug_aranges
+                0x00000000       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_aranges
+                0x00000020       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_aranges
+                0x00000040       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_aranges
+                0x00000060       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_aranges
+                0x00000080       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_aranges
+                0x000000a0       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_aranges
+                0x000000c0       0x20 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_aranges
+                0x000000e0       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_aranges
+                0x00000100       0x20 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-                        +---------------------+
-                        |   Module Segments   |
-                        +---------------------+
+.debug_line     0x00000000      0xf72
+ .debug_line    0x00000000       0x81 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_line    0x00000081       0xf4 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_line    0x00000175      0x4ff C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_line    0x00000674       0xbb C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_line    0x0000072f       0xcc C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_line    0x000007fb      0x38f C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_line    0x00000b8a       0x97 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_line    0x00000c21      0x180 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_line    0x00000da1      0x1d1 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-! = 32-bit segment
-c = initialized communal data
+.debug_str      0x00000000     0x12a3
+ .debug_str     0x00000000       0xea C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_str     0x000000ea      0x1c5 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_str     0x000002af      0x5e8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_str     0x00000897      0x1e2 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_str     0x00000a79      0x125 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_str     0x00000b9e      0x24e C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_str     0x00000dec       0xf1 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_str     0x00000edd      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_str     0x000010c0      0x1e3 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-Module          Segment               Class           Address         Size
-======          =======               =====           =======         ====
+.debug_line_str
+                0x00000000      0x7b5
+ .debug_line_str
+                0x00000000       0x86 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_line_str
+                0x00000086       0xf4 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_line_str
+                0x0000017a      0x113 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_line_str
+                0x0000028d      0x105 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_line_str
+                0x00000392       0xed C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_line_str
+                0x0000047f       0xf9 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_line_str
+                0x00000578       0x89 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .debug_line_str
+                0x00000601       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_line_str
+                0x000006db       0xda C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-main.asm        _ENTRY                CODE           00000000         00000013
-x86.asm         _TEXT                 CODE           00000013         00000119
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\ctype.c
-                _TEXT                 CODE           0000012c         00000086
-                CONST                 DATA           00001a74         00000000
-                CONST2                DATA           00001bba         00000000
-                _DATA                 DATA           00001bcc         00000000
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\disk.c
-                _TEXT                 CODE           000001b2         000001c6
-                CONST                 DATA           00001a74         00000000
-                CONST2                DATA           00001bba         00000000
-                _DATA                 DATA           00001bcc         00000000
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\fat.c
-                _TEXT                 CODE           00000378         00000c4f
-                CONST                 DATA           00001a74         00000107
-                CONST2                DATA           00001bba         00000000
-                _DATA                 DATA           00001bcc         00000004
-                _BSS                  BSS            00001bd4         00000008
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\main.c
-                _TEXT                 CODE           00000fc7         000001af
-                CONST                 DATA           00001b7c         0000003a
-                CONST2                DATA           00001bba         00000000
-                _DATA                 DATA           00001bd0         00000004
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\memory.c
-                _TEXT                 CODE           00001176         0000014c
-                CONST                 DATA           00001bb6         00000000
-                CONST2                DATA           00001bba         00000000
-                _DATA                 DATA           00001bd4         00000000
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\stdio.c
-                _TEXT                 CODE           000012c2         0000060e
-                CONST                 DATA           00001bb6         00000003
-                CONST2                DATA           00001bba         00000011
-                _DATA                 DATA           00001bd4         00000000
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\string.c
-                _TEXT                 CODE           000018d0         0000010a
-                CONST                 DATA           00001bba         00000000
-                CONST2                DATA           00001bcc         00000000
-                _DATA                 DATA           00001bd4         00000000
-C:\Users\Jonathan\Desktop\Dev\OS\src\bootloader\stage2\utility.c
-                _TEXT                 CODE           000019da         00000099
-                CONST                 DATA           00001bba         00000000
-                CONST2                DATA           00001bcc         00000000
-                _DATA                 DATA           00001bd4         00000000
-Warning! W1014: stack segment not found
+.comment        0x00000000       0xab
+ .comment       0x00000000       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .comment       0x00000013       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .comment       0x00000026       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .comment       0x00000039       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .comment       0x0000004c       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .comment       0x0000005f       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .comment       0x00000072       0x13 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
+ .comment       0x00000085       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .comment       0x00000098       0x13 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
+.debug_frame    0x00000000      0x524
+ .debug_frame   0x00000000       0x54 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/ctype.obj
+ .debug_frame   0x00000054       0x80 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/disk.obj
+ .debug_frame   0x000000d4      0x184 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/fat.obj
+ .debug_frame   0x00000258       0x2c C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/main.obj
+ .debug_frame   0x00000284       0x74 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/memory.obj
+ .debug_frame   0x000002f8      0x1b8 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/stdio.obj
+ .debug_frame   0x000004b0       0x74 C:/Users/Jonathan/Desktop/Dev/OS/build/stage2/c/string.obj
 
-                        +-----------------------+
-                        |   Linker Statistics   |
-                        +-----------------------+
+.debug_loclists
+                0x00000000      0x978
+ .debug_loclists
+                0x00000000      0x50c C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_loclists
+                0x0000050c      0x46c C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-Stack size:  0200 (512.)
-Memory size:  1bdc (7132.)
-Entry point address: 00000000
-Link time: 00:00.00
+.debug_rnglists
+                0x00000000       0x49
+ .debug_rnglists
+                0x00000000       0x2a C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_rnglists
+                0x0000002a       0x1f C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)

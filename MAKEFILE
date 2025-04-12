@@ -1,11 +1,8 @@
-# Definiere Variablen
-ASM = nasm
+include build_scripts/config.mk
+
 CC = gcc
 CC16=wcc
 LD16=wlink
-
-SRC_DIR = src
-BUILD_DIR = build
 
 .PHONY: all os_image bootloader kernel clean always
 
@@ -17,12 +14,13 @@ all: bootloader kernel os_image
 os_image: $(BUILD_DIR)/os.img
 
 $(BUILD_DIR)/os.img: bootloader kernel
-	fsutil file createnew $(BUILD_DIR)/os.img 1474560
-	mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/stage1.bin ::
-	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin "::/stage2.bin"
-	mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin "::/kernel.bin"
-	mmd -i $(BUILD_DIR)/os.img "::mydir"
-	mcopy -i $(BUILD_DIR)/os.img test.txt "::mydir/test.txt"
+	@fsutil file createnew $(BUILD_DIR)/os.img 1474560
+	@mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/stage1.bin ::
+	@mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
+	@mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+	@mmd -i $(BUILD_DIR)/os.img "::mydir"
+	@mcopy -i $(BUILD_DIR)/os.img test.txt "::mydir/test.txt"
+	@echo "--> Created: " $@
 
 #
 # Bootloader
@@ -32,12 +30,12 @@ bootloader: stage1 stage2
 stage1: $(BUILD_DIR)/stage1.bin
 
 $(BUILD_DIR)/stage1.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C src/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 stage2: $(BUILD_DIR)/stage2.bin
 
 $(BUILD_DIR)/stage2.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C src/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
@@ -45,17 +43,23 @@ $(BUILD_DIR)/stage2.bin: always
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: always
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
 #
 always:
-	$(shell mkdir $(BUILD_DIR))
+	@$(shell mkdir $(BUILD_DIR))
 
 #
 # Clean
 #
 clean:
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	del /q $(BUILD_DIR)\*
+	@$(MAKE) -C src/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@$(MAKE) -C src/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@del /q $(BUILD_DIR)\*
+	@del /q $(BUILD_DIR)\stage2\asm\*
+	@del /q $(BUILD_DIR)\stage2\c\*
+	@del /q $(BUILD_DIR)\kernel\asm\*
+	@del /q $(BUILD_DIR)\kernel\c\*
