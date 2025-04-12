@@ -12,7 +12,7 @@ bool DISK_Initialize(DISK* disk, uint8_t driveNumber)
 
     disk->id = driveNumber;
     disk->cylinders = cylinders + 1;
-    disk->heads = heads + 1;
+    disk->heads = heads;
     disk->sectors = sectors;
 
     return true;
@@ -35,6 +35,8 @@ bool DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, void* dataOut)
     uint16_t cylinder, sector, head;
 
     DISK_LBA2CHS(disk, lba, &cylinder, &sector, &head);
+
+    printf("Cylinders: %d, Heads: %d, Sectors: %d\r\n", disk->cylinders, disk->heads, disk->sectors);
 
     for (int i = 0; i < 3; i++)
     {

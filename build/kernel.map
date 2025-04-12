@@ -22,10 +22,10 @@ LOAD C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-
                 0x00100000                        phys = 0x100000
                 0x00100000                        . = phys
 
-.entry          0x00100000       0x44
+.entry          0x00100000       0x49
                 0x00100000                        __entry_start = .
  *(.entry)
- .entry         0x00100000       0x44 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .entry         0x00100000       0x49 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
                 0x00100000                start
 
 .text           0x00100050      0xbe6
@@ -73,7 +73,8 @@ LOAD C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-
 .rodata         0x00100c3c       0xd6
                 0x00100c3c                        __rodata_start = .
  *(.rodata)
- .rodata        0x00100c3c       0x1c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .rodata        0x00100c3c       0x1a C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ *fill*         0x00100c56        0x2 
  .rodata        0x00100c58       0xba C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
                 0x00100c58                SCREEN_WIDTH
                 0x00100c5c                SCREEN_HEIGHT
@@ -132,12 +133,12 @@ OUTPUT(C:/Users/Jonathan/Desktop/Dev/OS/build/kernel.bin binary)
  .debug_rnglists
                 0x0000003d       0x1f C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
-.debug_line     0x00000000      0x80e
- .debug_line    0x00000000       0x62 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
- .debug_line    0x00000062       0xcc C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
- .debug_line    0x0000012e      0x38f C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
- .debug_line    0x000004bd      0x180 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
- .debug_line    0x0000063d      0x1d1 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
+.debug_line     0x00000000      0x80f
+ .debug_line    0x00000000       0x63 C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
+ .debug_line    0x00000063       0xcc C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/memory.obj
+ .debug_line    0x0000012f      0x38f C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/stdio.obj
+ .debug_line    0x000004be      0x180 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_udivdi3.o)
+ .debug_line    0x0000063e      0x1d1 C:/Users/Jonathan/Documents/dev/i686-elf-tools-windows/bin/../lib/gcc/i686-elf/13.2.0\libgcc.a(_umoddi3.o)
 
 .debug_str      0x00000000      0x855
  .debug_str     0x00000000      0x11c C:/Users/Jonathan/Desktop/Dev/OS/build/kernel/c/main.obj
