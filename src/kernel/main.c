@@ -2,9 +2,17 @@
 #include "stdio.h"
 #include "memory.h"
 #include "hal/hal.h"
+#include <arch/i686/irq.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
+
+void crash_me();
+
+void timer(Registers* regs)
+{
+    printf(".");
+}
 
 void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 {
@@ -15,11 +23,8 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
     clrscr();
 
     printf("Hello world from kernel!\n");
-    __asm("int $0x2");
-    printf("Hello world from kernel!\n");
-    __asm("int $0x3");
-    printf("Hello world from kernel!\n");
-    __asm("int $0x4");
+
+    i686_IRQ_RegisterHandler(0, timer);
 
 end:
     for (;;);

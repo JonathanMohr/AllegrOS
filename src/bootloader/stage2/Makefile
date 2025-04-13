@@ -15,18 +15,18 @@ all: stage2
 stage2: $(BUILD_DIR)/stage2.bin
 
 $(BUILD_DIR)/stage2.bin: $(OBJECTS_ASM) $(OBJECTS_C)
-	$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/stage2.map -o $@ $^ $(TARGET_LIBS)
-	echo "--> Created  stage2.bin"
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/stage2.map -o $@ $^ $(TARGET_LIBS)
+	@echo "--> Created  stage2.bin"
 
 $(BUILD_DIR)/stage2/c/%.obj: %.c
-	if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
-	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
-	echo "--> Compiled: " $<
+	@if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
+	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/stage2/asm/%.obj: %.asm
-	if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
-	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
-	echo "--> Compiled: " $<
+	@if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
+	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
+	@echo "--> Compiled: " $<
 
 clean:
-	del /f /q $(subst /,\,$(BUILD_DIR)\stage2.bin)
+	@del /f /q $(subst /,\,$(BUILD_DIR)\stage2.bin)

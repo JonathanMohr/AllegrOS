@@ -53,4 +53,4 @@ arch/i686/isrs_gen.c arch/i686/isrs_gen.inc:
 	@python ../../build_scripts/generate_isrs.py arch/i686/isrs_gen.c arch/i686/isrs_gen.inc
 
 clean:
-	del /f /q $(subst /,\,$(BUILD_DIR)\kernel.bin)
+	@del /f /q $(subst /,\,$(BUILD_DIR)\kernel.bin)

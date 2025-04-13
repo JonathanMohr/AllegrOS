@@ -12,4 +12,4 @@ $(BUILD_DIR)/stage1.bin: boot.asm
 	@echo "--> Created  stage1.bin"
 
 clean:
-	del /f /q "$(BUILD_DIR)\stage1.bin"
+	@del /f /q "$(BUILD_DIR)\stage1.bin"
