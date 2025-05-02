@@ -7,6 +7,7 @@
 #include <arch/i686/io.h>
 #include "timer.h"
 #include "keyboard/key.h"
+#include "terminal/terminal.h"
 
 #define KEY_EXTENDED 0xE0
 
@@ -78,11 +79,13 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
+    terminal_init();
+
     HAL_Initialize();
 
-    clrscr();
-
     printf("Hello world from kernel!\n");
+
+    terminal_newLine();
 
     i686_IRQ_RegisterHandler(0, timer);
 

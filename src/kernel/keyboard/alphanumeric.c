@@ -1,19 +1,19 @@
 #include "alphanumeric.h"
 #include "keys.h"
 
-#include <stdio.h>
+#include "../terminal/terminal.h"
 
 void handle_alphanumeric(uint16_t key) {
     switch (key) {
         case SPACE:
-            printf(" ");
+            terminal_putc(' ');
             break;
         case A: case B: case C: case D: case E: case F:
         case G: case H: case I: case J: case K: case L:
         case M: case N: case O: case P: case Q: case R:
         case S: case T: case U: case V: case W: case X:
         case Y: case Z:
-            printf("%c", key + 'A' - A);
+            terminal_putc(key + 'a' - A);
             break;
         
         case SPACE | KEY_RELEASED:
@@ -35,10 +35,10 @@ void handle_alphanumeric(uint16_t key) {
         case ONE: case TWO: case THREE: case FOUR:
         case FIVE: case SIX: case SEVEN: case EIGHT:
         case NINE:
-            printf("%c", key + '1' - ONE);
+            terminal_putc(key + '1' - ONE);
             break;
         case ZERO:
-            printf("0");
+            terminal_putc('0');
             break;
         
         case ONE | KEY_RELEASED: case TWO | KEY_RELEASED:

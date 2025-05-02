@@ -1,7 +1,7 @@
 #include "navigation.h"
 #include "keys.h"
 
-#include <stdio.h>
+#include "../terminal/terminal.h"
 
 void handle_navigation(uint16_t key) {
     switch (key) {
@@ -15,10 +15,10 @@ void handle_navigation(uint16_t key) {
             // Handle Caps Lock key press
             break;
         case BACKSPACE:
-            // Handle Backspace key press
+            terminal_backspace();
             break;
         case ENTER:
-            printf("\n");
+            terminal_enter();
             break;
         
         case ESCAPE | KEY_RELEASED:

@@ -25,7 +25,10 @@
         "irq.h": "c",
         "stdint.h": "c",
         "key.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "stdio.h": "c",
+        "terminal.h": "c",
+        "acpi.h": "c"
     },
     "github.copilot.enable": {
         "*": true,
