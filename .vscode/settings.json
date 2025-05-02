@@ -21,6 +21,16 @@
         "vector": "cpp",
         "stdarg.h": "c",
         "gdt.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "irq.h": "c",
+        "stdint.h": "c",
+        "key.h": "c",
+        "io.h": "c"
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
     }
 }
