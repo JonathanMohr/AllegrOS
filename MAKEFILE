@@ -4,22 +4,27 @@ CC = gcc
 CC16=wcc
 LD16=wlink
 
-.PHONY: all os_image bootloader kernel clean always
+.PHONY: all floppy_image bootloader kernel clean always
 
-all: bootloader kernel os_image
+all: bootloader kernel floppy_image
 
 #
 # OS image
 #
-os_image: $(BUILD_DIR)/os.img
+floppy_image: $(BUILD_DIR)/floppy.img
 
-$(BUILD_DIR)/os.img: bootloader kernel
-	@fsutil file createnew $(BUILD_DIR)/os.img 1474560
-	@mformat -i $(BUILD_DIR)/os.img -f 1440 -v "MYOS" -B $(BUILD_DIR)/stage1.bin ::
-	@mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
-	@mcopy -i $(BUILD_DIR)/os.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-	@mmd -i $(BUILD_DIR)/os.img "::mydir"
-	@mcopy -i $(BUILD_DIR)/os.img test.txt "::mydir/test.txt"
+$(BUILD_DIR)/floppy.img: bootloader kernel
+	@python .\build_scripts\check.py
+	@python .\build_scripts\run_sh.py ./build_scripts/make_floppy_image.sh ${BUILD_DIR} $@
+	@echo "--> Created: " $@
+
+#
+# Disk image
+#
+disk_image: $(BUILD_DIR)/main_disk.raw
+
+$(BUILD_DIR)/main_disk.raw: bootloader kernel
+	@python .\build_scripts\run_sh.py ./build_scripts/make_disk_image.sh $@ $(MAKE_DISK_SIZE) ${BUILD_DIR}
 	@echo "--> Created: " $@
 
 #

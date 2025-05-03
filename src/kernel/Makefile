@@ -40,12 +40,12 @@ $(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
 	@echo "--> Created:  kernel.bin"
 
 $(BUILD_DIR)/kernel/c/%.obj: %.c $(HEADERS_C)
-	if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
+	@if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
 	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
-	if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
+	@if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 

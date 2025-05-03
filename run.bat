@@ -1,1 +1,1 @@
-qemu-system-i386 -drive if=floppy,format=raw,file=build/os.img
+qemu-system-i386 -drive if=floppy,format=raw,file=build/floppy.img

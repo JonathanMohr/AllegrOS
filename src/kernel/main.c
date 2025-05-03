@@ -85,11 +85,11 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 
     printf("Hello world from kernel!\n");
 
-    terminal_newLine();
+    //terminal_newLine();
 
     i686_IRQ_RegisterHandler(0, timer);
 
-    i686_IRQ_RegisterHandler(1, keyboard);
+    //i686_IRQ_RegisterHandler(1, keyboard);
 
 end:
     for (;;);
