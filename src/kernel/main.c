@@ -14,15 +14,20 @@
 extern uint8_t __bss_start;
 extern uint8_t __end;
 
+extern void _init();
+
+/*
 static bool extended = false;
 static bool e1_sequence = false;
 static int e1_index = 0;
 static uint8_t e1_bytes[3];
+*/
 
 void crash_me();
 
 void keyboard(Registers* regs)
 {
+    /*
     uint8_t keycode = i686_inb(0x60);
 
     if (keycode == 0xE1 && !e1_sequence) {
@@ -73,15 +78,20 @@ void keyboard(Registers* regs)
 
     i686_outb(0x20, 0x20);
     i686_outb(0xA0, 0x20);
+
+    */
 }
 
 void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
-    terminal_init();
+    // call global constructors
+    _init();
 
     HAL_Initialize();
+
+    terminal_init();
 
     printf("Hello world from kernel!\n");
 

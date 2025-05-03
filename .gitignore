@@ -1,1 +1,4 @@
 build/
+toolchains/
+*.err
+.sconsign.dblite
