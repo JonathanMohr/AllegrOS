@@ -16,4 +16,4 @@ def ensure_permissions(script_path):
 
 convert_line_endings(sys.argv[1])
 ensure_permissions(sys.argv[1])
-subprocess.run(['wsl', 'bash', sys.argv[1]] + sys.argv[2:], check=True)
+subprocess.run(['wsl', 'sudo', 'bash', sys.argv[1]] + sys.argv[2:], check=True)

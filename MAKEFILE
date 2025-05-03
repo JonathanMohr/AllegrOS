@@ -11,9 +11,9 @@ all: bootloader kernel floppy_image
 #
 # OS image
 #
-floppy_image: $(BUILD_DIR)/floppy.img
+floppy_image: $(BUILD_DIR)/main_floppy.img
 
-$(BUILD_DIR)/floppy.img: bootloader kernel
+$(BUILD_DIR)/main_floppy.img: bootloader kernel
 	@python .\build_scripts\check.py
 	@python .\build_scripts\run_sh.py ./build_scripts/make_floppy_image.sh ${BUILD_DIR} $@
 	@echo "--> Created: " $@
