@@ -44,6 +44,14 @@ section .entry
     global start
     
     start:
+        ; move partition entry from MBR to a different location so we 
+        ; don't overwrite it (which is passed through DS:SI)
+        ;;;mov ax, PARTITION_ENTRY_SEGMENT
+        ;;;mov es, ax
+        ;;;mov di, PARTITION_ENTRY_OFFSET
+        ;;;mov cx, 16
+        ;;;rep movsb
+        
         ; setup data segments
         mov ax, 0           ; can't set ds/es directly
         mov ds, ax
@@ -329,7 +337,12 @@ section .data
     STAGE2_LOAD_SEGMENT     equ 0x0
     STAGE2_LOAD_OFFSET      equ 0x500
 
+    ;;;PARTITION_ENTRY_SEGMENT equ 0x2000
+    ;;;PARTITION_ENTRY_OFFSET  equ 0x0
+
+
 section .data
+    global stage2_location
     stage2_location:        times 30 db 0
 
 section .bss

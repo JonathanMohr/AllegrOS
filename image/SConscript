@@ -74,10 +74,10 @@ def install_stage1(target: str, stage1: str, stage2_offset, stage2_size, offset=
         raise ValueError("Can't find __entry_start symbol in map file " + str(map_file))
     entry_offset -= 0x7c00
 
-    #stage2_start = find_symbol_in_map_file(map_file, 'stage2_location')
-    #if stage2_start is None:
-    #    raise ValueError("Can't find stage2_location symbol in map file " + str(map_file))
-    #stage2_start -= 0x7c00
+    stage2_start = find_symbol_in_map_file(map_file, 'stage2_location')
+    if stage2_start is None:
+        raise ValueError("Can't find stage2_location symbol in map file " + str(map_file))
+    stage2_start -= 0x7c00
 
     with open(stage1, 'rb') as fstage1:
         with os.fdopen(os.open(target, os.O_WRONLY | os.O_CREAT), 'wb+') as ftarget:
@@ -92,9 +92,9 @@ def install_stage1(target: str, stage1: str, stage2_offset, stage2_size, offset=
             ftarget.write(fstage1.read())
 
             # write location of stage2
-            #ftarget.seek(offset * SECTOR_SIZE + stage2_start, SEEK_SET)
-            #ftarget.write(stage2_offset.to_bytes(4, byteorder='little'))
-            #ftarget.write(stage2_size.to_bytes(1, byteorder='little'))
+            ftarget.seek(offset * SECTOR_SIZE + stage2_start, SEEK_SET)
+            ftarget.write(stage2_offset.to_bytes(4, byteorder='little'))
+            ftarget.write(stage2_size.to_bytes(1, byteorder='little'))
 
 def install_stage2(target: str, stage2: str, offset=0, limit=None):
     with open(stage2, 'rb') as fstage2:
