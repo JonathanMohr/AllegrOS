@@ -2,3 +2,4 @@ build/
 toolchains/
 *.err
 .sconsign.dblite
+__pycache__/
