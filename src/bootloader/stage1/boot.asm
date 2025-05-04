@@ -41,7 +41,8 @@ section .fsheaders
 ; Code goes here
 ;
 section .entry
-
+    global start
+    
     start:
         ; setup data segments
         mov ax, 0           ; can't set ds/es directly
