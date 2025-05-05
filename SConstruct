@@ -144,7 +144,7 @@ Import('image')
 
 # Phony targets
 PhonyTargets(HOST_ENVIRONMENT, 
-             run=['./scripts/run.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
+             run=['bash', './scripts/run.sh', HOST_ENVIRONMENT['imageType'], "/mnt/c/Users/Jonathan/images/image.img"],
              debug=['./scripts/debug.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
              bochs=['./scripts/bochs.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
              toolchain=['./scripts/setup_toolchain.sh', HOST_ENVIRONMENT['toolchain']])
