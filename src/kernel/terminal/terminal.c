@@ -1,6 +1,5 @@
 #include "terminal.h"
 #include "../memory.h"
-#include "../stdio.h"
 #include "../string.h"
 #include "../system/system.h"
 #include "../arch/i686/io.h"

@@ -16,18 +16,15 @@ extern uint8_t __end;
 
 extern void _init();
 
-/*
 static bool extended = false;
 static bool e1_sequence = false;
 static int e1_index = 0;
 static uint8_t e1_bytes[3];
-*/
 
 void crash_me();
 
 void keyboard(Registers* regs)
 {
-    /*
     uint8_t keycode = i686_inb(0x60);
 
     if (keycode == 0xE1 && !e1_sequence) {
@@ -78,8 +75,6 @@ void keyboard(Registers* regs)
 
     i686_outb(0x20, 0x20);
     i686_outb(0xA0, 0x20);
-
-    */
 }
 
 void __attribute__((section(".entry"))) start(uint16_t bootDrive)
@@ -93,13 +88,13 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 
     terminal_init();
 
-    printf("Hello world from kernel!\n");
+    puts("Hello world from kernel!\n");
 
-    //terminal_newLine();
+    terminal_newLine();
 
     i686_IRQ_RegisterHandler(0, timer);
 
-    //i686_IRQ_RegisterHandler(1, keyboard);
+    i686_IRQ_RegisterHandler(1, keyboard);
 
 end:
     for (;;);

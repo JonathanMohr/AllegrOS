@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "terminal/terminal.h"
+#include "terminal/console.h"
 
 #include <stdarg.h>
 #include <stdbool.h>

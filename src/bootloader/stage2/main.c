@@ -33,7 +33,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     }
 
     // load kernel
-    FAT_File* fd = FAT_Open(&part, "/kernel.bin");
+    FAT_File* fd = FAT_Open(&part, "/boot/kernel.bin");
     uint32_t read;
     uint8_t* kernelBuffer = Kernel;
 

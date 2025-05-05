@@ -30,7 +30,8 @@
         "terminal.h": "c",
         "acpi.h": "c",
         "assert.h": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "compare": "c"
     },
     "github.copilot.enable": {
         "*": false,
