@@ -1,6 +1,6 @@
 #config = 'release'
 #arch = 'i686'
 #imageType = 'disk'
-#imageFS = 'fat32'
+imageFS = 'fat16'
 #imageSize = '250m'
 toolchain='toolchains/'

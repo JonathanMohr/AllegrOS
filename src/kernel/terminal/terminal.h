@@ -1,5 +1,4 @@
-#ifndef TERMINAL_H
-#define TERMINAL_H
+#pragma once
 
 #include "console.h"
 
@@ -9,5 +8,3 @@ void terminal_putc(char c);
 void terminal_enter();
 void terminal_backspace();
 void terminal_clear();
-
-#endif

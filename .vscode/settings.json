@@ -28,7 +28,9 @@
         "io.h": "c",
         "stdio.h": "c",
         "terminal.h": "c",
-        "acpi.h": "c"
+        "acpi.h": "c",
+        "assert.h": "c",
+        "cstdint": "c"
     },
     "github.copilot.enable": {
         "*": false,

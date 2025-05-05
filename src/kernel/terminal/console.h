@@ -1,5 +1,4 @@
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -20,5 +19,3 @@ void clrscr(uint8_t color);
 void scrollback(int lines);
 void putc(char c);
 void puts(const char* str);
-
-#endif

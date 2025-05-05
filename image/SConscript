@@ -152,7 +152,6 @@ def create_partition_table(target: str, align_start: int):
 def mount_fs(image: str, mount_dir: str, offset_sectors: int):
     offset_bytes = offset_sectors * SECTOR_SIZE
 
-    print(f"> mounting with loop offset {offset_bytes} bytes...")
     subprocess.run([
         "sudo", "mount",
         "-o", f"loop,offset={offset_bytes}",
@@ -161,7 +160,6 @@ def mount_fs(image: str, mount_dir: str, offset_sectors: int):
     ], check=True)
 
 def unmount_fs(mount_dir: str):
-    time.sleep(3)
     subprocess.run(["sudo", "umount", mount_dir], check=True)
 
 
