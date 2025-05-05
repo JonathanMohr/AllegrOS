@@ -1,0 +1,7 @@
+build/
+toolchains/
+*.err
+*.err
+.vscode/*.log
+.sconsign.dblite
+__pycache__/

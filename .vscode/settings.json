@@ -1,0 +1,39 @@
+{
+    "files.associations": {
+        "stdbool.h": "c",
+        "charconv": "cpp",
+        "chrono": "cpp",
+        "optional": "cpp",
+        "format": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "array": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "__bit_reference": "cpp",
+        "__node_handle": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "limits": "cpp",
+        "locale": "cpp",
+        "vector": "cpp",
+        "stdarg.h": "c",
+        "gdt.h": "c",
+        "stddef.h": "c",
+        "irq.h": "c",
+        "stdint.h": "c",
+        "key.h": "c",
+        "io.h": "c",
+        "stdio.h": "c",
+        "terminal.h": "c",
+        "acpi.h": "c"
+    },
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    }
+}
