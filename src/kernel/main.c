@@ -94,11 +94,11 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 
     HAL_Initialize();
 
+    current_program = program_init();
+
     i686_IRQ_RegisterHandler(0, timer);
 
     i686_IRQ_RegisterHandler(1, keyboard);
-
-    current_program = program_init();
 
 end:
     for (;;);

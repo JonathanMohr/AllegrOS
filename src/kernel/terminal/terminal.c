@@ -91,7 +91,6 @@ void terminal_backspace()
 #include "input/alphanumeric.h"
 #include "input/arrow.h"
 #include "input/function.h"
-#include "input/input.h"
 #include "input/modifiers.h"
 #include "input/navigation.h"
 #include "input/numpad.h"
