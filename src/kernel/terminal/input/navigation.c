@@ -1,7 +1,7 @@
 #include "navigation.h"
-#include "keys.h"
+#include "../../keyboard/keys.h"
 
-#include "../terminal/terminal.h"
+#include "../terminal.h"
 
 void handle_navigation(uint16_t key) {
     switch (key) {

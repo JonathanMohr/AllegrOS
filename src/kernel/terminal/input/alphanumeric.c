@@ -1,7 +1,7 @@
 #include "alphanumeric.h"
-#include "keys.h"
+#include "../../keyboard/keys.h"
 
-#include "../terminal/terminal.h"
+#include "../terminal.h"
 
 void handle_alphanumeric(uint16_t key) {
     switch (key) {

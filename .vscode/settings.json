@@ -36,7 +36,10 @@
         "internet": "c",
         "typeindex": "c",
         "typeinfo": "c",
-        "*.x": "c"
+        "*.x": "c",
+        "*.in": "c",
+        "thread": "c",
+        "keys.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

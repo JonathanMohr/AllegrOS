@@ -1,5 +1,5 @@
 #include "arrow.h"
-#include "keys.h"
+#include "../../keyboard/keys.h"
 
 void handle_arrow_key(uint16_t key) {
     switch (key) {

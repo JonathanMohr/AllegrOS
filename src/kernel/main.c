@@ -7,7 +7,7 @@
 #include <arch/i686/io.h>
 #include "timer.h"
 #include "keyboard/key.h"
-#include "terminal/terminal.h"
+#include "program.h"
 
 #define KEY_EXTENDED 0xE0
 
@@ -20,6 +20,10 @@ static bool extended = false;
 static bool e1_sequence = false;
 static int e1_index = 0;
 static uint8_t e1_bytes[3];
+
+
+static uint64_t current_program = UINT64_MAX;
+
 
 void crash_me();
 
@@ -55,16 +59,20 @@ void keyboard(Registers* regs)
 
     uint16_t key = get_key(keycode, extended);
 
-    int result = handle_key(key);
+    int result = 1;
+
+    if (current_program != UINT64_MAX) {
+        result = handle_input(current_program, key);
+    }
 
     switch (result) {
         case 0:
             break;
         case 1:
             if (extended) {
-                printf("Unknown extended Key: 0x%d\n", key);
+                printf("Unhandled extended Key: 0x%d\n", key);
             } else {
-                printf("Unknown Key: 0x%d\n", key);
+                printf("Unhandled Key: 0x%d\n", key);
             }
         default:
             printf("Unknown result: %d\n", result);
@@ -86,15 +94,11 @@ void __attribute__((section(".entry"))) start(uint16_t bootDrive)
 
     HAL_Initialize();
 
-    terminal_init();
-
-    puts("Hello world from kernel!\n");
-
-    terminal_newLine();
-
     i686_IRQ_RegisterHandler(0, timer);
 
     i686_IRQ_RegisterHandler(1, keyboard);
+
+    current_program = program_init();
 
 end:
     for (;;);
