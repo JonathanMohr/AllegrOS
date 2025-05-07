@@ -11,9 +11,6 @@
 
 #define KEY_EXTENDED 0xE0
 
-extern uint8_t __bss_start;
-extern uint8_t __end;
-
 extern void _init();
 
 static bool extended = false;
@@ -85,10 +82,8 @@ void keyboard(Registers* regs)
     i686_outb(0xA0, 0x20);
 }
 
-void __attribute__((section(".entry"))) start(uint16_t bootDrive)
+void start(uint16_t bootDrive)
 {
-    memset(&__bss_start, 0, (&__end) - (&__bss_start));
-
     // call global constructors
     _init();
 
