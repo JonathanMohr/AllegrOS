@@ -3,7 +3,7 @@ import os
 from SCons.Environment import Environment
 from build_scripts.utility import GlobRecursive, FindIndex, IsFileName
 
-Import('TARGET_ENVIRONMENT')
+Import('TARGET_ENVIRONMENT')                                                                                                                # type: ignore
 TARGET_ENVIRONMENT: Environment
 
 env = TARGET_ENVIRONMENT.Clone()
@@ -36,4 +36,4 @@ objects = [
 
 stage2 = env.Program('stage2.bin', objects)
 
-Export('stage2')
+Export('stage2')                                                                                                                            # type: ignore

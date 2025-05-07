@@ -6,7 +6,7 @@ from decimal import Decimal
 from io import SEEK_CUR, SEEK_SET
 from pathlib import Path
 from shutil import copy2
-import parted # type: ignore
+import parted                                                                                                                               # type: ignore
 import sh
 
 from SCons.Action import Action
@@ -15,11 +15,11 @@ from SCons.Environment import Environment
 
 from build_scripts.utility import FindIndex, GlobRecursive, IsFileName
 
-Import('stage1')
-Import('stage2')
-Import('kernel')
+Import('stage1')                                                                                                                            # type: ignore
+Import('stage2')                                                                                                                            # type: ignore
+Import('kernel')                                                                                                                            # type: ignore
 
-Import('TARGET_ENVIRONMENT')
+Import('TARGET_ENVIRONMENT')                                                                                                                # type: ignore
 TARGET_ENVIRONMENT: Environment
 env:Environment = TARGET_ENVIRONMENT
 
@@ -246,7 +246,7 @@ def build_image(target, source, env):
 # Setup image target
 root = env.Dir('root')
 root_content = GlobRecursive(env, '*', root)
-inputs = [stage1, stage2, kernel] + root_content
+inputs = [stage1, stage2, kernel] + root_content                                                                                            # type: ignore
 
 output_fmt = 'img'
 # if env['imageType'] == 'qcow3':
@@ -258,4 +258,4 @@ image = env.Command(output, inputs,
                     action=Action(build_image, 'Creating disk image...'), 
                     BASEDIR=root.srcnode().path)
 
-Export('image')
+Export('image')                                                                                                                             # type: ignore

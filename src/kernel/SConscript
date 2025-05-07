@@ -4,7 +4,7 @@ from SCons.Environment import Environment
 from build_scripts.utility import GlobRecursive, FindIndex, IsFileName
 
 
-Import('TARGET_ENVIRONMENT')
+Import('TARGET_ENVIRONMENT')                                                                                                                # type: ignore
 TARGET_ENVIRONMENT: Environment
 
 env = TARGET_ENVIRONMENT.Clone()
@@ -36,4 +36,8 @@ objects = [
 
 kernel = env.Program('kernel.elf', objects)
 
-Export('kernel')
+kernel_stripped = env.Command('kernel-stripped.elf', kernel, '$STRIP -o $TARGET $SOURCE')
+env.Default(kernel_stripped)
+
+Export('kernel')                                                                                                                            # type: ignore
+Export('kernel_stripped')                                                                                                                   # type: ignore

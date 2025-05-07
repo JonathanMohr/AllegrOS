@@ -7,7 +7,7 @@ from build_scripts.utility import ParseSize
 from os import *
 from shutil import *
 
-VARS = Variables('build_scripts/config.py', ARGUMENTS)
+VARS = Variables('build_scripts/config.py', ARGUMENTS)                                                                                      # type: ignore
 VARS.AddVariables(
     EnumVariable("config",
                  help="Build configuration",
@@ -130,19 +130,19 @@ TARGET_ENVIRONMENT.Append(
 
 TARGET_ENVIRONMENT['ENV']['PATH'] += os.pathsep + str(toolchainBin)
 
-Help(VARS.GenerateHelpText(HOST_ENVIRONMENT))
-Export('HOST_ENVIRONMENT')
-Export('TARGET_ENVIRONMENT')
+Help(VARS.GenerateHelpText(HOST_ENVIRONMENT))                                                                                               # type: ignore
+Export('HOST_ENVIRONMENT')                                                                                                                  # type: ignore
+Export('TARGET_ENVIRONMENT')                                                                                                                # type: ignore
 
 variantDir = 'build/{0}_{1}'.format(TARGET_ENVIRONMENT['arch'], TARGET_ENVIRONMENT['config'])
 variantDirStage1 = variantDir + '/stage1_{0}'.format(TARGET_ENVIRONMENT['imageFS'])
 
-SConscript('src/bootloader/stage1/SConscript', variant_dir=variantDirStage1, duplicate=0)
-SConscript('src/bootloader/stage2/SConscript', variant_dir=variantDir + '/stage2', duplicate=0)
-SConscript('src/kernel/SConscript', variant_dir=variantDir + '/kernel', duplicate=0)
-SConscript('image/SConscript', variant_dir=variantDir, duplicate=0)
+SConscript('src/bootloader/stage1/SConscript', variant_dir=variantDirStage1, duplicate=0)                                                   # type: ignore
+SConscript('src/bootloader/stage2/SConscript', variant_dir=variantDir + '/stage2', duplicate=0)                                             # type: ignore
+SConscript('src/kernel/SConscript', variant_dir=variantDir + '/kernel', duplicate=0)                                                        # type: ignore
+SConscript('image/SConscript', variant_dir=variantDir, duplicate=0)                                                                         # type: ignore
 
-Import('image')
+Import('image')                                                                                                                             # type: ignore
 
 image_type = HOST_ENVIRONMENT['imageType']
 output_ext = 'img' if image_type == 'floppy' else 'vmdk'
@@ -156,17 +156,17 @@ if output_ext == 'img':
 else:
     convert_cmd = f"qemu-img convert -f raw -O vmdk $SOURCE $TARGET"
 
-converted_image = Command(str(output_file), image[0], convert_cmd)
+converted_image = Command(str(output_file), image[0], convert_cmd)                                                                          # type: ignore
 
 # Phony targets
 PhonyTargets(HOST_ENVIRONMENT, 
-             run=['bash', './scripts/run.sh', HOST_ENVIRONMENT['imageType'], image[0].path, "raw"],
-             debug=['./scripts/debug.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
-             bochs=['./scripts/bochs.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
+             run=['bash', './scripts/run.sh', HOST_ENVIRONMENT['imageType'], image[0].path, "raw"],                                         # type: ignore
+             debug=['./scripts/debug.sh', HOST_ENVIRONMENT['imageType'], image[0].path],                                                    # type: ignore
+             bochs=['./scripts/bochs.sh', HOST_ENVIRONMENT['imageType'], image[0].path],                                                    # type: ignore
              toolchain=['./scripts/setup_toolchain.sh', HOST_ENVIRONMENT['toolchain']])
 
-Depends('run', [image, converted_image])
-Depends('debug', [image, converted_image])
-Depends('bochs', [image, converted_image])
+Depends('run', [image, converted_image])                                                                                                    # type: ignore
+Depends('debug', [image, converted_image])                                                                                                  # type: ignore
+Depends('bochs', [image, converted_image])                                                                                                  # type: ignore
 
-Default(image, converted_image)
+Default(image, converted_image)                                                                                                             # type: ignore
