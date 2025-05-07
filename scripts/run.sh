@@ -21,6 +21,7 @@ DEST_DIR="/mnt/c/wsl/os_images/$IMAGE_DIR"
 mkdir -p "$DEST_DIR"
 
 cp "$IMAGE_PATH" "$DEST_DIR/$IMAGE_NAME"
+cp -ru "$IMAGE_DIR/images" "$DEST_DIR"
 
 WINDOWS_PATH=$(wslpath -w "$DEST_DIR/$IMAGE_NAME")
 

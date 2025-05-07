@@ -4,6 +4,8 @@ from SCons.Environment import *
 from SCons.Node import *
 from build_scripts.phony_targets import PhonyTargets
 from build_scripts.utility import ParseSize
+from os import *
+from shutil import *
 
 VARS = Variables('build_scripts/config.py', ARGUMENTS)
 VARS.AddVariables(
@@ -142,6 +144,20 @@ SConscript('image/SConscript', variant_dir=variantDir, duplicate=0)
 
 Import('image')
 
+image_type = HOST_ENVIRONMENT['imageType']
+output_ext = 'img' if image_type == 'floppy' else 'vmdk'
+output_file = Path(variantDir) / "images" / f"{image_type}.{output_ext}"
+
+rmtree(str(Path(variantDir) / "images"))
+os.makedirs(str(Path(variantDir) / "images"))
+
+if output_ext == 'img':
+    convert_cmd = f"cp $SOURCE $TARGET"
+else:
+    convert_cmd = f"qemu-img convert -f raw -O vmdk $SOURCE $TARGET"
+
+converted_image = Command(str(output_file), image[0], convert_cmd)
+
 # Phony targets
 PhonyTargets(HOST_ENVIRONMENT, 
              run=['bash', './scripts/run.sh', HOST_ENVIRONMENT['imageType'], image[0].path, "raw"],
@@ -149,6 +165,8 @@ PhonyTargets(HOST_ENVIRONMENT,
              bochs=['./scripts/bochs.sh', HOST_ENVIRONMENT['imageType'], image[0].path],
              toolchain=['./scripts/setup_toolchain.sh', HOST_ENVIRONMENT['toolchain']])
 
-Depends('run', image)
-Depends('debug', image)
-Depends('bochs', image)
+Depends('run', [image, converted_image])
+Depends('debug', [image, converted_image])
+Depends('bochs', [image, converted_image])
+
+Default(image, converted_image)

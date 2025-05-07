@@ -228,7 +228,6 @@ def build_disk(image, stage1, stage2, kernel, files, env):
             pass
         os.rmdir(tempdir)
 
-
 def build_image(target, source, env):
     stage1 = str(source[0])
     stage2 = str(source[1])
