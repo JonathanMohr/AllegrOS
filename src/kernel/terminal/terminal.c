@@ -1,7 +1,6 @@
 #include "terminal.h"
 #include "../memory.h"
 #include "../string.h"
-#include "../system/system.h"
 #include "../arch/i686/io.h"
 #include "../keyboard/keys.h"
 
@@ -19,21 +18,10 @@ int terminal_run_command()
 
         puts("\thelp - Show this help message\n");
         puts("\tclear - Clear the screen\n");
-        puts("\treboot - Reboot the system\n");
-        puts("\tshutdown - Shutdown the system\n");
 
     } else if (strcmp(command_buffer, "clear") == 0) {
         terminal_clear();
         return 0;
-    } else if (strcmp(command_buffer, "reboot") == 0) {
-        reboot();
-        puts("Error: Reboot failed\n");
-    } else if (strcmp(command_buffer, "shutdown") == 0) {
-        shutdown();
-        puts("Error: Shutdown failed\n");
-        puts("System halted\n");
-        puts("Shutdown manually\n");
-        i686_Panic();
     } else {
         puts("Unknown command: ");
         puts(command_buffer);
