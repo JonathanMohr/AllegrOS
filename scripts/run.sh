@@ -44,4 +44,4 @@ mkdir -p $LOG_DIR
   /mnt/c/Windows/System32/cmd.exe /C "qemu-system-i386.exe $QEMU_ARGS" | tee $LOG_DIR/debug.log
 )
 
-sed 's/\x1b\[0;36m/\[VERBOSE\] /g; s/\x1b\[2;37m/\[DEBUG\] /g; s/\x1b\[33m/\[INFO\] /g; s/\x1b\[1;33m/\[WARN\] /g; s/\x1b\[1;31m/\[ERROR\] /g; s/\x1b\[1;37;41m/\[FATAL\] /g; s/\x1b\[[0-9;]*m//g' "$LOG_DIR/debug.log" > "$LOG_DIR/debug_raw.log"w
+sed 's/\x1b\[0;36m/\[VERBOSE\] /g; s/\x1b\[2;37m/\[DEBUG\] /g; s/\x1b\[37m/\[INFO\] /g; s/\x1b\[1;33m/\[WARN\] /g; s/\x1b\[1;31m/\[ERROR\] /g; s/\x1b\[1;37;41m/\[FATAL\] /g; s/\x1b\[[0-9;]*m//g' "$LOG_DIR/debug.log" > "$LOG_DIR/debug_raw.log"

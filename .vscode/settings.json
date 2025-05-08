@@ -40,7 +40,12 @@
         "*.in": "c",
         "thread": "c",
         "keys.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "buffer": "c",
+        "hash_map": "c",
+        "hash_set": "c",
+        "algorithm": "c",
+        "dynamic_bitset": "c"
     },
     "github.copilot.enable": {
         "*": false,

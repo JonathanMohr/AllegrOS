@@ -11,5 +11,3 @@ uint8_t getcolor(int x, int y);
 void setcursor(int x, int y);
 void clrscr();
 void scrollback(int lines);
-void putc(char c);
-void puts(const char* str);

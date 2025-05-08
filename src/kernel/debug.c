@@ -1,5 +1,7 @@
 #include "debug.h"
+#include <stdio.h>
 #include <stdarg.h>
+#include "hal/vfs.h"
 
 static const char* const g_LogSeverityColors[] =
 {
@@ -20,4 +22,12 @@ void logf(const char* module, DebugLevel level, const char* fmt, ...)
 
     if (level < MIN_LOG_LEVEL)
         return;
+    
+    fputs(g_LogSeverityColors[level], VFS_FD_DEBUG);    // set color depending on level
+    fprintf(VFS_FD_DEBUG, "[%s] ", module);             // write module
+    vfprintf(VFS_FD_DEBUG, fmt, args);                  // write text
+    fputs(g_ColorReset, VFS_FD_DEBUG);                  // reset format
+    fputc('\n', VFS_FD_DEBUG);                          // newline
+    
+    va_end(args);  
 }

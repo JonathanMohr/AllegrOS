@@ -14,18 +14,18 @@ int terminal_run_command()
     }
 
     if (strcmp(command_buffer, "help") == 0) {
-        puts("\nAvailable commands: \n");
+        VGA_puts("\nAvailable commands: \n");
 
-        puts("\thelp - Show this help message\n");
-        puts("\tclear - Clear the screen\n");
+        VGA_puts("\thelp - Show this help message\n");
+        VGA_puts("\tclear - Clear the screen\n");
 
     } else if (strcmp(command_buffer, "clear") == 0) {
         terminal_clear();
         return 0;
     } else {
-        puts("Unknown command: ");
-        puts(command_buffer);
-        putc('\n');
+        VGA_puts("Unknown command: ");
+        VGA_puts(command_buffer);
+        VGA_putc('\n');
     }
 
     return 1;
@@ -35,7 +35,7 @@ void terminal_newLine()
 {
     len = 0;
     memset(command_buffer, 0, sizeof(command_buffer));
-    puts("/ ");
+    VGA_puts("/ ");
 }
 
 void terminal_init()
@@ -56,14 +56,14 @@ void terminal_putc(char c)
 {
     command_buffer[len++] = c;
     command_buffer[len] = '\0';
-    putc(c);
+    VGA_putc(c);
 }
 
 void terminal_enter()
 {
-    putc('\n');
+    VGA_putc('\n');
     if (terminal_run_command()) {
-        putc('\n');
+        VGA_putc('\n');
     }
     terminal_newLine();
 }
@@ -72,7 +72,7 @@ void terminal_backspace()
 {
     if (len > 0) {
         command_buffer[--len] = '\0';
-        putc('\b');
+        VGA_putc('\b');
     }
 }
 
@@ -212,7 +212,7 @@ void terminal_start()
 {
     terminal_init();
 
-    puts("Hello world from kernel!\n");
+    VGA_puts("Hello world from kernel!\n");
 
     terminal_newLine();
 }

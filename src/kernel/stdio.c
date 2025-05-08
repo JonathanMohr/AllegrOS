@@ -1,37 +1,20 @@
-#include <stdio.h>
+#include "stdio.h"
 #include "terminal/console.h"
 
-#include <stdarg.h>
 #include <stdbool.h>
 
-const char g_HexChars[] = "0123456789abcdef";
-
-void printf_unsigned(unsigned long long number, int radix)
+void fputc(char c, fd_t file)
 {
-    char buffer[32];
-    int pos = 0;
-
-    // convert number to ASCII
-    do 
-    {
-        unsigned long long rem = number % radix;
-        number /= radix;
-        buffer[pos++] = g_HexChars[rem];
-    } while (number > 0);
-
-    // print number in reverse order
-    while (--pos >= 0)
-        VGA_putc(buffer[pos]);
+    VFS_Write(file, &c, sizeof(c));
 }
 
-void printf_signed(long long number, int radix)
+void fputs(const char* str, fd_t file)
 {
-    if (number < 0)
+    while(*str)
     {
-        VGA_putc('-');
-        printf_unsigned(-number, radix);
+        fputc(*str, file);
+        str++;
     }
-    else printf_unsigned(number, radix);
 }
 
 #define PRINTF_STATE_NORMAL         0
@@ -46,11 +29,38 @@ void printf_signed(long long number, int radix)
 #define PRINTF_LENGTH_LONG          3
 #define PRINTF_LENGTH_LONG_LONG     4
 
-void printf(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
+const char g_HexChars[] = "0123456789abcdef";
 
+void fprintf_unsigned(fd_t file, unsigned long long number, int radix)
+{
+    char buffer[32];
+    int pos = 0;
+
+    // convert number to ASCII
+    do 
+    {
+        unsigned long long rem = number % radix;
+        number /= radix;
+        buffer[pos++] = g_HexChars[rem];
+    } while (number > 0);
+
+    // print number in reverse order
+    while (--pos >= 0)
+        fputc(buffer[pos], file);
+}
+
+void fprintf_signed(fd_t file, long long number, int radix)
+{
+    if (number < 0)
+    {
+        fputc('-', file);
+        fprintf_unsigned(-number, radix, file);
+    }
+    else fprintf_unsigned(number, radix, file);
+}
+
+void vfprintf(fd_t file, const char* fmt, va_list args)
+{
     int state = PRINTF_STATE_NORMAL;
     int length = PRINTF_LENGTH_DEFAULT;
     int radix = 10;
@@ -66,7 +76,7 @@ void printf(const char* fmt, ...)
                 {
                     case '%':   state = PRINTF_STATE_LENGTH;
                                 break;
-                    default:    VGA_putc(*fmt);
+                    default:    fputc(*fmt, file);
                                 break;
                 }
                 break;
@@ -106,14 +116,14 @@ void printf(const char* fmt, ...)
             PRINTF_STATE_SPEC_:
                 switch (*fmt)
                 {
-                    case 'c':   VGA_putc((char)va_arg(args, int));
+                    case 'c':   fputc((char)va_arg(args, int), file);
                                 break;
 
                     case 's':   
-                                VGA_puts(va_arg(args, const char*));
+                                fputs(va_arg(args, const char*), file);
                                 break;
 
-                    case '%':   VGA_putc('%');
+                    case '%':   fputc('%', file);
                                 break;
 
                     case 'd':
@@ -143,13 +153,13 @@ void printf(const char* fmt, ...)
                         {
                         case PRINTF_LENGTH_SHORT_SHORT:
                         case PRINTF_LENGTH_SHORT:
-                        case PRINTF_LENGTH_DEFAULT:     printf_signed(va_arg(args, int), radix);
+                        case PRINTF_LENGTH_DEFAULT:     fprintf_signed(file, va_arg(args, int), radix);
                                                         break;
 
-                        case PRINTF_LENGTH_LONG:        printf_signed(va_arg(args, long), radix);
+                        case PRINTF_LENGTH_LONG:        fprintf_signed(file, va_arg(args, long), radix);
                                                         break;
 
-                        case PRINTF_LENGTH_LONG_LONG:   printf_signed(va_arg(args, long long), radix);
+                        case PRINTF_LENGTH_LONG_LONG:   fprintf_signed(file, va_arg(args, long long), radix);
                                                         break;
                         }
                     }
@@ -159,13 +169,13 @@ void printf(const char* fmt, ...)
                         {
                         case PRINTF_LENGTH_SHORT_SHORT:
                         case PRINTF_LENGTH_SHORT:
-                        case PRINTF_LENGTH_DEFAULT:     printf_unsigned(va_arg(args, unsigned int), radix);
+                        case PRINTF_LENGTH_DEFAULT:     fprintf_unsigned(file, va_arg(args, unsigned int), radix);
                                                         break;
                                                         
-                        case PRINTF_LENGTH_LONG:        printf_unsigned(va_arg(args, unsigned  long), radix);
+                        case PRINTF_LENGTH_LONG:        fprintf_unsigned(file, va_arg(args, unsigned  long), radix);
                                                         break;
 
-                        case PRINTF_LENGTH_LONG_LONG:   printf_unsigned(va_arg(args, unsigned  long long), radix);
+                        case PRINTF_LENGTH_LONG_LONG:   fprintf_unsigned(file, va_arg(args, unsigned  long long), radix);
                                                         break;
                         }
                     }
@@ -182,19 +192,73 @@ void printf(const char* fmt, ...)
 
         fmt++;
     }
+}
 
+void fprintf(fd_t file, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(file, fmt, args);
+    va_end(args);
+}
+
+void fprint_buffer(fd_t file, const char* msg, const void* buffer, uint32_t count)
+{
+    const uint8_t* u8Buffer = (const uint8_t*)buffer;
+    
+    fputs(msg, file);
+    for (uint16_t i = 0; i < count; i++)
+    {
+        fputc(g_HexChars[u8Buffer[i] >> 4], file);
+        fputc(g_HexChars[u8Buffer[i] & 0xF], file);
+    }
+    fputc('\n', file);
+}
+
+
+
+void putc(char c)
+{
+    fputc(c, VFS_FD_STDOUT);
+}
+
+void puts(const char* str)
+{
+    fputs(str, VFS_FD_STDOUT);
+}
+
+void printf(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(VFS_FD_STDOUT, fmt, args);
     va_end(args);
 }
 
 void print_buffer(const char* msg, const void* buffer, uint32_t count)
 {
-    const uint8_t* u8Buffer = (const uint8_t*)buffer;
-    
-    VGA_puts(msg);
-    for (uint16_t i = 0; i < count; i++)
-    {
-        VGA_putc(g_HexChars[u8Buffer[i] >> 4]);
-        VGA_putc(g_HexChars[u8Buffer[i] & 0xF]);
-    }
-    VGA_putc('\n');
+    fprint_buffer(VFS_FD_STDOUT, msg, buffer, count);
+}
+
+void debugc(char c)
+{
+    fputc(c, VFS_FD_DEBUG);
+}
+
+void debugs(const char* str)
+{
+    fputs(str, VFS_FD_DEBUG);
+}
+
+void debugf(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(VFS_FD_DEBUG, fmt, args);
+    va_end(args);
+}
+
+void debug_buffer(const char* msg, const void* buffer, uint32_t count)
+{
+    fprint_buffer(VFS_FD_DEBUG, msg, buffer, count);
 }

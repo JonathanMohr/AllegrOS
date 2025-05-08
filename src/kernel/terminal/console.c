@@ -30,13 +30,3 @@ void scrollback(int lines)
 {
     VGA_scrollback(lines);
 }
-
-void putc(char c)
-{
-    VGA_putc(c);
-}
-
-void puts(const char* str)
-{
-    VGA_puts(str);
-}
