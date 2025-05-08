@@ -39,7 +39,8 @@
         "*.x": "c",
         "*.in": "c",
         "thread": "c",
-        "keys.h": "c"
+        "keys.h": "c",
+        "debug.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

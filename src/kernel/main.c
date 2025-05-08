@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "keyboard/key.h"
 #include "program.h"
+#include "debug/debug.h"
 
 #define KEY_EXTENDED 0xE0
 
@@ -94,6 +95,8 @@ void start(uint16_t bootDrive)
     i686_IRQ_RegisterHandler(0, timer);
 
     i686_IRQ_RegisterHandler(1, keyboard);
+
+    dbg_puts("\033[1;31mHello world from my OS!\033[0m");
 
 end:
     for (;;);

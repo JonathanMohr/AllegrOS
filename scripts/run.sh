@@ -28,15 +28,20 @@ WINDOWS_PATH=$(wslpath -w "$DEST_DIR/$IMAGE_NAME")
 FORMAT=$3
 
 case "$1" in
-    "floppy")   QEMU_ARGS="${QEMU_ARGS} -drive file=$WINDOWS_PATH,format=${FORMAT},if=floppy"
+    "floppy")   QEMU_ARGS="${QEMU_ARGS} -debugcon stdio -drive file=$WINDOWS_PATH,format=${FORMAT},if=floppy"
     ;;
-    "disk")     QEMU_ARGS="${QEMU_ARGS} -drive file=$WINDOWS_PATH,format=${FORMAT},if=ide"
+    "disk")     QEMU_ARGS="${QEMU_ARGS} -debugcon stdio -drive file=$WINDOWS_PATH,format=${FORMAT},if=ide"
     ;;
     *)          echo "Unknown image type $1."
                 exit 2
 esac
 
+LOG_DIR=$PWD/logs
+mkdir -p $LOG_DIR
+
 (
   cd /mnt/c && \
-  /mnt/c/Windows/System32/cmd.exe /C "qemu-system-i386.exe $QEMU_ARGS"
+  /mnt/c/Windows/System32/cmd.exe /C "qemu-system-i386.exe $QEMU_ARGS" | tee $LOG_DIR/debug.log
 )
+
+sed 's/\x1b\[0;36m/\[VERBOSE\] /g; s/\x1b\[2;37m/\[DEBUG\] /g; s/\x1b\[33m/\[INFO\] /g; s/\x1b\[1;33m/\[WARN\] /g; s/\x1b\[1;31m/\[ERROR\] /g; s/\x1b\[1;37;41m/\[FATAL\] /g; s/\x1b\[[0-9;]*m//g' "$LOG_DIR/debug.log" > "$LOG_DIR/debug_raw.log"w

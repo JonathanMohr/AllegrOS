@@ -21,14 +21,14 @@ void printf_unsigned(unsigned long long number, int radix)
 
     // print number in reverse order
     while (--pos >= 0)
-        putc(buffer[pos]);
+        VGA_putc(buffer[pos]);
 }
 
 void printf_signed(long long number, int radix)
 {
     if (number < 0)
     {
-        putc('-');
+        VGA_putc('-');
         printf_unsigned(-number, radix);
     }
     else printf_unsigned(number, radix);
@@ -66,7 +66,7 @@ void printf(const char* fmt, ...)
                 {
                     case '%':   state = PRINTF_STATE_LENGTH;
                                 break;
-                    default:    putc(*fmt);
+                    default:    VGA_putc(*fmt);
                                 break;
                 }
                 break;
@@ -106,14 +106,14 @@ void printf(const char* fmt, ...)
             PRINTF_STATE_SPEC_:
                 switch (*fmt)
                 {
-                    case 'c':   putc((char)va_arg(args, int));
+                    case 'c':   VGA_putc((char)va_arg(args, int));
                                 break;
 
                     case 's':   
-                                puts(va_arg(args, const char*));
+                                VGA_puts(va_arg(args, const char*));
                                 break;
 
-                    case '%':   putc('%');
+                    case '%':   VGA_putc('%');
                                 break;
 
                     case 'd':
@@ -190,11 +190,11 @@ void print_buffer(const char* msg, const void* buffer, uint32_t count)
 {
     const uint8_t* u8Buffer = (const uint8_t*)buffer;
     
-    puts(msg);
+    VGA_puts(msg);
     for (uint16_t i = 0; i < count; i++)
     {
-        putc(g_HexChars[u8Buffer[i] >> 4]);
-        putc(g_HexChars[u8Buffer[i] & 0xF]);
+        VGA_putc(g_HexChars[u8Buffer[i] >> 4]);
+        VGA_putc(g_HexChars[u8Buffer[i] & 0xF]);
     }
-    puts("\n");
+    VGA_putc('\n');
 }

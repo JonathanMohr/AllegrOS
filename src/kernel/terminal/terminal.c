@@ -40,14 +40,14 @@ void terminal_newLine()
 
 void terminal_init()
 {
-    clrscr(0x7);
+    clrscr();
     len = 0;
     memset(command_buffer, 0, sizeof(command_buffer));
 }
 
 void terminal_clear()
 {
-    clrscr(0x7);
+    clrscr();
     len = 0;
     command_buffer[0] = '\0';
 }
