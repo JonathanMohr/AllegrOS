@@ -45,7 +45,8 @@
         "hash_map": "c",
         "hash_set": "c",
         "algorithm": "c",
-        "dynamic_bitset": "c"
+        "dynamic_bitset": "c",
+        "gcov-14.C": "cpp"
     },
     "github.copilot.enable": {
         "*": false,
