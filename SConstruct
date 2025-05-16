@@ -137,6 +137,8 @@ Export('TARGET_ENVIRONMENT')                                                    
 variantDir = 'build/{0}_{1}'.format(TARGET_ENVIRONMENT['arch'], TARGET_ENVIRONMENT['config'])
 variantDirStage1 = variantDir + '/stage1_{0}'.format(TARGET_ENVIRONMENT['imageFS'])
 
+SConscript('src/libs/core/SConscript', variant_dir=variantDir + '/libs/core', duplicate=0)                                                  # type: ignore
+
 SConscript('src/bootloader/stage1/SConscript', variant_dir=variantDirStage1, duplicate=0)                                                   # type: ignore
 SConscript('src/bootloader/stage2/SConscript', variant_dir=variantDir + '/stage2', duplicate=0)                                             # type: ignore
 SConscript('src/kernel/SConscript', variant_dir=variantDir + '/kernel', duplicate=0)                                                        # type: ignore
