@@ -2,7 +2,7 @@
 #include "../memory.h"
 #include "../string.h"
 #include "../arch/i686/io.h"
-#include "../keyboard/keys.h"
+#include "../drivers/keyboard/keys.h"
 
 char command_buffer[256] = "";
 uint16_t len = 0;
