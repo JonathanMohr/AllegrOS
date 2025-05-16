@@ -1,5 +1,5 @@
 #include "special.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 
 void handle_special_key(uint16_t key) {
     switch (key) {

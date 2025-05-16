@@ -1,5 +1,5 @@
 #include "alphanumeric.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 
 #include "../terminal.h"
 

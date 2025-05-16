@@ -1,5 +1,5 @@
 #include "function.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 
 void handle_function(uint16_t key) {
     switch (key) {

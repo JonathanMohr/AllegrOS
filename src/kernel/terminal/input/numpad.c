@@ -1,5 +1,5 @@
 #include "numpad.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 #include "navigation.h"
 
 void handle_numpad(uint16_t key) {

@@ -1,5 +1,5 @@
 #include "navigation.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 
 #include "../terminal.h"
 

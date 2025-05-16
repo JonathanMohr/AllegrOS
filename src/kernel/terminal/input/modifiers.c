@@ -1,5 +1,5 @@
 #include "modifiers.h"
-#include "../../keyboard/keys.h"
+#include "../../drivers/keyboard/keys.h"
 
 void handle_modifiers(uint16_t key) {
     switch (key) {
