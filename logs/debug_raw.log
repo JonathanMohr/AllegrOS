@@ -1,6 +1,0 @@
-[VERBOSE] [Main] This is a verbose msg!
-[DEBUG] [Main] This is a debug msg!
-[INFO] [Main] This is an info msg!
-[WARN] [Main] This is a warning msg!
-[ERROR] [Main] This is an error msg!
-[FATAL] [Main] This is a critical msg!

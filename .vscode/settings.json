@@ -1,6 +1,6 @@
 {
     "files.associations": {
-        "*.inc": "c",
+        "*.inc": "asm-intel-x86-generic",
         "stdbool.h": "c",
         "charconv": "cpp",
         "chrono": "cpp",

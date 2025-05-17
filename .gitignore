@@ -5,3 +5,4 @@ toolchains/
 .vscode/*.log
 .sconsign.dblite
 __pycache__/
+logs/
