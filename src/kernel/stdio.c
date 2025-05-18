@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "terminal/console.h"
+#include "arch/i686/vga_text.h"
 
 #include <stdbool.h>
 
