@@ -50,7 +50,19 @@
         "bootparams.h": "c",
         "string.h": "c",
         "allocator.h": "c",
-        "paging.h": "c"
+        "paging.h": "c",
+        "bumpallocator.h": "c",
+        "socket": "c",
+        "string_view": "c",
+        "rope": "c",
+        "slist": "c",
+        "ranges": "c",
+        "span": "c",
+        "valarray": "c",
+        "regex": "c",
+        "initializer_list": "c",
+        "memory.h": "c",
+        "physicalallocator.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

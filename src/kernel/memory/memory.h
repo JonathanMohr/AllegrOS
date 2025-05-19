@@ -9,6 +9,12 @@
 #define MEMORY_TYPE_BAD                 5
 
 #define MEMORY_TYPE_KERNEL              6
+#define MEMORY_TYPE_BOOT                7
 
 void memory_Initialize(MemoryInfo* memInfo, uintptr_t kernel_start, uintptr_t kernel_end);
+void memory_Initialize_Allocator();
+
 void* memory_Allocate(uint64_t size, uint64_t align);
+void memory_Free(uintptr_t ptr);
+
+void* memory_ReserveRegionAndGetPtr(uint64_t size, uint64_t align);

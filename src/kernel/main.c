@@ -40,36 +40,21 @@ void ENTRY start(BootParams* bootParams)
 
     printf("Hello world from kernel!\n");
 
-    Paging_Initialize();
-
-    log_info("Kernel", "Paging initialized!");
-
-    /*
     memory_Initialize(&bootParams->Memory, (uintptr_t)__text_start, (uintptr_t)__end);
+
+    Paging_Initialize((uintptr_t)__end);
 
     log_debug("Main", "Boot device: %x", bootParams->BootDevice);
     log_debug("Main", "Memory region count: %x", bootParams->Memory.RegionCount);
     for (int i = 0; i < bootParams->Memory.RegionCount; i++)
     {
-        log_debug("Main", "MEM: start=0x%llx, length=%llx, type=%x",
+        log_debug("Main", "MEM: start=0x%llx, length=0x%llx, type=%x",
             bootParams->Memory.Regions[i].Begin,
             bootParams->Memory.Regions[i].Length,
             bootParams->Memory.Regions[i].Type);
     }
 
-    for (uint64_t i = 0; i < 0x1000; i++)
-    {
-        uint64_t* ptr = (uint64_t*)memory_Allocate(sizeof(uint64_t), 1);
-        if (ptr == NULL)
-        {
-            log_err("KERNEL", "Allocation failed at i=%llu", i);
-            break;
-        }
-        *ptr = i;
-    }
-
-    log_debug("KERNEL", "Works!");
-    */
+    memory_Initialize_Allocator();
 
 end:
     for (;;);
