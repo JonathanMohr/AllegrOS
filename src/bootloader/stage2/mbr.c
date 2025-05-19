@@ -1,6 +1,6 @@
 #include "mbr.h"
-#include "memory.h"
 #include "stdio.h"
+#include <core/memory/memory.h>
 
 typedef struct {
     // 0x00	1	Drive attributes (bit 7 set = active or bootable)

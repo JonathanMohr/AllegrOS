@@ -4,11 +4,11 @@
 #include "disk.h"
 #include "fat.h"
 #include "memdefs.h"
-#include "memory.h"
 #include "mbr.h"
 #include "elf.h"
 #include "memdetect.h"
 #include <boot/bootparams.h>
+#include <core/memory/memory.h>
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
 uint8_t* Kernel = (uint8_t*)MEMORY_KERNEL_ADDR;

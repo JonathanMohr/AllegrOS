@@ -46,7 +46,10 @@
         "hash_set": "c",
         "algorithm": "c",
         "dynamic_bitset": "c",
-        "keyboard.h": "c"
+        "keyboard.h": "c",
+        "bootparams.h": "c",
+        "string.h": "c",
+        "allocator.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

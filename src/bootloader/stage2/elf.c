@@ -1,9 +1,9 @@
 #include "elf.h"
 #include "fat.h"
 #include "memdefs.h"
-#include "memory.h"
 #include "minmax.h"
 #include "stdio.h"
+#include <core/memory/memory.h>
 
 bool ELF_Read(Partition* part, const char* path, void** entryPoint)
 {
