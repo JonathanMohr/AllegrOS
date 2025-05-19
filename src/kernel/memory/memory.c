@@ -117,7 +117,7 @@ void memory_Initialize_Allocator()
         if (region->Type == MEMORY_TYPE_USABLE && region->Length >= 4096)
         {
             PhysicalAllocator_Initialize(&g_PhysicalAllocator, region->Begin, region->Length);
-            log_info("Physical Allocator", "Initialized at 0x%llx with size %llu\n", region->Begin, region->Length);
+            log_info("Physical Allocator", "Initialized at 0x%llx with size %llu", region->Begin, region->Length);
             ok = true;
         }
     }
