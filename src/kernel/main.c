@@ -2,13 +2,12 @@
 #include <stdbool.h>
 #include "stdio.h"
 #include "hal/hal.h"
-#include <arch/i686/irq.h>
-#include <arch/i686/io.h>
 #include "timer.h"
 #include "debug.h"
 #include <boot/bootparams.h>
 #include <core/memory/memory.h>
 #include "memory/memory.h"
+#include "hal/paging.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -41,6 +40,11 @@ void ENTRY start(BootParams* bootParams)
 
     printf("Hello world from kernel!\n");
 
+    Paging_Initialize();
+
+    log_info("Kernel", "Paging initialized!");
+
+    /*
     memory_Initialize(&bootParams->Memory, (uintptr_t)__text_start, (uintptr_t)__end);
 
     log_debug("Main", "Boot device: %x", bootParams->BootDevice);
@@ -65,6 +69,7 @@ void ENTRY start(BootParams* bootParams)
     }
 
     log_debug("KERNEL", "Works!");
+    */
 
 end:
     for (;;);
