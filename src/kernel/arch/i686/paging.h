@@ -15,3 +15,5 @@ uint64_t i686_get_paging_size(uint64_t size);
 bool i686_paging_Initialize(uint64_t kernel_end);
 void i686_paging_Load_Directory(uint32_t* page_directory);
 void i686_enable_paging();
+bool i686_map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags);
+void i686_unmap_page(uint32_t virtual_addr);

@@ -56,6 +56,14 @@ void ENTRY start(BootParams* bootParams)
 
     memory_Initialize_Allocator();
 
+    char* test = memory_Allocate(sizeof(char), 1);
+    
+    if(test)
+    {
+        memset(test, 'a', 1);
+        log_debug("", "Test: %c", *test);
+    }
+
 end:
     for (;;);
 }

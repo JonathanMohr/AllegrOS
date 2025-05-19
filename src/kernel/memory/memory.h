@@ -14,6 +14,8 @@
 void memory_Initialize(MemoryInfo* memInfo, uintptr_t kernel_start, uintptr_t kernel_end);
 void memory_Initialize_Allocator();
 
+void* memory_physicalAllocate(uint64_t size, uint64_t align);
+void memory_physicalFree(uintptr_t ptr);
 void* memory_Allocate(uint64_t size, uint64_t align);
 void memory_Free(uintptr_t ptr);
 

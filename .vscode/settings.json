@@ -62,7 +62,9 @@
         "regex": "c",
         "initializer_list": "c",
         "memory.h": "c",
-        "physicalallocator.h": "c"
+        "physicalallocator.h": "c",
+        "virtualallocator.h": "c",
+        "cstdlib": "c"
     },
     "github.copilot.enable": {
         "*": false,

@@ -1,7 +1,9 @@
 #include "memory.h"
 
 #include "physicalAllocator.h"
+#include "virtualAllocator.h"
 #include "../debug.h"
+#include "../hal/paging.h"
 
 #include <core/memory/memory.h>
 
@@ -10,6 +12,7 @@
 
 static MemoryInfo* g_MemoryInfo;
 static PhysicalAllocator g_PhysicalAllocator;
+static VirtualAllocator g_VirtualAllocator;
 
 static MemoryRegion newRegions[MAX_REGIONS];
 
@@ -111,23 +114,63 @@ void memory_Initialize_Allocator()
 {
     bool ok = false;
 
+    uint64_t heap_start;
+
     for (int i = 0; i < g_MemoryInfo->RegionCount; i++)
     {
         MemoryRegion* region = &g_MemoryInfo->Regions[i];
         if (region->Type == MEMORY_TYPE_USABLE && region->Length >= 4096)
         {
+            heap_start = region->Begin;
             PhysicalAllocator_Initialize(&g_PhysicalAllocator, region->Begin, region->Length);
             log_info("Physical Allocator", "Initialized at 0x%llx with size %llu", region->Begin, region->Length);
             ok = true;
         }
     }
+
+    VirtualAllocator_Initialize(&g_VirtualAllocator, 32329728);
+    g_VirtualAllocator.base = heap_start;
+    log_info("Virtual Allocator", "Initialized at 0x%lx (virtual) with size %llu", g_VirtualAllocator.base, g_VirtualAllocator.size);
 }
+
+void* memory_physicalAllocate(uint64_t size, uint64_t align)
+{
+    return PhysicalAllocator_Alloc(&g_PhysicalAllocator, size, align);
+}
+
+void memory_physicalFree(uintptr_t ptr)
+{
+    //TODO
+}
+
+//TODO:remove arch
+#include "../arch/i686/paging.h"
 
 void* memory_Allocate(uint64_t size, uint64_t align)
 {
-    //TODO
+    uint64_t pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+    uint64_t alloc_size = pages * PAGE_SIZE;
+
+    void* virtual = VirtualAllocator_Alloc(&g_VirtualAllocator, alloc_size, align);
+    if (!virtual)
+    {
+        // TODO
+        return NULL;
+    }
+
+    for (uint64_t i = 0; i < pages; i++) {
+        void* physical = PhysicalAllocator_Alloc(&g_PhysicalAllocator, PAGE_SIZE, PAGE_SIZE);
+        if (!physical) {
+            // TODO
+            return NULL;
+        }
+
+        bool ok = Paging_Map((uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
+        if (!ok)
+            return NULL;
+    }
     
-    //return PhysicalAllocator_Alloc(&g_PhysicalAllocator, size, align);
+    return virtual;
 }
 
 void memory_Free(uintptr_t ptr)
