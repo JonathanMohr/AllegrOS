@@ -16,7 +16,9 @@ void memory_Initialize_Allocator();
 
 void* memory_physicalAllocate(uint64_t size, uint64_t align);
 void memory_physicalFree(uintptr_t ptr);
-void* memory_Allocate(uint64_t size, uint64_t align);
+void* memory_virtualAllocate(uint64_t size, uint64_t align);
+void memory_virtualFree(uintptr_t ptr);
+void* memory_Allocate(uint64_t size);
 void memory_Free(uintptr_t ptr);
 
 void* memory_ReserveRegionAndGetPtr(uint64_t size, uint64_t align);

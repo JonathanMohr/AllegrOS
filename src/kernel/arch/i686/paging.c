@@ -29,6 +29,8 @@ bool i686_paging_Initialize(uint64_t kernel_end)
 {
     uint64_t paging_size = i686_get_paging_size(kernel_end);
 
+    paging_size += PAGE_SIZE;
+
     void* ptr = memory_ReserveRegionAndGetPtr(paging_size, PAGE_SIZE);
     if (!ptr) {
         log_crit("KERNEL | MEMORY", "No memory left for paging!");
@@ -58,9 +60,19 @@ bool i686_paging_Initialize(uint64_t kernel_end)
         page_directory[pt] = ((uint32_t)&page_tables[pt][0]) | (PAGE_PRESENT | PAGE_RW);
     }
 
+    uintptr_t paging_base = (uintptr_t)ptr;
+    uintptr_t paging_end = paging_base + paging_size;
+
+    bool ok = true;
+
+    for (uintptr_t addr = paging_base; addr < paging_end; addr += PAGE_SIZE) {
+        if (!i686_map_page(addr, addr, PAGE_PRESENT | PAGE_RW, false))
+            ok = false;
+    }
+
     i686_paging_Load_Directory(page_directory);
 
-    return true;
+    return ok;
 }
 
 void i686_paging_Load_Directory(uint32_t* page_directory)
@@ -75,7 +87,7 @@ void i686_enable_paging()
     write_cr0(cr0);
 }
 
-bool i686_map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags)
+bool i686_map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags, bool safeguard)
 {
     uint32_t dir_index = (virt_addr >> 22) & 0x3FF;
     uint32_t table_index = (virt_addr >> 12) & 0x3FF;
@@ -85,17 +97,23 @@ bool i686_map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags)
 
     uint32_t* page_table = page_tables[dir_index];
 
-    if (!page_table) {
-        // Hier solltest du eine Funktion aufrufen, die dir eine neue Page Table anlegt, z.B.
-        void* new_table = memory_physicalAllocate(PAGE_SIZE, PAGE_SIZE);
-        if (!new_table) return false;
+    if (!page_tables[dir_index + 1] || !page_tables[dir_index] && !safeguard)
+    {
+        // TODO
+        log_err("Paging", "page table doesn't exist: %lu", dir_index);
+        return false;
+        uintptr_t new_table = (uintptr_t)memory_physicalAllocate(PAGE_SIZE, PAGE_SIZE);
+        uintptr_t virtual_new_table = (uintptr_t)memory_virtualAllocate(PAGE_SIZE, PAGE_SIZE);
+        if (!new_table || !virtual_new_table)
+            return false;
 
-        memset(new_table, 0, PAGE_SIZE);
-        page_tables[dir_index] = (uint32_t*)new_table;
-        page_table = (uint32_t*)new_table;
+        if (!i686_map_page(virtual_new_table, new_table, PAGE_PRESENT | PAGE_RW, false))
+            return false;
 
-        // Page Directory Entry mit Flags setzen
-        page_directory[dir_index] = ((uintptr_t)new_table & 0xFFFFF000) | PAGE_PRESENT | PAGE_RW;
+        memset((void*)virtual_new_table, 0, PAGE_SIZE);
+
+        page_directory[dir_index] = (new_table & 0xFFFFF000) | PAGE_PRESENT | PAGE_RW;
+        page_tables[dir_index] = (uint32_t*)virtual_new_table;
     }
 
     page_table[table_index] = (phys_addr & 0xFFFFF000) | (flags & 0xFFF);

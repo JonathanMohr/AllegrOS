@@ -143,20 +143,32 @@ void memory_physicalFree(uintptr_t ptr)
     //TODO
 }
 
+void* memory_virtualAllocate(uint64_t size, uint64_t align)
+{
+    return VirtualAllocator_Alloc(&g_VirtualAllocator, size, align);
+}
+
+void memory_virtualFree(uintptr_t ptr)
+{
+    //TODO
+}
+
 //TODO:remove arch
 #include "../arch/i686/paging.h"
 
-void* memory_Allocate(uint64_t size, uint64_t align)
+void* memory_Allocate(uint64_t size)
 {
     uint64_t pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
     uint64_t alloc_size = pages * PAGE_SIZE;
 
-    void* virtual = VirtualAllocator_Alloc(&g_VirtualAllocator, alloc_size, align);
+    void* virtual = VirtualAllocator_Alloc(&g_VirtualAllocator, alloc_size, PAGE_SIZE);
     if (!virtual)
     {
         // TODO
         return NULL;
     }
+
+    log_debug("Memory", "pages: %llu", pages);
 
     for (uint64_t i = 0; i < pages; i++) {
         void* physical = PhysicalAllocator_Alloc(&g_PhysicalAllocator, PAGE_SIZE, PAGE_SIZE);
