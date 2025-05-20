@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define MAX_REGIONS 256
+
 typedef struct {
     uint64_t Begin, Length;
     uint32_t Type;

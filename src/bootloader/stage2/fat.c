@@ -2,10 +2,10 @@
 #include "stdio.h"
 #include "memdefs.h"
 #include "string.h"
-#include "memory.h"
 #include "ctype.h"
 #include <stddef.h>
 #include "minmax.h"
+#include <core/memory/memory.h>
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256

@@ -1,6 +1,8 @@
 #include "gdt.h"
 #include <stdint.h>
 
+#include <core/Defs.h>
+
 typedef struct
 {
     uint16_t LimitLow;                  // limit (bits 0-15)
@@ -86,7 +88,7 @@ GDTEntry g_GDT[] = {
 
 GDTDescriptor g_GDTDescriptor = { sizeof(g_GDT) - 1, g_GDT};
 
-void __attribute__((cdecl)) i686_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
+void ASMCALL i686_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
 
 void i686_GDT_Initialize()
 {
