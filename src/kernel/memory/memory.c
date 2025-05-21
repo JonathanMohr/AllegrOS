@@ -3,7 +3,7 @@
 #include "physicalAllocator.h"
 #include "virtualAllocator.h"
 #include "../debug.h"
-#include "../hal/paging.h"
+#include "heapAllocator.h"
 
 #include <core/memory/memory.h>
 
@@ -13,8 +13,11 @@
 static MemoryInfo* g_MemoryInfo;
 static PhysicalAllocator g_PhysicalAllocator;
 static VirtualAllocator g_VirtualAllocator;
+static HeapAllocator g_HeapAllocator;
 
 static MemoryRegion newRegions[MAX_REGIONS];
+
+static PageDirectory* g_KernelPageDirectory;
 
 void memory_SanitizeMap(MemoryInfo* memInfo, uint64_t kernelStart, uint64_t kernelEnd) {
     memset(newRegions, 0, sizeof(newRegions));
@@ -110,7 +113,7 @@ void memory_Initialize(MemoryInfo* memInfo, uintptr_t kernel_start, uintptr_t ke
     memory_SanitizeMap(g_MemoryInfo, kernel_start, kernel_end);
 }
 
-void memory_Initialize_Allocator()
+void memory_Initialize_Allocator(PageDirectory* page_directory)
 {
     bool ok = false;
 
@@ -123,6 +126,7 @@ void memory_Initialize_Allocator()
         {
             heap_start = region->Begin;
             PhysicalAllocator_Initialize(&g_PhysicalAllocator, region->Begin, region->Length);
+            //TODO: info log print
             log_info("Physical Allocator", "Initialized at 0x%llx with size %llu", region->Begin, region->Length);
             ok = true;
         }
@@ -130,7 +134,11 @@ void memory_Initialize_Allocator()
 
     VirtualAllocator_Initialize(&g_VirtualAllocator, 32329728);
     g_VirtualAllocator.base = heap_start;
+    //TODO: info log print
     log_info("Virtual Allocator", "Initialized at 0x%lx (virtual) with size %llu", g_VirtualAllocator.base, g_VirtualAllocator.size);
+
+    HeapAllocator_Initialize(page_directory, &g_HeapAllocator);
+    g_KernelPageDirectory = page_directory;
 }
 
 void* memory_physicalAllocate(uint64_t size, uint64_t align)
@@ -156,7 +164,7 @@ void memory_virtualFree(uintptr_t ptr)
 //TODO:remove arch
 #include "../arch/i686/paging.h"
 
-void* memory_Allocate(uint64_t size)
+void* memory_PageAllocate(PageDirectory* page_directory, uint64_t size)
 {
     uint64_t pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
     uint64_t alloc_size = pages * PAGE_SIZE;
@@ -168,8 +176,6 @@ void* memory_Allocate(uint64_t size)
         return NULL;
     }
 
-    log_debug("Memory", "pages: %llu", pages);
-
     for (uint64_t i = 0; i < pages; i++) {
         void* physical = PhysicalAllocator_Alloc(&g_PhysicalAllocator, PAGE_SIZE, PAGE_SIZE);
         if (!physical) {
@@ -177,17 +183,31 @@ void* memory_Allocate(uint64_t size)
             return NULL;
         }
 
-        bool ok = Paging_Map((uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
+        bool ok = Paging_Map(page_directory, g_KernelPageDirectory, (uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
         if (!ok)
+            // TODO
             return NULL;
+
+        //TODO: debug log print
+        // log_debug("Memory", "Virtual: %p, Physical: %p", virtual, physical);
     }
-    
+
     return virtual;
+}
+
+void memory_PageFree(PageDirectory* page_directory, uintptr_t ptr)
+{
+    //TODO
+}
+
+void* memory_Allocate(uint64_t size, uint64_t align)
+{
+    return HeapAllocator_Alloc(g_KernelPageDirectory, &g_HeapAllocator, size, align);
 }
 
 void memory_Free(uintptr_t ptr)
 {
-    //TODO
+    HeapAllocator_Free(g_KernelPageDirectory, &g_HeapAllocator, ptr);
 }
 
 static inline uint64_t align_up(uint64_t addr, uint64_t align)
@@ -213,16 +233,8 @@ void* memory_ReserveRegionAndGetPtr(uint64_t size, uint64_t align)
 
             if (region.Length >= size + padding && ptr == NULL)
             {
-                if (padding > 0)
-                {
-                    MemoryRegion before = region;
-                    before.Length = padding;
-                    newRegions[newCount++] = before;
-                }
-
                 MemoryRegion reserved = region;
-                reserved.Begin = alignedBegin;
-                reserved.Length = size;
+                reserved.Length = padding + size;
                 reserved.Type = MEMORY_TYPE_RESERVED;
                 newRegions[newCount++] = reserved;
 

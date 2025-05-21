@@ -154,7 +154,9 @@ image_type = HOST_ENVIRONMENT['imageType']
 output_ext = 'img' if image_type == 'floppy' else 'vmdk'
 output_file = Path(variantDir) / "images" / f"{image_type}.{output_ext}"
 
-rmtree(str(Path(variantDir) / "images"))
+images_dir = Path(variantDir) / "images"
+if images_dir.exists():
+    rmtree(images_dir)
 os.makedirs(str(Path(variantDir) / "images"))
 
 if output_ext == 'img':
