@@ -45,8 +45,8 @@ write_cr0:
     ret
 
 ; void ASMCALL i686_invlpg(uint32_t addr);
-global i686_invlpg
-i686_invlpg:
+global invlpg
+invlpg:
     ; make new call frame
     push ebp             ; save old call frame
     mov ebp, esp         ; initialize new call frame

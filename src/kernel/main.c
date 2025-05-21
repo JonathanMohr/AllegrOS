@@ -21,6 +21,8 @@ extern uint8_t __end[];
 
 static uint64_t current_program = UINT64_MAX;
 
+static PageDirectory* kernelPageDirectory;
+
 void crash_me();
 
 void keyboard_handler(Registers* regs)
@@ -42,7 +44,7 @@ void ENTRY start(BootParams* bootParams)
 
     memory_Initialize(&bootParams->Memory, (uintptr_t)__text_start, (uintptr_t)__end);
 
-    Paging_Initialize((uintptr_t)__end);
+    kernelPageDirectory = Paging_Initialize((uintptr_t)__end);
 
     log_debug("Main", "Boot device: %x", bootParams->BootDevice);
     log_debug("Main", "Memory region count: %x", bootParams->Memory.RegionCount);
@@ -54,7 +56,12 @@ void ENTRY start(BootParams* bootParams)
             bootParams->Memory.Regions[i].Type);
     }
 
-    memory_Initialize_Allocator();
+    memory_Initialize_Allocator(kernelPageDirectory);
+
+    PageDirectory* new_page_directory = Paging_New_Directory();
+
+    log_debug("Kernel", "New page directory pointer: %p", new_page_directory);
+    log_debug("Kernel", "New page directory: %p", new_page_directory->directory);
 
 end:
     for (;;);
