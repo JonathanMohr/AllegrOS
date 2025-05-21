@@ -30,4 +30,4 @@ void i686_paging_Load_Directory(uint32_t* page_directory);
 void i686_enable_paging();
 int i686_map_page(PageDirectory* dir, uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags, bool safeguard);
 void i686_unmap_page(PageDirectory* dir, uint32_t virtual_addr);
-int i686_create_new_map(PageDirectory* dir);
+int i686_create_new_map(PageDirectory* dir, PageDirectory* map);

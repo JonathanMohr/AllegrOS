@@ -153,7 +153,7 @@ void i686_unmap_page(PageDirectory* dir, uint32_t virtual_addr)
     invlpg(virtual_addr);
 }
 
-int i686_create_new_map(PageDirectory* dir)
+int i686_create_new_map(PageDirectory* dir, PageDirectory* map)
 {
     // 1: Finde die nächste freie Page Directory Entry (dir_index), also die nächste noch nicht genutzte Page Table.
     uint32_t dir_index = -1;
@@ -180,8 +180,8 @@ int i686_create_new_map(PageDirectory* dir)
         return -3;
     }
 
-    // 4: Die neue Page Table 1:1 mappen (virtuell auf physikalisch)
-    int ok = i686_map_page(dir, new_table_virt, new_table_phys, PAGE_PRESENT | PAGE_RW, false);
+    // 4: Die neue Page Table mappen (virtuell auf physikalisch)
+    int ok = i686_map_page(map, new_table_virt, new_table_phys, PAGE_PRESENT | PAGE_RW, false);
     if (ok != 1) {
         return -4;
     }

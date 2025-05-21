@@ -183,7 +183,7 @@ void* memory_PageAllocate(PageDirectory* page_directory, uint64_t size)
             return NULL;
         }
 
-        bool ok = Paging_Map(page_directory, (uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
+        bool ok = Paging_Map(page_directory, g_KernelPageDirectory, (uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
         if (!ok)
             // TODO
             return NULL;

@@ -14,7 +14,7 @@ PageDirectory* Paging_Initialize(uint64_t kernel_end)
     return &g_PageDirectory;
 }
 
-bool Paging_Map(PageDirectory* page_directory, uintptr_t virt_addr, uintptr_t phys_addr)
+bool Paging_Map(PageDirectory* page_directory, PageDirectory* map_directory, uintptr_t virt_addr, uintptr_t phys_addr)
 {
     int result = MAP_NOT_DONE;
     uint8_t tries = 0;
@@ -24,7 +24,8 @@ bool Paging_Map(PageDirectory* page_directory, uintptr_t virt_addr, uintptr_t ph
         switch (result)
         {
             case MAP_MISSING_TABLE:
-                if (i686_create_new_map(page_directory) < 0)
+                //TODO: create missing map, not just the next one
+                if (i686_create_new_map(page_directory, map_directory) < 0)
                     return false;
                 break;
 
