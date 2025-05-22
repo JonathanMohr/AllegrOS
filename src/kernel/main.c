@@ -31,8 +31,6 @@ void keyboard_handler(Registers* regs)
 
 void ENTRY start(BootParams* bootParams)
 {
-    log_debug("Kernel", "Hi");
-    /*
     // call global constructors
     _init();
 
@@ -44,10 +42,6 @@ void ENTRY start(BootParams* bootParams)
 
     printf("Hello world from kernel!\n");
 
-    memory_Initialize(&bootParams->Memory, (uintptr_t)__text_start, (uintptr_t)__end);
-
-    kernelPageDirectory = Paging_Initialize((uintptr_t)__end);
-
     log_debug("Main", "Boot device: 0x%x", bootParams->BootDevice);
     log_debug("Main", "Memory region count: 0x%x", bootParams->Memory.RegionCount);
     for (int i = 0; i < bootParams->Memory.RegionCount; i++)
@@ -57,14 +51,6 @@ void ENTRY start(BootParams* bootParams)
             bootParams->Memory.Regions[i].Length,
             bootParams->Memory.Regions[i].Type);
     }
-
-    memory_Initialize_Allocator(kernelPageDirectory);
-
-    PageDirectory* new_page_directory = Paging_New_Directory();
-
-    log_debug("Kernel", "New page directory pointer: %p", new_page_directory);
-    log_debug("Kernel", "New page directory: %p", new_page_directory->directory);
-    */
 
 end:
     for (;;);

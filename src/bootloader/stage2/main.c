@@ -46,9 +46,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 
     Memory_AddBootRegion(&g_BootParams.Memory);
 
-    // load kernel
-    KernelStart kernelEntry;
-
+    // prepare paging
     uint32_t kernelSize = ELF_Size(&part, "/boot/kernel.elf");
     if (kernelSize == 0)
     {
@@ -56,12 +54,15 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         goto end;
     }
 
-    uint32_t kernelPages = (kernelSize + PAGE_SIZE - 1) / PAGE_SIZE + 1;
-    uint32_t bootPages = (g_BootParams.Memory.Regions[0].Length + PAGE_SIZE - 1) / PAGE_SIZE;
+    uint32_t kernelPages = (kernelSize + PAGE_SIZE - 1) / PAGE_SIZE;
+    uint32_t kernelPageTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES + 1;
+    uint32_t kernelPagingSize = kernelPageTables * PAGE_SIZE;
+    //TODO: remove hardcoded 0x100000
+    uint32_t bootPages = (0x100000 + PAGE_SIZE - 1) / PAGE_SIZE;
+    uint32_t bootPageTables = (bootPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
+    uint32_t bootPagingSize = bootPageTables * PAGE_SIZE;
 
-    uint32_t mapCount = kernelPages + bootPages;
-    uint32_t pageTables = (mapCount + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
-    uint32_t pagingSize = PAGE_SIZE + pageTables * PAGE_SIZE;
+    uint32_t pagingSize = 2 * PAGE_SIZE + kernelPagingSize + bootPagingSize;
 
     uint8_t* kernelBegin = NULL;
     uint8_t* pageDirectoryPtr = NULL;
@@ -90,24 +91,24 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
                 newRegions[newCount++] = paddingRegion;
             }
 
-            MemoryRegion kernelRegion = *region;
-            kernelRegion.Begin = alignedBegin;
-            kernelRegion.Length = kernelPages * PAGE_SIZE;
-            kernelRegion.Type = MEMORY_TYPE_KERNEL;
-            newRegions[newCount++] = kernelRegion;
-
-            kernelBegin = (uint8_t*)(uintptr_t)kernelRegion.Begin;
-
             MemoryRegion pagingRegion = *region;
-            pagingRegion.Begin = kernelRegion.Begin + kernelRegion.Length;
+            pagingRegion.Begin = alignedBegin;
             pagingRegion.Length = pagingSize;
             pagingRegion.Type = MEMORY_TYPE_RESERVED;
             newRegions[newCount++] = pagingRegion;
 
             pageDirectoryPtr = (uint8_t*)(uintptr_t)pagingRegion.Begin;
 
+            MemoryRegion kernelRegion = *region;
+            kernelRegion.Begin = pagingRegion.Begin + pagingRegion.Length;
+            kernelRegion.Length = kernelPages * PAGE_SIZE;
+            kernelRegion.Type = MEMORY_TYPE_KERNEL;
+            newRegions[newCount++] = kernelRegion;
+
+            kernelBegin = (uint8_t*)(uintptr_t)kernelRegion.Begin;
+
             MemoryRegion usableRegion = *region;
-            usableRegion.Begin = pagingRegion.Begin + pagingRegion.Length;
+            usableRegion.Begin = kernelRegion.Begin + kernelRegion.Length;
             usableRegion.Length = (region->Begin + region->Length) - usableRegion.Begin;
             newRegions[newCount++] = usableRegion;
 
@@ -126,33 +127,66 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         g_BootParams.Memory.Regions[i] = newRegions[i];
     }
 
-    //TODO: identity map boot region, map kernelRegion to 0xC0000000, activate paging
+    PageDirectory pageDirectory;
 
-    
+    //TODO: change to bootLength
+    uint8_t* newPtr = (uint8_t*)i686_paging_Initialize(&pageDirectory, 0x100000, pageDirectoryPtr);
 
-    printf("Boot device: 0x%x\n", g_BootParams.BootDevice);
-    printf("Memory region count: 0x%x\n", g_BootParams.Memory.RegionCount);
-    for (int i = 0; i < g_BootParams.Memory.RegionCount; i++)
-    {
-        printf("MEM: start=0x%llx, length=0x%llx, type=%u\n",
-            g_BootParams.Memory.Regions[i].Begin,
-            g_BootParams.Memory.Regions[i].Length,
-            g_BootParams.Memory.Regions[i].Type);
+    for (uintptr_t addr = (uintptr_t)newPtr; addr < (uintptr_t)kernelBegin; addr += PAGE_SIZE) {
+        // physAddr = virtAddr bei Identity Mapping
+        if (!i686_map_page(&pageDirectory, addr, addr, PAGE_PRESENT | PAGE_RW, false)) {
+            printf("Mapping failed at 0x%x\n", (unsigned)addr);
+        }
     }
 
-    printf("Kernel page count: %u\n", kernelPages);
+    uintptr_t kernelVirt = 0xC0000000;
+    int numKernelTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
 
+    int kernelPDIndexStart = (kernelVirt >> 22);
+
+    for (int i = 0; i < numKernelTables; i++) {
+        pageDirectory.tables_virtual[kernelPDIndexStart + i] = (uint32_t*)newPtr;
+        uint32_t* pt = (uint32_t*)newPtr;  // Deine Kernel-Page Tables (physisch oder virtuell je nach Setup)
+        newPtr += PAGE_SIZE;
+        memset(pt, 0, PAGE_SIZE);
+
+        uintptr_t phys = (uintptr_t)pt;  // Falls virtuell, musst du hier noch zur physischen Adresse umrechnen
+
+        // Page Directory Index berechnen
+        uint32_t pdIndex = ((kernelVirt >> 22) + i) & 0x3FF;
+
+        pageDirectory.directory[pdIndex] = phys | PAGE_PRESENT | PAGE_RW;
+
+        kernelVirt += PAGE_SIZE * PAGE_TABLE_ENTRIES;  // Nächster 4MB-Bereich
+    }
+
+    uintptr_t physPage = (uintptr_t)kernelBegin;
+    for (int pt = 0; pt < numKernelTables; pt++) {
+        uint32_t* ptEntries = pageDirectory.tables_virtual[kernelPDIndexStart + pt];
+
+        for (int i = 0; i < PAGE_TABLE_ENTRIES; i++) {
+            if ((pt * PAGE_TABLE_ENTRIES + i) >= kernelPages) {
+                break; // Nicht mehr Seiten als KernelSize
+            }
+
+            ptEntries[i] = physPage | PAGE_PRESENT | PAGE_RW;
+            physPage += PAGE_SIZE;
+        }
+    }
+
+    i686_enable_paging();
+
+    // load kernel
+    KernelStart kernelEntry;
     uint32_t loadKernel = ELF_Read(&part, "/boot/kernel.elf", (void**)&kernelEntry);
-    if (kernelSize == 0)
+    if (loadKernel == 0)
     {
         printf("ELF read failed, booting halted!\r\n");
         goto end;
     }
 
-    printf("Finished\n");
-
     // execute kernel
-    // kernelEntry(&g_BootParams);
+    kernelEntry(&g_BootParams);
 
 end:
     for (;;);

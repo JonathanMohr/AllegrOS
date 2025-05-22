@@ -1,6 +1,6 @@
 ENTRY(start)
 OUTPUT_FORMAT("elf32-i386")
-addr = 0x00100000;
+addr = 0xC0000000;
 
 SECTIONS
 {
