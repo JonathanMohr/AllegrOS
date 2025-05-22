@@ -18,18 +18,23 @@ extern uint8_t __rodata_start[];
 extern uint8_t __bss_start[];
 extern uint8_t __end[];
 
+static BootParams bootParams;
+
 void crash_me();
 
 void keyboard_handler(Registers* regs)
 {
 }
 
-void ENTRY start(BootParams* bootParams)
+void ENTRY start(BootParams* bParams)
 {
+    bootParams = *bParams;
     // call global constructors
     _init();
 
     HAL_Initialize();
+    memory_Initialize(&bootParams.Memory);
+
 
     i686_IRQ_RegisterHandler(0, timer);
 
@@ -37,17 +42,15 @@ void ENTRY start(BootParams* bootParams)
 
     printf("Hello world from kernel!\n");
 
-    log_debug("Main", "Boot device: 0x%x", bootParams->BootDevice);
-    log_debug("Main", "Memory region count: 0x%x", bootParams->Memory.RegionCount);
-    for (int i = 0; i < bootParams->Memory.RegionCount; i++)
+    log_debug("Main", "Boot device: 0x%x", bootParams.BootDevice);
+    log_debug("Main", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
+    for (int i = 0; i < bootParams.Memory.RegionCount; i++)
     {
         log_debug("Main", "MEM: start=0x%llx, length=0x%llx, type=%u",
-            bootParams->Memory.Regions[i].Begin,
-            bootParams->Memory.Regions[i].Length,
-            bootParams->Memory.Regions[i].Type);
+            bootParams.Memory.Regions[i].Begin,
+            bootParams.Memory.Regions[i].Length,
+            bootParams.Memory.Regions[i].Type);
     }
-
-    memory_Initialize(&bootParams->Memory);
 
 end:
     for (;;);

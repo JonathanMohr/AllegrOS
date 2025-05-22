@@ -58,17 +58,7 @@ void* i686_paging_Initialize(PageDirectory* dir, uint64_t size, void* ptr)
     uintptr_t paging_base = (uintptr_t)ptr;
     uintptr_t paging_end = paging_base + paging_size;
 
-    bool ok = true;
-
-    for (uintptr_t addr = paging_base; addr < paging_end; addr += PAGE_SIZE) {
-        if (!i686_map_page(dir, addr, addr, PAGE_PRESENT | PAGE_RW, false))
-            ok = false;
-    }
-
     i686_paging_Load_Directory(dir->directory);
-
-    if (!ok)
-        return NULL;
 
     return (void*)(paging_end);
 }

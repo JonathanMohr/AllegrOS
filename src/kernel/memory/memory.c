@@ -19,7 +19,7 @@ void memory_Initialize(MemoryInfo* memInfo)
 {
     g_MemoryInfo = memInfo;
     //TODO
-    PhysicalAllocator_Initialize(&g_PhysicalAllocator, 0, 0);
+    PhysicalAllocator_Initialize(&g_PhysicalAllocator, memInfo);
     VirtualAllocator_Initialize(&g_VirtualAllocator, 0);
 }
 

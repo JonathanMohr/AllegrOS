@@ -1,12 +1,23 @@
 #include "physicalAllocator.h"
 
 #include <stddef.h>
+#include "../debug.h"
 
-void PhysicalAllocator_Initialize(PhysicalAllocator* alloc, uint64_t base, uint64_t size)
+void PhysicalAllocator_Initialize(PhysicalAllocator* alloc, MemoryInfo* memInfo)
 {
-    alloc->base = base;
-    alloc->size = size;
+    alloc->base = 0;
+    alloc->size = 0;
     alloc->used = 0;
+    for (uint32_t i = 0; i < memInfo->RegionCount; i++)
+    {
+        MemoryRegion* memRegion = &memInfo->Regions[i];
+        if (memRegion->Type == MEMORY_TYPE_USABLE)
+        {
+            alloc->base = memRegion->Begin;
+            alloc->size = memRegion->Length;
+            break;
+        }
+    }
 }
 
 void* PhysicalAllocator_Alloc(PhysicalAllocator* alloc, uint64_t size, uint64_t align)

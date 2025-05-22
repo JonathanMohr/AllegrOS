@@ -19,7 +19,8 @@ typedef enum {
 } MapResult;
 
 typedef struct {
-    uint32_t* directory;            // Physikalisch
+    uint32_t* directory;
+    uint32_t* directory_virtual;
     uint32_t* tables_virtual[1024]; // Nur zum Zugriff im Kernel
 } PageDirectory;
 

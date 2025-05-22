@@ -67,6 +67,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     uint8_t* kernelBegin = NULL;
     uint8_t* pageDirectoryPtr = NULL;
 
+    MemoryRegion pagingRegion;
+
     uint32_t bootLength = 0;
 
     memset(newRegions, 0, sizeof(newRegions));
@@ -91,7 +93,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
                 newRegions[newCount++] = paddingRegion;
             }
 
-            MemoryRegion pagingRegion = *region;
+            pagingRegion = *region;
             pagingRegion.Begin = alignedBegin;
             pagingRegion.Length = pagingSize;
             pagingRegion.Type = MEMORY_TYPE_RESERVED;
@@ -132,13 +134,6 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     //TODO: change to bootLength
     uint8_t* newPtr = (uint8_t*)i686_paging_Initialize(&pageDirectory, 0x100000, pageDirectoryPtr);
 
-    for (uintptr_t addr = (uintptr_t)newPtr; addr < (uintptr_t)kernelBegin; addr += PAGE_SIZE) {
-        // physAddr = virtAddr bei Identity Mapping
-        if (!i686_map_page(&pageDirectory, addr, addr, PAGE_PRESENT | PAGE_RW, false)) {
-            printf("Mapping failed at 0x%x\n", (unsigned)addr);
-        }
-    }
-
     uintptr_t kernelVirt = 0xC0000000;
     int numKernelTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
 
@@ -173,6 +168,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
             physPage += PAGE_SIZE;
         }
     }
+
+    //TODO: map page directory and page tables
 
     i686_enable_paging();
 
