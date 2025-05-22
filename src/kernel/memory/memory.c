@@ -9,10 +9,32 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "../debug.h"
 
 static MemoryInfo* g_MemoryInfo;
 static PhysicalAllocator g_PhysicalAllocator;
 static VirtualAllocator g_VirtualAllocator;
+
+void memory_Initialize(MemoryInfo* memInfo)
+{
+    g_MemoryInfo = memInfo;
+    //TODO
+    PhysicalAllocator_Initialize(&g_PhysicalAllocator, 0, 0);
+    VirtualAllocator_Initialize(&g_VirtualAllocator, 0);
+}
+
+void* memory_Allocate(uint64_t size, uint64_t align)
+{
+    return NULL;
+    //return HeapAllocator_Alloc(g_KernelPageDirectory, &g_HeapAllocator, size, align);
+}
+
+void memory_Free(uintptr_t ptr)
+{
+    //HeapAllocator_Free(g_KernelPageDirectory, &g_HeapAllocator, ptr);
+}
+
+/*
 static HeapAllocator g_HeapAllocator;
 
 static MemoryRegion newRegions[MAX_REGIONS];
@@ -260,3 +282,4 @@ void* memory_ReserveRegionAndGetPtr(uint64_t size, uint64_t align)
 
     return ptr;
 }
+*/

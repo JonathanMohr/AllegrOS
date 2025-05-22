@@ -3,9 +3,7 @@
 #include <stddef.h>
 #include "memory.h"
 
-//TODO: remove
-#include "../arch/i686/paging.h"
-
+/*
 bool HeapAllocator_Initialize(PageDirectory* page_directory, HeapAllocator* alloc)
 {
     alloc->start = (uintptr_t)memory_PageAllocate(page_directory, PAGE_SIZE);
@@ -45,3 +43,4 @@ void HeapAllocator_Free(PageDirectory* page_directory, HeapAllocator* alloc, uin
 {
     // TODO
 }
+*/

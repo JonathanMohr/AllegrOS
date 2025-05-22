@@ -7,7 +7,6 @@
 #include <boot/bootparams.h>
 #include <core/memory/memory.h>
 #include "memory/memory.h"
-#include "hal/paging.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -47,6 +46,8 @@ void ENTRY start(BootParams* bootParams)
             bootParams->Memory.Regions[i].Length,
             bootParams->Memory.Regions[i].Type);
     }
+
+    memory_Initialize(&bootParams->Memory);
 
 end:
     for (;;);
