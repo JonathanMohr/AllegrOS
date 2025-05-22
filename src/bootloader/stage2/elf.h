@@ -107,5 +107,5 @@ enum ELFProgramType
     ELF_PROGRAM_TYPE_HIPROC         = 0x7FFFFFFF,
 };
 
-
-bool ELF_Read(Partition* part, const char* path, void** entryPoint);
+uint64_t ELF_Size(Partition* part, const char* path);
+uint32_t ELF_Read(Partition* part, const char* path, void** entryPoint);

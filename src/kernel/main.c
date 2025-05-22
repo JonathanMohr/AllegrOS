@@ -31,6 +31,8 @@ void keyboard_handler(Registers* regs)
 
 void ENTRY start(BootParams* bootParams)
 {
+    log_debug("Kernel", "Hi");
+    /*
     // call global constructors
     _init();
 
@@ -62,6 +64,7 @@ void ENTRY start(BootParams* bootParams)
 
     log_debug("Kernel", "New page directory pointer: %p", new_page_directory);
     log_debug("Kernel", "New page directory: %p", new_page_directory->directory);
+    */
 
 end:
     for (;;);

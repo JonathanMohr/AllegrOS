@@ -1,10 +1,10 @@
 ENTRY(start)
 OUTPUT_FORMAT("elf32-i386")
-phys = 0x00100000;
+addr = 0x00100000;
 
 SECTIONS
 {
-    . = phys;
+    . = addr;
 
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
