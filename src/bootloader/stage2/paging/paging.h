@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define PAGE_DIRECTORY_ENTRIES 1024
 #define PAGE_TABLE_ENTRIES 1024
@@ -21,5 +22,3 @@ typedef struct {
     uint32_t* directory;            // Physikalisch
     uint32_t* tables_virtual[1024]; // Nur zum Zugriff im Kernel
 } PageDirectory;
-
-int i686_map_page(PageDirectory* dir, uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags);

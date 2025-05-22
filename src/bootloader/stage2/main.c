@@ -11,6 +11,7 @@
 #include "memory/memory.h"
 #include <boot/bootparams.h>
 #include <core/memory/memory.h>
+#include <stddef.h>
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
 uint8_t* Kernel = (uint8_t*)MEMORY_KERNEL_ADDR;
@@ -62,6 +63,11 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     uint32_t pageTables = (mapCount + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
     uint32_t pagingSize = PAGE_SIZE + pageTables * PAGE_SIZE;
 
+    uint8_t* kernelBegin = NULL;
+    uint8_t* pageDirectoryPtr = NULL;
+
+    uint32_t bootLength = 0;
+
     memset(newRegions, 0, sizeof(newRegions));
     int newCount = 0;
 
@@ -90,11 +96,15 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
             kernelRegion.Type = MEMORY_TYPE_KERNEL;
             newRegions[newCount++] = kernelRegion;
 
+            kernelBegin = (uint8_t*)(uintptr_t)kernelRegion.Begin;
+
             MemoryRegion pagingRegion = *region;
             pagingRegion.Begin = kernelRegion.Begin + kernelRegion.Length;
             pagingRegion.Length = pagingSize;
             pagingRegion.Type = MEMORY_TYPE_RESERVED;
             newRegions[newCount++] = pagingRegion;
+
+            pageDirectoryPtr = (uint8_t*)(uintptr_t)pagingRegion.Begin;
 
             MemoryRegion usableRegion = *region;
             usableRegion.Begin = pagingRegion.Begin + pagingRegion.Length;
@@ -102,6 +112,10 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
             newRegions[newCount++] = usableRegion;
 
             continue;
+        }
+        else if (region->Type == MEMORY_TYPE_BOOT)
+        {
+            bootLength = region->Length;
         }
 
         newRegions[newCount++] = *region;
@@ -113,6 +127,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     }
 
     //TODO: identity map boot region, map kernelRegion to 0xC0000000, activate paging
+
+    
 
     printf("Boot device: 0x%x\n", g_BootParams.BootDevice);
     printf("Memory region count: 0x%x\n", g_BootParams.Memory.RegionCount);
@@ -136,7 +152,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     printf("Finished\n");
 
     // execute kernel
-    kernelEntry(&g_BootParams);
+    // kernelEntry(&g_BootParams);
 
 end:
     for (;;);
