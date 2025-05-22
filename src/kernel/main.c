@@ -19,10 +19,6 @@ extern uint8_t __rodata_start[];
 extern uint8_t __bss_start[];
 extern uint8_t __end[];
 
-static uint64_t current_program = UINT64_MAX;
-
-static PageDirectory* kernelPageDirectory;
-
 void crash_me();
 
 void keyboard_handler(Registers* regs)
