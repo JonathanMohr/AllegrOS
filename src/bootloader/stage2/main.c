@@ -131,9 +131,10 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 
     PageDirectory pageDirectory;
 
-    //TODO: change to bootLength
+    //TODO: remove hardcoded 0x100000
     uint8_t* newPtr = (uint8_t*)i686_paging_Initialize(&pageDirectory, 0x100000, pageDirectoryPtr);
 
+    //TODO: remove hardcoded 0xC0000000
     uintptr_t kernelVirt = 0xC0000000;
     int numKernelTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
 
