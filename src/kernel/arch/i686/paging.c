@@ -72,7 +72,6 @@ bool i686_add_page_table(uint32_t* pageDirectory, uint32_t index)
 
 bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physical_addr)
 {
-    /*
     uint32_t pd_index = (virtual_addr >> 22) & 0x3FF;
     uint32_t pt_index = (virtual_addr >> 12) & 0x3FF;
 
@@ -86,7 +85,6 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
 
     // Page Table Eintrag setzen
     page_table[pt_index] = (physical_addr & PAGE_MASK) | PAGE_PRESENT | PAGE_RW;
-    */
 
     return true;
 }
@@ -124,7 +122,7 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
     uint32_t* pd_phys = (uint32_t*)memory_physicalAllocate(PAGE_SIZE, PAGE_SIZE, false);
     if (!pd_phys)
     {
-        pd.directory = 0;
+        pd.directory = NULL;
         return pd;
     }
 
@@ -132,21 +130,18 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
     if (!pd_virt)
     {
         memory_physicalFree(pd_phys);
-        pd.directory = 0;
+        pd.directory = NULL;
         return pd;
     }
 
-    i686_map(pageDirectory, (uintptr_t)pd_virt, (uintptr_t)pd_phys);
-
-    /*
     if (!i686_map(pageDirectory, (uintptr_t)pd_virt, (uintptr_t)pd_phys))
     {
         memory_physicalFree(pd_phys);
         memory_virtualFree(pd_virt);
-        pd.directory = 0;
+        pd.directory = NULL;
         return pd;
     }
-    
+
     memset(pd_virt, 0, PAGE_SIZE);
 
     uint32_t* current_pd = getPageDirectory().directory_virtual;
@@ -159,7 +154,6 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
 
     pd.directory = pd_phys;
     pd.directory_virtual = pd_virt;
-    */
 
     return pd;
 }
