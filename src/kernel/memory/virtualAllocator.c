@@ -4,14 +4,9 @@
 
 void VirtualAllocator_Initialize(VirtualAllocator* alloc, uint64_t size)
 {
-    alloc->base = 0;
+    alloc->base = 0xC0000000;
     alloc->size = size;
     alloc->used = 0;
-}
-
-void VirtualAllocator_Skip(VirtualAllocator* alloc, uint64_t size)
-{
-    alloc->used += size;
 }
 
 void* VirtualAllocator_Alloc(VirtualAllocator* alloc, uint64_t size, uint64_t align)

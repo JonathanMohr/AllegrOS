@@ -2,11 +2,11 @@
 
 #include <stddef.h>
 #include "memory.h"
+#include "../debug.h"
 
-/*
-bool HeapAllocator_Initialize(PageDirectory* page_directory, HeapAllocator* alloc)
+bool HeapAllocator_Initialize(HeapAllocator* alloc)
 {
-    alloc->start = (uintptr_t)memory_PageAllocate(page_directory, PAGE_SIZE);
+    alloc->start = (uintptr_t)page_Allocate(1);
     if (!alloc->start)
         return false;
 
@@ -15,32 +15,24 @@ bool HeapAllocator_Initialize(PageDirectory* page_directory, HeapAllocator* allo
     return true;
 }
 
-void* HeapAllocator_Alloc(PageDirectory* page_directory, HeapAllocator* alloc, uint64_t size, uint64_t align)
+void* HeapAllocator_Alloc(HeapAllocator* alloc, uint64_t size, uint64_t align)
 {
     uintptr_t current_ptr = (uintptr_t)(alloc->start + alloc->offset);
-
     uintptr_t aligned_ptr = (current_ptr + align - 1) & ~(align - 1);
-
     uint64_t padding = aligned_ptr - current_ptr;
-
     while (alloc->offset + padding + size > alloc->size) {
-        void* new_page = memory_PageAllocate(page_directory, PAGE_SIZE);
+        void* new_page = page_Allocate(16);
         if (!new_page)
             return NULL;
-        
         alloc->size += PAGE_SIZE;
     }
-
-    void* result = (void*)aligned_ptr;
-
-    // Offset für nächsten Alloc erhöhen
     alloc->offset += padding + size;
 
+    void* result = (void*)aligned_ptr;
     return result;
 }
 
-void HeapAllocator_Free(PageDirectory* page_directory, HeapAllocator* alloc, uintptr_t ptr)
+void HeapAllocator_Free(HeapAllocator* alloc, uintptr_t ptr)
 {
     // TODO
 }
-*/
