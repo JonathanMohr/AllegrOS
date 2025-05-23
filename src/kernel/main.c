@@ -32,8 +32,6 @@ void keyboard_handler(Registers* regs)
 {
 }
 
-
-
 void ENTRY start(BootParams* bParams)
 {
     // copy bootParams to kernel
