@@ -54,9 +54,6 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Type);
     }
 
-    uint16_t* test = (uint16_t*)memory_Allocate(sizeof(uint16_t), 1);
-    log_debug("Kernel", "Test: %x", *test);
-
 end:
     for (;;);
 }

@@ -9,6 +9,5 @@ typedef struct {
 } VirtualAllocator;
 
 void VirtualAllocator_Initialize(VirtualAllocator* alloc, uint64_t size);
-void VirtualAllocator_Skip(VirtualAllocator* alloc, uint64_t size);
 void* VirtualAllocator_Alloc(VirtualAllocator* alloc, uint64_t size, uint64_t align);
 void VirtualAllocator_Free(VirtualAllocator* alloc, void* ptr);

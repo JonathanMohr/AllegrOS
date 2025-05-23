@@ -65,7 +65,8 @@
         "physicalallocator.h": "c",
         "virtualallocator.h": "c",
         "cstdlib": "c",
-        "heapallocator.h": "c"
+        "heapallocator.h": "c",
+        "executor": "c"
     },
     "github.copilot.enable": {
         "*": false,

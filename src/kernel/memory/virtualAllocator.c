@@ -9,11 +9,6 @@ void VirtualAllocator_Initialize(VirtualAllocator* alloc, uint64_t size)
     alloc->used = 0;
 }
 
-void VirtualAllocator_Skip(VirtualAllocator* alloc, uint64_t size)
-{
-    alloc->used += size;
-}
-
 void* VirtualAllocator_Alloc(VirtualAllocator* alloc, uint64_t size, uint64_t align)
 {
     uintptr_t aligned = (alloc->base + alloc->used + (align - 1)) & ~(align - 1);

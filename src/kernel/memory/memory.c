@@ -7,7 +7,6 @@
 
 #include <core/memory/memory.h>
 
-#include <stdbool.h>
 #include <stddef.h>
 #include "../debug.h"
 #include "../hal/paging.h"
@@ -52,19 +51,20 @@ void* page_Allocate(uint32_t pages)
 
     for (uint64_t i = 0; i < pages; i++) {
         void* physical = PhysicalAllocator_Alloc(&g_PhysicalAllocator, PAGE_SIZE, PAGE_SIZE);
-        if (!physical) {
+        if (!physical)
+        {
             // TODO
             return NULL;
         }
 
-        /*bool ok = Paging_Map(page_directory, g_KernelPageDirectory, (uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical);
-        if (!ok)
+        if (!Paging_Map((uintptr_t)virtual + i * PAGE_SIZE, (uintptr_t)physical))
+        {
             // TODO
             return NULL;
-        */
+        }
 
         //TODO: debug log print
-        log_debug("Memory", "Virtual: %p, Physical: %p", virtual + i * PAGE_SIZE, physical);
+        //log_debug("Memory", "Virtual: %p, Physical: %p", virtual + i * PAGE_SIZE, physical);
     }
 
     return virtual;
@@ -73,4 +73,24 @@ void* page_Allocate(uint32_t pages)
 void page_Free(uintptr_t ptr)
 {
     // TODO
+}
+
+void* memory_physicalAllocate(uint64_t size, uint64_t align, bool freeable)
+{
+    return PhysicalAllocator_Alloc(&g_PhysicalAllocator, size, align);
+}
+
+void memory_physicalFree(void* ptr)
+{
+    PhysicalAllocator_Free(&g_PhysicalAllocator, ptr);
+}
+
+void* memory_virtualAllocate(uint64_t size, uint64_t align)
+{
+    return VirtualAllocator_Alloc(&g_VirtualAllocator, size, align);
+}
+
+void memory_virtualFree(void* ptr)
+{
+    VirtualAllocator_Free(&g_VirtualAllocator, ptr);
 }
