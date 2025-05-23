@@ -74,12 +74,10 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
         return false;
     }
 
-    /*
     uint32_t* page_table = (uint32_t*)(0xFFC00000 + (pd_index << 12));
 
     // Page Table Eintrag setzen
     page_table[pt_index] = (physical_addr & PAGE_MASK) | PAGE_PRESENT | PAGE_RW;
 
-    */
     return true;
 }

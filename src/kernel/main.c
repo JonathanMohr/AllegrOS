@@ -47,6 +47,19 @@ void ENTRY start(BootParams* bParams)
     HAL_Initialize();
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
 
+    MemoryRegion* oldRegions = bootParams.Memory.Regions;
+
+    bootParams.Memory.Regions = memory_Allocate(
+        sizeof(MemoryRegion) * bootParams.Memory.RegionCount,
+        1
+    );
+
+    memcpy(
+        bootParams.Memory.Regions,
+        oldRegions,
+        sizeof(MemoryRegion) * bootParams.Memory.RegionCount
+    );
+
 
     i686_IRQ_RegisterHandler(0, timer);
 
