@@ -157,3 +157,8 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
 
     return pd;
 }
+
+void i686_load_page_directory(PageDirectory* pd)
+{
+    write_cr3((uint32_t)pd->directory);
+}
