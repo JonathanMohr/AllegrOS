@@ -8,6 +8,7 @@
 #include <core/memory/memory.h>
 #include "memory/memory.h"
 #include "stack/stack.h"
+#include "exceptions/exceptions.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -44,6 +45,7 @@ void ENTRY start(BootParams* bParams)
     // call global constructors
     _init();
 
+    // Initialize
     HAL_Initialize();
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
 
@@ -60,11 +62,12 @@ void ENTRY start(BootParams* bParams)
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount
     );
 
-
+    // Initialize handlers
+    isr_registerExceptionHandlers();
     i686_IRQ_RegisterHandler(0, timer);
-
     //i686_IRQ_RegisterHandler(1, keyboard_handler);
 
+    // Run main part
     printf("Hello world from kernel!\n");
 
     log_debug("Main", "Boot device: 0x%x", bootParams.BootDevice);

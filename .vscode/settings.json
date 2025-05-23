@@ -68,7 +68,9 @@
         "heapallocator.h": "c",
         "executor": "c",
         "timer.h": "c",
-        "stack.h": "c"
+        "stack.h": "c",
+        "exceptions.h": "c",
+        "isr.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

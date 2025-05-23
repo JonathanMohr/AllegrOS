@@ -31,7 +31,7 @@ static const char* const g_Exceptions[] = {
     "Machine Check",
     "SIMD Floating-Point Exception",
     "Virtualization Exception",
-    "Control Protection Exception ",
+    "Control Protection Exception",
     "",
     "",
     "",
