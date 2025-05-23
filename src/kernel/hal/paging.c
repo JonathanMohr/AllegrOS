@@ -14,11 +14,20 @@ PageDirectory getPageDirectory()
 
 bool Paging_Map(uintptr_t virtual, uintptr_t physical)
 {
-    PageDirectory dir;
-
-    dir.directory_virtual = (uint32_t*)PAGE_DIRECTORY_PTR;
+    PageDirectory dir = getPageDirectory();
 
     if (!i686_map(dir.directory_virtual, virtual, physical))
         return false;
     return true;
+}
+
+PageDirectory Paging_Create(PageDirectory* kernel)
+{
+    PageDirectory pageDirectory = i686_create_page_directory(kernel->directory_virtual);
+    return pageDirectory;
+}
+
+void Paging_Load(PageDirectory* pageDirectory)
+{
+    i686_load_page_directory(pageDirectory);
 }

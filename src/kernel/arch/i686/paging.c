@@ -4,8 +4,15 @@
 #include "../../debug.h"
 #include "../../memory/memory.h"
 #include <core/memory/memory.h>
+#include <core/Defs.h>
+#include "../../hal/paging.h"
 
 #define PAGE_MASK 0xFFFFF000
+
+void ASMCALL write_cr3(uint32_t val);
+uint32_t ASMCALL read_cr0();
+void ASMCALL write_cr0(uint32_t val);
+void ASMCALL invlpg(uint32_t addr);
 
 uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr) {
     // Index im Page Directory (10 Bits)
@@ -80,4 +87,78 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
     page_table[pt_index] = (physical_addr & PAGE_MASK) | PAGE_PRESENT | PAGE_RW;
 
     return true;
+}
+
+bool i686_unmap(uint32_t* pageDirectory, uintptr_t virtual_addr)
+{
+    uint32_t pd_index = (virtual_addr >> 22) & 0x3FF;
+    uint32_t pt_index = (virtual_addr >> 12) & 0x3FF;
+
+    uint32_t pd_entry = pageDirectory[pd_index];
+
+    if (!(pd_entry & PAGE_PRESENT)) {
+        // Page Table nicht vorhanden, nichts zu tun
+        return false;
+    }
+
+    uint32_t* page_table = (uint32_t*)(0xFFC00000 + (pd_index << 12));
+
+    if (!(page_table[pt_index] & PAGE_PRESENT)) {
+        // Seite ist schon nicht gemappt
+        return false;
+    }
+
+    page_table[pt_index] = 0;
+
+    invlpg(virtual_addr);
+
+    return true;
+}
+
+PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
+{
+    PageDirectory pd;
+
+    uint32_t* pd_phys = (uint32_t*)memory_physicalAllocate(PAGE_SIZE, PAGE_SIZE, false);
+    if (!pd_phys)
+    {
+        pd.directory = NULL;
+        return pd;
+    }
+
+    uint32_t* pd_virt = (uint32_t*)memory_virtualAllocate(PAGE_SIZE, PAGE_SIZE);
+    if (!pd_virt)
+    {
+        memory_physicalFree(pd_phys);
+        pd.directory = NULL;
+        return pd;
+    }
+
+    if (!i686_map(pageDirectory, (uintptr_t)pd_virt, (uintptr_t)pd_phys))
+    {
+        memory_physicalFree(pd_phys);
+        memory_virtualFree(pd_virt);
+        pd.directory = NULL;
+        return pd;
+    }
+
+    memset(pd_virt, 0, PAGE_SIZE);
+
+    uint32_t* current_pd = getPageDirectory().directory_virtual;
+    for (int i = 768; i < 1023; i++)
+    {
+        pd_virt[i] = current_pd[i];
+    }
+
+    pd_virt[1023] = (uint32_t)pd_phys | PAGE_PRESENT | PAGE_RW;
+
+    pd.directory = pd_phys;
+    pd.directory_virtual = pd_virt;
+
+    return pd;
+}
+
+void i686_load_page_directory(PageDirectory* pd)
+{
+    write_cr3((uint32_t)pd->directory);
 }
