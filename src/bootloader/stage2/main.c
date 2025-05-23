@@ -17,10 +17,10 @@ uint8_t* Kernel = (uint8_t*)MEMORY_KERNEL_ADDR;
 
 BootParams g_BootParams;
 
-//only works with 0x100000
+// I don't know why but it only works when using 0x100000 and not PAGE_SIZE
 #define BOOTSIZE 0x100000
 
-// Just don't change the kernel linker virt addr
+// Don't change the kernel linker virt addr
 #define KERNEL_VIRT 0xC0000000
 
 typedef void (*KernelStart)(BootParams* bootParams);
@@ -57,128 +57,16 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         goto end;
     }
 
-    uint32_t kernelPages = (kernelSize + PAGE_SIZE - 1) / PAGE_SIZE;
-    uint32_t kernelPageTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
-    uint32_t kernelPagingSize = kernelPageTables * PAGE_SIZE;
-
-    uint32_t bootPages = (BOOTSIZE + PAGE_SIZE - 1) / PAGE_SIZE;
-    uint32_t bootPageTables = (bootPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
-    uint32_t bootPagingSize = bootPageTables * PAGE_SIZE;
-
-    uint32_t pagingSize = PAGE_SIZE + kernelPagingSize + bootPagingSize;
-
-    uint8_t* kernelBegin = NULL;
+    // prepare paging
     uint8_t* pageDirectoryPtr = NULL;
+    uint32_t kernelPages = 0;
+    uint8_t* kernelBegin = NULL;
+    uint32_t bootLength = i686_prepare_paging(&g_BootParams.Memory, BOOTSIZE, kernelSize,
+                                              &pageDirectoryPtr, &kernelPages, &kernelBegin);
 
-    MemoryRegion pagingRegion;
-
-    uint32_t bootLength = 0;
-
-    MemoryRegion newRegions[MAX_REGIONS];
-    memset(newRegions, 0, sizeof(newRegions));
-    int newCount = 0;
-
-    for (int i = 0; i < g_BootParams.Memory.RegionCount; ++i)
-    {
-        MemoryRegion* region = &g_BootParams.Memory.Regions[i];
-        uint64_t begin = region->Begin;
-        uint64_t end = region->Begin + region->Length;
-
-        uintptr_t alignedBegin = (region->Begin + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-        uint32_t padding = alignedBegin - region->Begin;
-        
-        if (region->Begin == 0)
-        {
-            MemoryRegion bootRegion = *region;
-            bootRegion.Type = MEMORY_TYPE_BOOT;
-            newRegions[newCount++] = bootRegion;
-
-            bootLength = region->Length;
-
-            continue;
-        }
-        else if (region->Type == MEMORY_TYPE_USABLE && region->Length >= (kernelPages * PAGE_SIZE + pagingSize + padding))
-        {
-            if (padding > 0)
-            {
-                MemoryRegion paddingRegion = *region;
-                paddingRegion.Type = MEMORY_TYPE_RESERVED;
-                paddingRegion.Length = padding;
-                newRegions[newCount++] = paddingRegion;
-            }
-
-            pagingRegion = *region;
-            pagingRegion.Begin = alignedBegin;
-            pagingRegion.Length = pagingSize;
-            pagingRegion.Type = MEMORY_TYPE_RESERVED;
-            newRegions[newCount++] = pagingRegion;
-
-            pageDirectoryPtr = (uint8_t*)(uintptr_t)pagingRegion.Begin;
-
-            MemoryRegion kernelRegion = *region;
-            kernelRegion.Begin = pagingRegion.Begin + pagingRegion.Length;
-            kernelRegion.Length = kernelPages * PAGE_SIZE;
-            kernelRegion.Type = MEMORY_TYPE_KERNEL;
-            newRegions[newCount++] = kernelRegion;
-
-            kernelBegin = (uint8_t*)(uintptr_t)kernelRegion.Begin;
-
-            MemoryRegion usableRegion = *region;
-            usableRegion.Begin = kernelRegion.Begin + kernelRegion.Length;
-            usableRegion.Length = (region->Begin + region->Length) - usableRegion.Begin;
-            newRegions[newCount++] = usableRegion;
-
-            continue;
-        }
-        
-        newRegions[newCount++] = *region;
-    }
-
-    g_BootParams.Memory.RegionCount = newCount;
-    for (int i = 0; i < newCount; ++i) {
-        g_BootParams.Memory.Regions[i] = newRegions[i];
-    }
-
-    PageDirectory pageDirectory;
-
-    // I don't know why but it only works when using 0x100000 and not PAGE_SIZE
+    // initialize paging
     bootLength = (bootLength + BOOTSIZE - 1) / BOOTSIZE;
-    bootLength = bootLength * BOOTSIZE;
-
-
-    uint8_t* newPtr = (uint8_t*)i686_paging_Initialize(&pageDirectory, bootLength, pageDirectoryPtr);
-
-    uintptr_t kernelVirt = KERNEL_VIRT;
-    int numKernelTables = (kernelPages + PAGE_TABLE_ENTRIES - 1) / PAGE_TABLE_ENTRIES;
-
-    int kernelPDIndexStart = (kernelVirt >> 22);
-
-    uintptr_t physPage = (uintptr_t)kernelBegin;
-    for (int i = 0; i < numKernelTables; i++) {
-        uint32_t* pt = (uint32_t*)newPtr;
-        newPtr += PAGE_SIZE;
-        memset(pt, 0, PAGE_SIZE);
-
-        uintptr_t phys = (uintptr_t)pt;
-
-        uint32_t pdIndex = ((kernelVirt >> 22) + i) & 0x3FF;
-
-        pageDirectory.directory[pdIndex] = phys | PAGE_PRESENT | PAGE_RW;
-
-        kernelVirt += PAGE_SIZE * PAGE_TABLE_ENTRIES;
-
-        for (int j = 0; j < PAGE_TABLE_ENTRIES; j++) {
-            if ((i * PAGE_TABLE_ENTRIES + j) >= kernelPages) {
-                break;
-            }
-
-            pt[j] = physPage | PAGE_PRESENT | PAGE_RW;
-            physPage += PAGE_SIZE;
-        }
-    }
-
-    // map page directory and page tables 0xFFC00000
-    pageDirectory.directory[1023] = (uint32_t)pageDirectory.directory | PAGE_PRESENT | PAGE_RW;
+    PageDirectory* pageDirectory = i686_paging_Initialize(bootLength * BOOTSIZE, pageDirectoryPtr, KERNEL_VIRT, kernelPages, kernelBegin);
 
     // enable paging
     i686_enable_paging();

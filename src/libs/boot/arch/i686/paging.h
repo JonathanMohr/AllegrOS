@@ -1,0 +1,23 @@
+#pragma once
+
+#include <stdint.h>
+
+#define PAGE_DIRECTORY_ENTRIES 1024
+#define PAGE_TABLE_ENTRIES 1024
+#define PAGE_SIZE 4096
+
+#define PAGE_PRESENT 0x1
+#define PAGE_RW      0x2
+#define PAGE_USER    0x4
+
+typedef enum {
+    MAP_SUCCESS = 1,
+    MAP_NOT_DONE = 0,
+    MAP_OUT_OF_RANGE = -1,
+    MAP_MISSING_TABLE = -2
+} MapResult;
+
+typedef struct {
+    uint32_t* directory;
+    uint32_t* directory_virtual;
+} PageDirectory;
