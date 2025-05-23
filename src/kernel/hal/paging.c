@@ -14,9 +14,7 @@ PageDirectory getPageDirectory()
 
 bool Paging_Map(uintptr_t virtual, uintptr_t physical)
 {
-    PageDirectory dir;
-
-    dir.directory_virtual = (uint32_t*)PAGE_DIRECTORY_PTR;
+    PageDirectory dir = getPageDirectory();
 
     if (!i686_map(dir.directory_virtual, virtual, physical))
         return false;

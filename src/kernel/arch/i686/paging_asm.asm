@@ -44,7 +44,7 @@ write_cr0:
     pop ebp
     ret
 
-; void ASMCALL i686_invlpg(uint32_t addr);
+; void ASMCALL invlpg(uint32_t addr);
 global invlpg
 invlpg:
     ; make new call frame

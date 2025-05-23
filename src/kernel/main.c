@@ -8,6 +8,7 @@
 #include <core/memory/memory.h>
 #include "memory/memory.h"
 #include "stack/stack.h"
+#include "hal/paging.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -22,6 +23,7 @@ extern uint8_t __bss_start[];
 extern uint8_t __end[];
 
 static BootParams bootParams;
+static PageDirectory kernelPageDir;
 
 __attribute__((section(".stack"))) 
 static uint8_t kernel_stack[KERNEL_STACK_SIZE];
@@ -47,20 +49,20 @@ void ENTRY start(BootParams* bParams)
     HAL_Initialize();
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
 
-    /*
+    MemoryRegion* oldRegions = bootParams.Memory.Regions;
+
     bootParams.Memory.Regions = memory_Allocate(
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount,
         1
     );
 
-    log_verbose("Memory regions", "0x%p", bootParams.Memory.Regions);
-
     memcpy(
         bootParams.Memory.Regions,
-        bParams->Memory.Regions,
+        oldRegions,
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount
     );
-    */
+
+    kernelPageDir = getPageDirectory();
 
     i686_IRQ_RegisterHandler(0, timer);
 
@@ -78,8 +80,8 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Type);
     }
 
-    uint32_t* test = memory_Allocate(sizeof(uint32_t), 1);
-    *test = 1;
+    //PageDirectory new_page_directory = i686_create_page_directory(kernelPageDir.directory);
+    //log_debug("Kernel", "New page directory physical: %p", new_page_directory.directory);
 
 end:
     for (;;);
