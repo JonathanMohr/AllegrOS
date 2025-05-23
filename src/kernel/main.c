@@ -8,6 +8,7 @@
 #include <core/memory/memory.h>
 #include "memory/memory.h"
 #include "stack/stack.h"
+#include "hal/paging.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -22,6 +23,7 @@ extern uint8_t __bss_start[];
 extern uint8_t __end[];
 
 static BootParams bootParams;
+static PageDirectory kernelPageDir;
 
 __attribute__((section(".stack"))) 
 static uint8_t kernel_stack[KERNEL_STACK_SIZE];
@@ -60,6 +62,8 @@ void ENTRY start(BootParams* bParams)
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount
     );
 
+    kernelPageDir = getPageDirectory();
+
 
     i686_IRQ_RegisterHandler(0, timer);
 
@@ -76,6 +80,9 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
     }
+
+    PageDirectory new_page_directory = i686_create_page_directory(kernelPageDir.directory_virtual);
+    log_debug("Kernel", "New page directory physical: %p", new_page_directory.directory_virtual);
 
 end:
     for (;;);
