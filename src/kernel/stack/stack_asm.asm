@@ -1,13 +1,10 @@
 [bits 32]
 
+extern kernel_main
+
 ; void ASMCALL set_Stack(uint32_t ptr);
 global set_Stack
 set_Stack:
-    mov eax, [esp + 4]      ; neues Stack-Ende (Kernel Stack oben)
-    mov ebx, [esp]          ; Rücksprungadresse vom alten Stack holen
-
-    mov [eax - 4], ebx      ; Rücksprungadresse ganz oben auf neuen Stack legen
-    lea esp, [eax - 4]      ; esp auf die Rücksprungadresse setzen
-    mov ebp, eax
-
-    ret
+    mov eax, [esp + 4]    ; neues Stackende (kernel_stack + size)
+    mov esp, eax          ; ESP auf neuen Stack setzen
+    jmp kernel_main       ; direkt zu kernel_main springen

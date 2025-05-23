@@ -10,6 +10,8 @@
 #include "stack/stack.h"
 #include "hal/paging.h"
 #include "exceptions/exceptions.h"
+#include "drivers/disk/disk.h"
+#include "drivers/disk/mbr.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -42,29 +44,38 @@ void ENTRY start(BootParams* bParams)
 
     // initialize stack
     void* kernel_stack_end = &kernel_stack[KERNEL_STACK_SIZE];
-    set_Stack((uint32_t)kernel_stack_end - 3 * sizeof(uintptr_t));
+    set_Stack((uint32_t)kernel_stack_end);
+}
 
+void kernel_main()
+{
     // call global constructors
     _init();
 
     // Initialize
     HAL_Initialize();
+
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
-
     MemoryRegion* oldRegions = bootParams.Memory.Regions;
-
     bootParams.Memory.Regions = memory_Allocate(
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount,
         1
     );
-
     memcpy(
         bootParams.Memory.Regions,
         oldRegions,
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount
     );
-
     kernelPageDir = getPageDirectory();
+
+    Disk disk;
+    if (!disk_Initialize(&disk, bootParams.BootDevice))
+    {
+        log_err("Kernel", "Couldn't initialize disk!");
+    }
+
+    Partition partition;
+    MBR_DetectPartition(&partition, &disk, bootParams.partition);
 
     // Initialize handlers
     isr_registerExceptionHandlers();
@@ -83,6 +94,8 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
     }
+
+    
 
 end:
     for (;;);
