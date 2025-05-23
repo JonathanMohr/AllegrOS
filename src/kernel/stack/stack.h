@@ -3,6 +3,6 @@
 #include <stdint.h>
 #include <core/Defs.h>
 
-#define KERNEL_STACK_SIZE 0x4000  // 16 KB
+#define KERNEL_STACK_SIZE 0x10000
 
 void ASMCALL set_Stack(uint32_t ptr);

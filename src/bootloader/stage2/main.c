@@ -67,6 +67,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     g_BootParams.kernelSize = kernelPages * PAGE_SIZE;
 
     // initialize paging
+    // TODO: kernel guard page for stack
     bootLength = (bootLength + BOOTSIZE - 1) / BOOTSIZE;
     PageDirectory* pageDirectory = i686_paging_Initialize(bootLength * BOOTSIZE, pageDirectoryPtr, KERNEL_VIRT, kernelPages, kernelBegin);
 

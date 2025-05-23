@@ -23,6 +23,7 @@ extern uint8_t __end[];
 
 static BootParams bootParams;
 
+__attribute__((section(".stack"))) 
 static uint8_t kernel_stack[KERNEL_STACK_SIZE];
 
 void crash_me();
@@ -37,8 +38,8 @@ void ENTRY start(BootParams* bParams)
     bootParams = *bParams;
 
     // initialize stack
-    void *kernel_stack_end = &kernel_stack[KERNEL_STACK_SIZE];
-    set_Stack((uint32_t)kernel_stack_end);
+    void* kernel_stack_end = &kernel_stack[KERNEL_STACK_SIZE];
+    set_Stack((uint32_t)kernel_stack_end - 3 * sizeof(uintptr_t));
 
     // call global constructors
     _init();
