@@ -26,6 +26,8 @@ void keyboard_handler(Registers* regs)
 {
 }
 
+
+
 void ENTRY start(BootParams* bParams)
 {
     bootParams = *bParams;
