@@ -74,11 +74,11 @@ void ENTRY start(BootParams* bParams)
     // Run main part
     printf("Hello world from kernel!\n");
 
-    log_debug("Main", "Boot device: 0x%x", bootParams.BootDevice);
-    log_debug("Main", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
+    log_debug("Kernel", "Boot device: 0x%x", bootParams.BootDevice);
+    log_debug("Kernel", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
     for (int i = 0; i < bootParams.Memory.RegionCount; i++)
     {
-        log_debug("Main", "MEM: start=0x%llx, length=0x%llx, type=%u",
+        log_debug("Kernel", "MEM: start=0x%llx, length=0x%llx, type=%u",
             bootParams.Memory.Regions[i].Begin,
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
