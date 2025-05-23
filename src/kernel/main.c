@@ -28,12 +28,14 @@ void keyboard_handler(Registers* regs)
 
 void ENTRY start(BootParams* bParams)
 {
+    // copy bootParams to kernel
     bootParams = *bParams;
+
     // call global constructors
     _init();
 
     HAL_Initialize();
-    memory_Initialize(&bootParams.Memory);
+    memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
 
 
     i686_IRQ_RegisterHandler(0, timer);
@@ -51,6 +53,9 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
     }
+
+    uint16_t* test = (uint16_t*)memory_Allocate(sizeof(uint16_t), 1);
+    log_debug("Kernel", "Test: %x", *test);
 
 end:
     for (;;);

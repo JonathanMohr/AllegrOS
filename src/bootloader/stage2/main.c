@@ -64,6 +64,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     uint32_t bootLength = i686_prepare_paging(&g_BootParams.Memory, BOOTSIZE, kernelSize,
                                               &pageDirectoryPtr, &kernelPages, &kernelBegin);
 
+    g_BootParams.kernelSize = kernelPages * PAGE_SIZE;
+
     // initialize paging
     bootLength = (bootLength + BOOTSIZE - 1) / BOOTSIZE;
     PageDirectory* pageDirectory = i686_paging_Initialize(bootLength * BOOTSIZE, pageDirectoryPtr, KERNEL_VIRT, kernelPages, kernelBegin);
