@@ -47,6 +47,20 @@ void ENTRY start(BootParams* bParams)
     HAL_Initialize();
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
 
+    /*
+    bootParams.Memory.Regions = memory_Allocate(
+        sizeof(MemoryRegion) * bootParams.Memory.RegionCount,
+        1
+    );
+
+    log_verbose("Memory regions", "0x%p", bootParams.Memory.Regions);
+
+    memcpy(
+        bootParams.Memory.Regions,
+        bParams->Memory.Regions,
+        sizeof(MemoryRegion) * bootParams.Memory.RegionCount
+    );
+    */
 
     i686_IRQ_RegisterHandler(0, timer);
 
@@ -63,6 +77,9 @@ void ENTRY start(BootParams* bParams)
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
     }
+
+    uint32_t* test = memory_Allocate(sizeof(uint32_t), 1);
+    *test = 1;
 
 end:
     for (;;);

@@ -6,7 +6,7 @@
 
 bool HeapAllocator_Initialize(HeapAllocator* alloc)
 {
-    alloc->start = (uintptr_t)page_Allocate(1);
+    alloc->start = (uintptr_t)page_Allocate(16);
     if (!alloc->start)
         return false;
 
