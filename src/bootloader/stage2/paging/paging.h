@@ -21,11 +21,9 @@ typedef enum {
 typedef struct {
     uint32_t* directory;
     uint32_t* directory_virtual;
-    uint32_t* tables_virtual[1024]; // Nur zum Zugriff im Kernel
 } PageDirectory;
 
 uint64_t i686_get_paging_size(uint64_t size);
 void* i686_paging_Initialize(PageDirectory* dir, uint64_t kernel_end, void* ptr);
 void i686_paging_Load_Directory(uint32_t* page_directory);
 void i686_enable_paging();
-int i686_map_page(PageDirectory* dir, uintptr_t virt_addr, uintptr_t phys_addr, uint32_t flags, bool safeguard);
