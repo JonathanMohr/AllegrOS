@@ -81,7 +81,7 @@ void ENTRY start(BootParams* bParams)
     }
 
     PageDirectory new_page_directory = i686_create_page_directory(kernelPageDir.directory_virtual);
-    log_debug("Kernel", "New page directory physical: %p", new_page_directory.directory_virtual);
+    log_debug("Kernel", "New page directory: physical = %p, virtual = %p", new_page_directory.directory, new_page_directory.directory_virtual);
 
 end:
     for (;;);
