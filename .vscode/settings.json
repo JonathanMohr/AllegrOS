@@ -66,7 +66,9 @@
         "virtualallocator.h": "c",
         "cstdlib": "c",
         "heapallocator.h": "c",
-        "executor": "c"
+        "executor": "c",
+        "timer.h": "c",
+        "stack.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

@@ -7,8 +7,11 @@
 #include <boot/bootparams.h>
 #include <core/memory/memory.h>
 #include "memory/memory.h"
+#include "stack/stack.h"
 
 #define ENTRY __attribute__((section(".entry")))
+
+
 
 extern void _init();
 
@@ -20,6 +23,8 @@ extern uint8_t __end[];
 
 static BootParams bootParams;
 
+static uint8_t kernel_stack[KERNEL_STACK_SIZE];
+
 void crash_me();
 
 void keyboard_handler(Registers* regs)
@@ -30,6 +35,10 @@ void ENTRY start(BootParams* bParams)
 {
     // copy bootParams to kernel
     bootParams = *bParams;
+
+    // initialize stack
+    void *kernel_stack_end = &kernel_stack[KERNEL_STACK_SIZE];
+    set_Stack((uint32_t)kernel_stack_end);
 
     // call global constructors
     _init();
