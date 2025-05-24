@@ -50,3 +50,5 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_ARCHIVE           = 0x20,
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
+
+bool FAT_Initialize(Partition* disk);

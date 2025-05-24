@@ -12,6 +12,7 @@
 #include "exceptions/exceptions.h"
 #include "drivers/disk/disk.h"
 #include "drivers/disk/mbr.h"
+#include "drivers/fat/fat.h"
 
 #define ENTRY __attribute__((section(".entry")))
 
@@ -76,6 +77,7 @@ void kernel_main()
 
     Partition partition;
     MBR_DetectPartition(&partition, &disk, bootParams.partition);
+    FAT_Initialize(&partition);
 
     // Initialize handlers
     isr_registerExceptionHandlers();
