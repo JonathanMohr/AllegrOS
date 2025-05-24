@@ -70,6 +70,7 @@ bool disk_ReadSectors(Disk     *disk,
                       uint8_t   sector_count,
                       void     *buffer)
 {
+    // TODO: change everything
     if (disk->id >= 0x80)
     {
         if (sector_count == 0 || sector_count > 255)

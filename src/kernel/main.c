@@ -77,7 +77,10 @@ void kernel_main()
 
     Partition partition;
     MBR_DetectPartition(&partition, &disk, bootParams.partition);
-    FAT_Initialize(&partition);
+    if (!FAT_Initialize(&partition))
+    {
+        log_err("Kernel", "Couldn't initialize FAT!");
+    }
 
     // Initialize handlers
     isr_registerExceptionHandlers();
