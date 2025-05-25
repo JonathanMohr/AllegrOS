@@ -2,6 +2,7 @@
 #include "../disk/mbr.h"
 #include "../../memory/memory.h"
 #include <stddef.h>
+#include "fatdefs.h"
 
 static uint8_t* BootSector = NULL;
 
@@ -15,7 +16,6 @@ bool FAT_ReadBootSector(Partition* disk)
 bool FAT_Initialize(Partition* disk)
 {
     BootSector = memory_Allocate(512, 1);
-    //TODO: not working
     if (!FAT_ReadBootSector(disk))
         return false;
     return true;
