@@ -69,14 +69,19 @@ void kernel_main()
     );
     kernelPageDir = getPageDirectory();
 
+    uint16_t* buffer = (uint16_t*)memory_Allocate(256 * sizeof(uint16_t), 1);
+    if (!buffer)
+    {
+        log_err("Kernel", "Couldn't allocate buffer");
+    }
     Disk disk;
-    if (!disk_Initialize(&disk, bootParams.BootDevice))
+    if (!disk_Initialize(&disk, bootParams.BootDevice, buffer))
     {
         log_err("Kernel", "Couldn't initialize disk!");
     }
 
     Partition partition;
-    MBR_DetectPartition(&partition, &disk, bootParams.partition);
+    MBR_DetectPartition(&partition, &disk, bootParams.partitionOffset, bootParams.partitionSize);
     if (!FAT_Initialize(&partition))
     {
         log_err("Kernel", "Couldn't initialize FAT!");
@@ -90,11 +95,20 @@ void kernel_main()
     // Run main part
     printf("Hello world from kernel!\n");
 
-    log_debug("Kernel", "Boot device: 0x%x", bootParams.BootDevice);
-    log_debug("Kernel", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
+    log_debug("Drive", "Boot device: 0x%x", bootParams.BootDevice);
+    log_debug("Drive", "Cylinders: 0x%x, Sectors: 0x%x, Heads: 0x%x",
+        partition.disk->cylinders, partition.disk->sectors, partition.disk->heads);
+    log_debug("Drive", "Serial number: '%s'", partition.disk->serial_number);
+    log_debug("Drive", "Firmware revision: '%s'", partition.disk->firmware_revision);
+    log_debug("Drive", "Model number: '%s'", partition.disk->model_number);
+    log_debug("Drive", "Max sectors per read/write: 0x%x", partition.disk->max_sectors_per_rw);
+    log_debug("Drive", "Total sectors 28 bit: 0x%x, Total sectors 48 bit: 0x%x",
+        partition.disk->total_sectors_28bit, partition.disk->total_sectors_48bit);
+
+    log_debug("Memory", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
     for (int i = 0; i < bootParams.Memory.RegionCount; i++)
     {
-        log_debug("Kernel", "MEM: start=0x%llx, length=0x%llx, type=%u",
+        log_debug("Memory", "start=0x%llx, length=0x%llx, type=%u",
             bootParams.Memory.Regions[i].Begin,
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);

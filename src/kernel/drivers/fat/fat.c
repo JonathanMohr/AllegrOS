@@ -18,4 +18,5 @@ bool FAT_Initialize(Partition* disk)
     //TODO: not working
     if (!FAT_ReadBootSector(disk))
         return false;
+    return true;
 }
