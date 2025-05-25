@@ -16,8 +16,6 @@
 
 #define ENTRY __attribute__((section(".entry")))
 
-
-
 extern void _init();
 
 extern uint8_t __text_start[];
@@ -73,11 +71,15 @@ void kernel_main()
     if (!buffer)
     {
         log_err("Kernel", "Couldn't allocate memory for buffer");
+        printf("You're system doesn't have enough memory.\n");
+        goto end;
     }
     Disk disk;
     if (!disk_Initialize(&disk, bootParams.BootDevice, buffer))
     {
         log_err("Kernel", "Couldn't initialize disk!");
+        printf("Couldn't initialize disk drivers!\nTry restarting.\n");
+        goto end;
     }
 
     Partition partition;
@@ -85,6 +87,8 @@ void kernel_main()
     if (!FAT_Initialize(&partition))
     {
         log_err("Kernel", "Couldn't initialize FAT!");
+        printf("Couldn't initialize fat drivers!\nTry reinstalling OS.\n");
+        goto end;
     }
 
     // Initialize handlers
