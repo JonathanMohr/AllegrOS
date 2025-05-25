@@ -3,6 +3,12 @@
 #include <stdint.h>
 #include "fat.h"
 
+#define SECTOR_SIZE             512
+#define MAX_PATH_SIZE           256
+#define MAX_FILE_HANDLES        10
+#define ROOT_DIRECTORY_HANDLE   -1
+#define FAT_CACHE_SIZE          5
+
 typedef struct 
 {
     // extended boot record
@@ -56,7 +62,8 @@ typedef struct
 
 typedef struct
 {
-    uint8_t* Buffer;
+    //TODO
+    uint8_t Buffer[SECTOR_SIZE];
     FAT_File Public;
     bool Opened;
     uint32_t FirstCluster;
