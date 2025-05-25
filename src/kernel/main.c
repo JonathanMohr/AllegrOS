@@ -120,7 +120,9 @@ void kernel_main()
     {
         log_err("Kernel", "Couldn't allocate memory for test.txt");
     }
+
     FAT_Read(&partition, fd, 512, textBuffer);
+
     FAT_Close(fd);
 
     log_debug("Test.txt", "'%s'", textBuffer);
