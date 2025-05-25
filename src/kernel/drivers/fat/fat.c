@@ -1,9 +1,15 @@
 #include "fat.h"
+
+#include <core/string/string.h>
+#include <core/string/ctype.h>
+#include <core/minmax.h>
+#include <core/memory/memory.h>
+
 #include "../disk/mbr.h"
-#include "../../memory/memory.h"
 #include <stddef.h>
 #include "fatdefs.h"
 #include "../../debug.h"
+#include "../../memory/memory.h"
 
 typedef struct
 {
