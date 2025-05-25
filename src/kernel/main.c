@@ -72,7 +72,7 @@ void kernel_main()
     uint16_t* buffer = (uint16_t*)memory_Allocate(256 * sizeof(uint16_t), 1);
     if (!buffer)
     {
-        log_err("Kernel", "Couldn't allocate buffer");
+        log_err("Kernel", "Couldn't allocate memory for buffer");
     }
     Disk disk;
     if (!disk_Initialize(&disk, bootParams.BootDevice, buffer))
@@ -114,7 +114,16 @@ void kernel_main()
             bootParams.Memory.Regions[i].Type);
     }
 
-    
+    FAT_File* fd = FAT_Open(&partition, "/test.txt");
+    char* textBuffer = (char*)memory_Allocate(512, 1);
+    if (!textBuffer)
+    {
+        log_err("Kernel", "Couldn't allocate memory for test.txt");
+    }
+    FAT_Read(&partition, fd, 512, textBuffer);
+    FAT_Close(fd);
+
+    log_debug("Test.txt", "'%s'", textBuffer);
 
 end:
     for (;;);

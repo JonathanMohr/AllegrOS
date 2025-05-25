@@ -52,3 +52,7 @@ enum FAT_Attributes
 };
 
 bool FAT_Initialize(Partition* disk);
+FAT_File * FAT_Open(Partition* disk, const char* path);
+uint32_t FAT_Read(Partition* disk, FAT_File* file, uint32_t byteCount, void* dataOut);
+bool FAT_ReadEntry(Partition* disk, FAT_File* file, FAT_DirectoryEntry* dirEntry);
+void FAT_Close(FAT_File* file);

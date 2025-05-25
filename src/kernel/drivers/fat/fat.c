@@ -170,3 +170,43 @@ bool FAT_Initialize(Partition* disk)
 
     return true;
 }
+
+FAT_File* FAT_OpenEntry(Partition* disk, FAT_DirectoryEntry* entry)
+{
+    //TODO
+}
+
+uint32_t FAT_NextCluster(Partition* disk, uint32_t currentCluster)
+{
+    //TODO
+}
+
+uint32_t FAT_Read(Partition* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
+{
+    //TODO
+}
+
+bool FAT_ReadEntry(Partition* disk, FAT_File* file, FAT_DirectoryEntry* dirEntry)
+{
+    //TODO
+}
+
+void FAT_Close(FAT_File* file)
+{
+    //TODO
+}
+
+void FAT_GetShortName(const char* name, char shortName[12])
+{
+    //TODO
+}
+
+bool FAT_FindFile(Partition* disk, FAT_File* file, const char* name, FAT_DirectoryEntry* entryOut)
+{
+    //TODO
+}
+
+FAT_File* FAT_Open(Partition* disk, const char* path)
+{
+    //TODO
+}
