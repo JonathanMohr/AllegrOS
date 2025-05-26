@@ -71,7 +71,8 @@
         "stack.h": "c",
         "exceptions.h": "c",
         "isr.h": "c",
-        "pr77550.C": "cpp"
+        "pr77550.C": "cpp",
+        "disk.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

@@ -9,7 +9,7 @@ void ASMCALL outb(uint16_t port, uint8_t value);
 uint8_t ASMCALL inb(uint16_t port);
 uint16_t ASMCALL inw(uint16_t port);
 
-void iowait()
+static void iowait()
 {
     outb(UNUSED_PORT, 0);
 }

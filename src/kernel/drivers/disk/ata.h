@@ -1,27 +1,14 @@
 #pragma once
-#include "io.h"
 
-#define ATA_PRIMARY_IO      0x1F0
-#define ATA_PRIMARY_CTRL    0x3F6
-#define ATA_MASTER          0xE0
-#define ATA_SLAVE           0xF0
+#include "disk.h"
 
-#define ATA_READ_SECTORS    0x20
-#define ATA_READ_SECTORS_EXT 0x24
+#define ATA_SUCCESSFUL              0x0
+#define ATA_NO_DRIVE                0x1
+#define ATA_SECTOR_COUNT            0x2
+#define ATA_TOO_HIGH_LBA            0x3
+#define ATA_28_BIT_TOO_HIGH_LBA     0x4
+#define ATA_DRIVE_ERROR             0x5
 
-static void ata_wait_bsy_clear()
-{
-    //TODO: ADD INTERRUPTS
-    while (inb(ATA_PRIMARY_IO + 7) & 0x80);
-}
+uint8_t ATA_Read(Disk *disk, uint64_t lba, uint8_t sector_count, void *buffer);
 
-static void ata_wait_drq_set()
-{
-    //TODO: ADD INTERRUPTS
-    while (!(inb(ATA_PRIMARY_IO + 7) & 0x08));
-}
-
-static void ata_delay_400ns()
-{
-    for (int i = 0; i < 4; i++) inb(ATA_PRIMARY_CTRL);
-}
+uint8_t ATA_Initialize(Disk *disk, uint8_t device, uint16_t* buffer);
