@@ -77,12 +77,19 @@ void page_Free(uintptr_t ptr)
 
 void* memory_physicalAllocate(uint64_t size, uint64_t align, bool freeable)
 {
+    //TODO: freeable
     return PhysicalAllocator_Alloc(&g_PhysicalAllocator, size, align);
 }
 
 void memory_physicalFree(void* ptr)
 {
+    //TODO: freeable
     PhysicalAllocator_Free(&g_PhysicalAllocator, ptr);
+}
+
+void memory_physicalForceFree(void* ptr)
+{
+    //TODO
 }
 
 void* memory_virtualAllocate(uint64_t size, uint64_t align)
