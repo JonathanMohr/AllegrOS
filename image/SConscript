@@ -120,8 +120,8 @@ def build_floppy(image, stage1, stage2, kernel, files, env):
 
     print(f"> copying files...")
     print('    ... copying', kernel)
-    sh.mmd('-i', image, "::boot")
-    sh.mcopy('-i', image, kernel, "::boot/")
+    sh.mmd('-i', image, "::system")
+    sh.mcopy('-i', image, kernel, "::system/")
 
     # copy rest of files
     src_root = env['BASEDIR']
@@ -201,9 +201,9 @@ def build_disk(image, stage1, stage2, kernel, files, env):
 
         # copy kernel
         print(f"> copying kernel...")
-        bootdir = os.path.join(tempdir, 'boot')
-        os.makedirs(bootdir)
-        copy2(kernel, bootdir)
+        systemdir = os.path.join(tempdir, 'system')
+        os.makedirs(systemdir)
+        copy2(kernel, systemdir)
 
         # copy rest of files
         src_root = env['BASEDIR']
