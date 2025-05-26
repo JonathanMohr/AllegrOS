@@ -95,8 +95,6 @@ void kernel_main()
             bootParams.Memory.Regions[i].Type);
     }
 
-    
-
 end:
     for (;;);
 }

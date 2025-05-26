@@ -21,7 +21,7 @@ void memory_Initialize(MemoryInfo* memInfo, uint32_t kernelSize)
     PageDirectory pageDirectory = getPageDirectory();
     g_MemoryInfo = memInfo;
     PhysicalAllocator_Initialize(&g_PhysicalAllocator, memInfo);
-    VirtualAllocator_Initialize(&g_VirtualAllocator, 0x40000000 - 0x00400000);
+    VirtualAllocator_Initialize(&g_VirtualAllocator, 0xC0000000, 0x40000000 - 0x00400000);
     g_VirtualAllocator.used = kernelSize;
     HeapAllocator_Initialize(&g_HeapAllocator);
 }
@@ -31,7 +31,7 @@ void* memory_Allocate(uint64_t size, uint64_t align)
     return HeapAllocator_Alloc(&g_HeapAllocator, size, align);
 }
 
-void memory_Free(uintptr_t ptr)
+void memory_Free(void* ptr)
 {
     HeapAllocator_Free(&g_HeapAllocator, ptr);
 }

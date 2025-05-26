@@ -7,7 +7,7 @@
 void memory_Initialize(MemoryInfo* memInfo, uint32_t kernelSize);
 
 void* memory_Allocate(uint64_t size, uint64_t align);
-void memory_Free(uintptr_t ptr);
+void memory_Free(void* ptr);
 
 
 void* page_Allocate(uint32_t pages);
