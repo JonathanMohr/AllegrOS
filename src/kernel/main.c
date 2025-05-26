@@ -118,19 +118,6 @@ void kernel_main()
             bootParams.Memory.Regions[i].Type);
     }
 
-    FAT_File* fd = FAT_Open(&partition, "/test.txt");
-    char* textBuffer = (char*)memory_Allocate(512, 1);
-    if (!textBuffer)
-    {
-        log_err("Kernel", "Couldn't allocate memory for test.txt");
-    }
-
-    FAT_Read(&partition, fd, 512, textBuffer);
-
-    FAT_Close(fd);
-
-    log_debug("Test.txt", "'%s'", textBuffer);
-
 end:
     for (;;);
 }
