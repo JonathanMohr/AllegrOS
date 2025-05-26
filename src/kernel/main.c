@@ -53,8 +53,6 @@ void kernel_main()
     _init();
 
     // Initialize
-    HAL_Initialize();
-
     memory_Initialize(&bootParams.Memory, bootParams.kernelSize);
     MemoryRegion* oldRegions = bootParams.Memory.Regions;
     bootParams.Memory.Regions = memory_Allocate(
@@ -66,7 +64,13 @@ void kernel_main()
         oldRegions,
         sizeof(MemoryRegion) * bootParams.Memory.RegionCount
     );
-    kernelPageDir = getPageDirectory();
+    kernelPageDir = Paging_Initialize();
+    if (!kernelPageDir.directory_virtual)
+    {
+        log_err("Kernel", "Couldn't initialize paging!");
+    }
+
+    HAL_Initialize();
 
     Disk disk;
     if (!disk_Initialize(&disk, bootParams.BootDevice))

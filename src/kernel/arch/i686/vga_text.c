@@ -8,8 +8,13 @@ const unsigned SCREEN_WIDTH = 80;
 const unsigned SCREEN_HEIGHT = 25;
 const uint8_t DEFAULT_COLOR = 0x7;
 
-uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
+uint8_t* g_ScreenBuffer;
 int g_ScreenX = 0, g_ScreenY = 0;
+
+void VGA_init(uint8_t* vga_addr)
+{
+    g_ScreenBuffer = vga_addr;
+}
 
 void VGA_putchr(int x, int y, char c)
 {

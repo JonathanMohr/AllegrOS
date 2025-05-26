@@ -2,6 +2,11 @@
 #include <arch/i686/vga_text.h>
 #include <arch/i686/e9.h>
 
+void VFS_Initialize(uint8_t* vga_addr)
+{
+    VGA_init(vga_addr);
+}
+
 int VFS_Write(fd_t file, uint8_t* data, size_t size)
 {
     switch (file)
