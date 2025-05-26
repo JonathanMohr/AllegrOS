@@ -448,7 +448,7 @@ bool FAT_FindFile(Partition* disk, FAT_File* file, const char* name, FAT_Directo
         {
             *entryOut = entry;
             return true;
-        }        
+        }
     }
     
     return false;
@@ -478,7 +478,7 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
         {
             unsigned len = strlen(path);
             memcpy(name, path, len);
-            name[len + 1] = '\0';
+            name[len] = '\0';
             path += len;
             isLast = true;
         }

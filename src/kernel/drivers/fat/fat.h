@@ -50,3 +50,9 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_ARCHIVE           = 0x20,
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
+
+bool FAT_Initialize(Partition* partition);
+FAT_File * FAT_Open(Partition* partition, const char* path);
+uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void* dataOut);
+bool FAT_ReadEntry(Partition* partition, FAT_File* file, FAT_DirectoryEntry* dirEntry);
+void FAT_Close(FAT_File* file);

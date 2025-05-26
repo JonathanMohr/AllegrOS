@@ -47,7 +47,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 
     // prepare boot params
     g_BootParams.BootDevice = bootDrive;
-    g_BootParams.partition = partition;
+    g_BootParams.partitionOffset = part.partitionOffset;
+    g_BootParams.partitionSize = part.partitionSize;
     Memory_Detect(&g_BootParams.Memory);
 
     // prepare paging
