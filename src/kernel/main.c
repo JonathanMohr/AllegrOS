@@ -67,6 +67,8 @@ void kernel_main()
     if (!kernelPageDir.directory_virtual)
     {
         log_err("Kernel", "Couldn't initialize paging!");
+        printf("Couldn't initialize paging!\nTry restarting.\n");
+        goto end;
     }
 
     HAL_Initialize();
@@ -121,6 +123,17 @@ void kernel_main()
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
     }
+
+    FAT_File* fd = FAT_Open(&partition, "test.txt");
+    if (!fd)
+    {
+        log_err("Kernel", "Error while opening file.");
+    }
+    char* text = (char*)memory_Allocate(fd->Size + 1, 1);
+    memset(text, 0, fd->Size + 1);
+    FAT_Read(&partition, fd, fd->Size, text);
+
+    printf("Text.txt: '%s'\n", text);
 
 end:
     for (;;);
