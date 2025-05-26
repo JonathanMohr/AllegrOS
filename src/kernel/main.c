@@ -135,6 +135,8 @@ void kernel_main()
 
     printf("Text.txt: '%s'\n", text);
 
+    memory_Free(text);
+
 end:
     for (;;);
 }
