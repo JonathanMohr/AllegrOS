@@ -1,6 +1,33 @@
 #include "paging.h"
 
+#define VGA_TEXT_BUFFER_START 0xB8000
+#define VGA_TEXT_BUFFER_SIZE 4096 // 4 KB
+
 #include "../debug.h"
+#include "../memory/memory.h"
+#include <stddef.h>
+#include "vfs.h"
+
+PageDirectory Paging_Initialize()
+{
+    uint8_t* VGA_addr = memory_virtualAllocate(VGA_TEXT_BUFFER_SIZE, VGA_TEXT_BUFFER_SIZE);
+    if (!VGA_addr)
+    {
+        PageDirectory empty_pd = {0};
+        return empty_pd;
+    }
+
+    if (!Paging_Map((uintptr_t)VGA_addr, VGA_TEXT_BUFFER_START))
+    {
+        memory_virtualFree(VGA_addr);
+        PageDirectory empty_pd = {0};
+        return empty_pd;
+    }
+
+    VFS_Initialize(VGA_addr);
+
+    return getPageDirectory();
+}
 
 PageDirectory getPageDirectory()
 {
