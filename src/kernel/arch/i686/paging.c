@@ -70,7 +70,7 @@ bool i686_add_page_table(uint32_t* pageDirectory, uint32_t index)
     return true;
 }
 
-bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physical_addr)
+bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physical_addr, bool user)
 {
     uint32_t pd_index = (virtual_addr >> 22) & 0x3FF;
     uint32_t pt_index = (virtual_addr >> 12) & 0x3FF;
@@ -84,7 +84,10 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
     uint32_t* page_table = (uint32_t*)(0xFFC00000 + (pd_index << 12));
 
     // Page Table Eintrag setzen
-    page_table[pt_index] = (physical_addr & PAGE_MASK) | PAGE_PRESENT | PAGE_RW;
+    uint32_t flags = PAGE_PRESENT | PAGE_RW;
+    if (user) flags |= PAGE_USER;
+
+    page_table[pt_index] = (physical_addr & PAGE_MASK) | flags;
 
     return true;
 }
@@ -117,7 +120,7 @@ bool i686_unmap(uint32_t* pageDirectory, uintptr_t virtual_addr)
 
 PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
 {
-    PageDirectory pd;
+    PageDirectory pd = {0};
 
     uint32_t* pd_phys = (uint32_t*)memory_physicalAllocate(PAGE_SIZE, PAGE_SIZE, false);
     if (!pd_phys)
@@ -134,7 +137,7 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
         return pd;
     }
 
-    if (!i686_map(pageDirectory, (uintptr_t)pd_virt, (uintptr_t)pd_phys))
+    if (!i686_map(pageDirectory, (uintptr_t)pd_virt, (uintptr_t)pd_phys, false))
     {
         memory_physicalFree(pd_phys);
         memory_virtualFree(pd_virt);

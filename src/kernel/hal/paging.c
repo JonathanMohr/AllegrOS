@@ -17,7 +17,7 @@ PageDirectory Paging_Initialize()
         return empty_pd;
     }
 
-    if (!Paging_Map((uintptr_t)VGA_addr, VGA_TEXT_BUFFER_START))
+    if (!Paging_Map((uintptr_t)VGA_addr, VGA_TEXT_BUFFER_START, false))
     {
         memory_virtualFree(VGA_addr);
         PageDirectory empty_pd = {0};
@@ -39,11 +39,11 @@ PageDirectory getPageDirectory()
     return dir;
 }
 
-bool Paging_Map(uintptr_t virtual, uintptr_t physical)
+bool Paging_Map(uintptr_t virtual, uintptr_t physical, bool user)
 {
     PageDirectory dir = getPageDirectory();
 
-    if (!i686_map(dir.directory_virtual, virtual, physical))
+    if (!i686_map(dir.directory_virtual, virtual, physical, user))
         return false;
     return true;
 }

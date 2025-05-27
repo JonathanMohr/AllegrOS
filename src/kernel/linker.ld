@@ -6,7 +6,12 @@ SECTIONS
 {
     . = addr;
 
+    __stack_start = .;
+
     .stack              : {                         *(.stack)   }
+
+    __stack_end = .;
+    
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }

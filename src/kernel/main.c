@@ -8,6 +8,7 @@
 #include <core/memory/memory.h>
 #include "memory/memory.h"
 #include "stack/stack.h"
+#include "stack/user.h"
 #include "hal/paging.h"
 #include "exceptions/exceptions.h"
 #include "drivers/disk/disk.h"
@@ -124,18 +125,29 @@ void kernel_main()
             bootParams.Memory.Regions[i].Type);
     }
 
+    PageDirectory user = Paging_Create(&kernelPageDir);
+
+    Paging_Load(&user);
+    uint8_t* stack = prepareUserStack();
+
     FAT_File* fd = FAT_Open(&partition, "test.txt");
     if (!fd)
     {
         log_err("Kernel", "Error while opening file.");
     }
-    char* text = (char*)memory_Allocate(fd->Size + 1, 1);
-    memset(text, 0, fd->Size + 1);
-    FAT_Read(&partition, fd, fd->Size, text);
+    uint32_t pages = (fd->Size + PAGE_SIZE) / PAGE_SIZE;
 
-    printf("Text.txt: '%s'\n", text);
+    char* file = (char*)page_UserAllocate(pages);
+    
+    memset(file, 0, fd->Size + 1);
+    FAT_Read(&partition, fd, fd->Size, file);
 
-    memory_Free(text);
+    printf("Text.txt: '%s'\n", file);
+
+    page_UserFree((uintptr_t)file);
+
+    // TODO: implement enter
+    // TODO: add interrupt and syscall support
 
 end:
     for (;;);

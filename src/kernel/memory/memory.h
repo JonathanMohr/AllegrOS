@@ -19,3 +19,7 @@ void memory_physicalForceFree(void* ptr);
 
 void* memory_virtualAllocate(uint64_t size, uint64_t align);
 void memory_virtualFree(void* ptr);
+
+
+void* page_UserAllocate(uint32_t pages);
+void page_UserFree(uintptr_t ptr);
