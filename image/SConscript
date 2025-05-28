@@ -18,6 +18,7 @@ from build_scripts.utility import FindIndex, GlobRecursive, IsFileName
 Import('stage1')                                                                                                                            # type: ignore
 Import('stage2')                                                                                                                            # type: ignore
 Import('kernel')                                                                                                                            # type: ignore
+Import('terminal')                                                                                                                          # type: ignore
 
 Import('TARGET_ENVIRONMENT')                                                                                                                # type: ignore
 TARGET_ENVIRONMENT: Environment
@@ -102,7 +103,7 @@ def install_stage2(target: str, stage2: str, offset=0, limit=None):
             ftarget.seek(offset * SECTOR_SIZE, SEEK_SET)
             ftarget.write(fstage2.read())
 
-def build_floppy(image, stage1, stage2, kernel, files, env):
+def build_floppy(image, stage1, stage2, kernel, terminal, files, env):
     size_sectors = 2880
     stage2_size = os.stat(stage2).st_size
     stage2_sectors = (stage2_size + SECTOR_SIZE - 1) // SECTOR_SIZE
@@ -120,8 +121,9 @@ def build_floppy(image, stage1, stage2, kernel, files, env):
 
     print(f"> copying files...")
     print('    ... copying', kernel)
-    sh.mmd('-i', image, "::boot")
-    sh.mcopy('-i', image, kernel, "::boot/")
+    sh.mmd('-i', image, "::system")
+    sh.mcopy('-i', image, kernel, "::system/")
+    sh.mcopy('-i', image, terminal, "::system/")
 
     # copy rest of files
     src_root = env['BASEDIR']
@@ -163,7 +165,7 @@ def unmount_fs(mount_dir: str):
     subprocess.run(["sudo", "umount", mount_dir], check=True)
 
 
-def build_disk(image, stage1, stage2, kernel, files, env):
+def build_disk(image, stage1, stage2, kernel, terminal, files, env):
     size_sectors = (env['imageSize'] + SECTOR_SIZE - 1) // SECTOR_SIZE
     file_system = env['imageFS']
     partition_offset = 2048
@@ -201,9 +203,12 @@ def build_disk(image, stage1, stage2, kernel, files, env):
 
         # copy kernel
         print(f"> copying kernel...")
-        bootdir = os.path.join(tempdir, 'boot')
-        os.makedirs(bootdir)
-        copy2(kernel, bootdir)
+        systemdir = os.path.join(tempdir, 'system')
+        os.makedirs(systemdir)
+        copy2(kernel, systemdir)
+
+        print(f"> copying terminal...")
+        copy2(terminal, systemdir)
 
         # copy rest of files
         src_root = env['BASEDIR']
@@ -232,13 +237,14 @@ def build_image(target, source, env):
     stage1 = str(source[0])
     stage2 = str(source[1])
     kernel = str(source[2])
-    files = source[3:]
+    terminal = str(source[3])
+    files = source[4:]
 
     image = str(target[0])
     if env['imageType'] == 'floppy':
-        build_floppy(image, stage1, stage2, kernel, files, env)
+        build_floppy(image, stage1, stage2, kernel, terminal, files, env)
     elif env['imageType'] == 'disk':
-        build_disk(image, stage1, stage2, kernel, files, env)
+        build_disk(image, stage1, stage2, kernel, terminal, files, env)
     else:
         raise ValueError('Unknown image type ' + env['imageType'])
 
@@ -246,7 +252,7 @@ def build_image(target, source, env):
 # Setup image target
 root = env.Dir('root')
 root_content = GlobRecursive(env, '*', root)
-inputs = [stage1, stage2, kernel] + root_content                                                                                            # type: ignore
+inputs = [stage1, stage2, kernel, terminal] + root_content                                                                                  # type: ignore
 
 output_fmt = 'img'
 # if env['imageType'] == 'qcow3':

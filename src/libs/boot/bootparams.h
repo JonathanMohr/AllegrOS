@@ -28,4 +28,6 @@ typedef struct {
     MemoryInfo Memory;
     uint8_t BootDevice;
     uint32_t kernelSize;
+    uint32_t partitionOffset;
+    uint32_t partitionSize;
 } BootParams;

@@ -2,9 +2,9 @@
 
 #include <stddef.h>
 
-void VirtualAllocator_Initialize(VirtualAllocator* alloc, uint64_t size)
+void VirtualAllocator_Initialize(VirtualAllocator* alloc, uint64_t base, uint64_t size)
 {
-    alloc->base = 0xC0000000;
+    alloc->base = base;
     alloc->size = size;
     alloc->used = 0;
 }

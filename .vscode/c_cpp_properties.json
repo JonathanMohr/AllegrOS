@@ -4,8 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\msys64\\mingw64\\include",
-                "C:\\msys64\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\14.2.0\\include"
+                "${workspaceFolder}/src/libs",
+                "${workspaceFolder}/toolchains/i686-elf/lib/gcc/i686-elf/11.2.0/include",
+                "${workspaceFolder}/toolchains/i686-elf/lib/gcc/i686-elf/11.2.0/include-fixed"
             ],
             "defines": [
                 "_DEBUG",

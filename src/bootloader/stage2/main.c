@@ -47,10 +47,12 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 
     // prepare boot params
     g_BootParams.BootDevice = bootDrive;
+    g_BootParams.partitionOffset = part.partitionOffset;
+    g_BootParams.partitionSize = part.partitionSize;
     Memory_Detect(&g_BootParams.Memory);
 
     // prepare paging
-    uint32_t kernelSize = ELF_Size(&part, "/boot/kernel.elf");
+    uint32_t kernelSize = ELF_Size(&part, "/system/kernel.elf");
     if (kernelSize == 0)
     {
         printf("ELF read failed, booting halted!\r\n");
@@ -76,7 +78,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 
     // load kernel
     KernelStart kernelEntry;
-    uint32_t loadKernel = ELF_Read(&part, "/boot/kernel.elf", (void**)&kernelEntry);
+    uint32_t loadKernel = ELF_Read(&part, "/system/kernel.elf", (void**)&kernelEntry);
     if (loadKernel == 0)
     {
         printf("ELF read failed, booting halted!\r\n");

@@ -31,7 +31,7 @@ static const char* const g_Exceptions[] = {
     "Machine Check",
     "SIMD Floating-Point Exception",
     "Virtualization Exception",
-    "Control Protection Exception ",
+    "Control Protection Exception",
     "",
     "",
     "",
@@ -49,7 +49,7 @@ void i686_ISR_InitializeGates();
 void i686_ISR_Initialize()
 {
     i686_ISR_InitializeGates();
-    for (int i = 0; i <256; i++)
+    for (int i = 0; i < 256; i++)
         i686_IDT_EnableGate(i);
     
     i686_IDT_DisableGate(0x80);
@@ -61,11 +61,11 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
         g_ISRHandlers[regs->interrupt](regs);
     
     else if (regs->interrupt >= 32)
-        log_warn("KERNEL | ISR", "Unhandled interrupt %d!", regs->interrupt);
+        log_warn("KERNEL | ISR", "Unhandled interrupt 0x%x!", regs->interrupt);
     
     else
     {
-        log_crit("KERNEL | ISR", "Unhandled exception %d %s", regs->interrupt, g_Exceptions[regs->interrupt]);
+        log_crit("KERNEL | ISR", "Unhandled exception 0x%x %s", regs->interrupt, g_Exceptions[regs->interrupt]);
 
         log_crit("KERNEL | ISR", "  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x",
             regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);

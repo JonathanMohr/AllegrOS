@@ -32,3 +32,10 @@ i686_GDT_Load:
     mov esp, ebp
     pop ebp
     ret
+
+; void ASMCALL i686_TSS_Load(uint16_t selector);
+global i686_TSS_Load
+i686_TSS_Load:
+    mov ax, [esp + 4]
+    ltr ax
+    ret
