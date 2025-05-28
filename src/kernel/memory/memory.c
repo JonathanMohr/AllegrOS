@@ -26,6 +26,8 @@ void memory_Initialize(MemoryInfo* memInfo, uint32_t kernelSize)
 
     VirtualAllocator_Initialize(&g_KernelVirtualAllocator, 0xC0000000, 0x40000000 - 0x00400000 + 1);
     g_KernelVirtualAllocator.used = kernelSize;
+
+    // TODO: remove 0x00400000
     VirtualAllocator_Initialize(&g_UserVirtualAllocator, 0x00400000, 0xBFFFFFFF - 0x00400000 + 1);
 
     HeapAllocator_Initialize(&g_HeapAllocator);

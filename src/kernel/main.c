@@ -15,6 +15,9 @@
 #include "drivers/disk/mbr.h"
 #include "drivers/fat/fat.h"
 
+//TODO add to HAL
+#include "arch/i686/user.h"
+
 #define ENTRY __attribute__((section(".entry")))
 
 extern void _init();
@@ -41,6 +44,9 @@ void ENTRY start(BootParams* bParams)
 {
     // copy bootParams to kernel
     bootParams = *bParams;
+
+    // initialize stack top
+    kernelStackTop = (uint32_t)&kernel_stack[KERNEL_STACK_SIZE];
 
     // initialize stack
     void* kernel_stack_end = &kernel_stack[KERNEL_STACK_SIZE];
@@ -119,7 +125,7 @@ void kernel_main()
     log_debug("Memory", "Memory region count: 0x%x", bootParams.Memory.RegionCount);
     for (int i = 0; i < bootParams.Memory.RegionCount; i++)
     {
-        log_debug("Memory", "start=0x%llx, length=0x%llx, type=%u",
+        log_debug("Memory", "start=0x%llx, length=0x%llx, type=%lu",
             bootParams.Memory.Regions[i].Begin,
             bootParams.Memory.Regions[i].Length,
             bootParams.Memory.Regions[i].Type);
@@ -128,25 +134,20 @@ void kernel_main()
     PageDirectory user = Paging_Create(&kernelPageDir);
 
     Paging_Load(&user);
-    uint8_t* stack = prepareUserStack();
+    uint8_t* stackTop = prepareUserStack();
 
-    FAT_File* fd = FAT_Open(&partition, "test.txt");
+    FAT_File* fd = FAT_Open(&partition, "system/terminal.bin");
     if (!fd)
     {
         log_err("Kernel", "Error while opening file.");
     }
     uint32_t pages = (fd->Size + PAGE_SIZE) / PAGE_SIZE;
 
-    char* file = (char*)page_UserAllocate(pages);
+    uint8_t* file = (uint8_t*)page_UserAllocate(pages);
     
-    memset(file, 0, fd->Size + 1);
     FAT_Read(&partition, fd, fd->Size, file);
 
-    printf("Text.txt: '%s'\n", file);
-
-    page_UserFree((uintptr_t)file);
-
-    // TODO: implement enter
+    enter(file, stackTop);
     // TODO: add interrupt and syscall support
 
 end:

@@ -33,9 +33,9 @@ i686_GDT_Load:
     pop ebp
     ret
 
-; void ASMCALL i686_TSS_Load(uint16_t tssSegmentSelector);
+; void ASMCALL i686_TSS_Load(uint16_t selector);
 global i686_TSS_Load
 i686_TSS_Load:
-    mov ax, [esp + 4]   ; tssSegmentSelector vom Stack holen (erstes Argument)
-    ltr ax              ; Lade Task Register mit tssSegmentSelector
+    mov ax, [esp + 4]
+    ltr ax
     ret

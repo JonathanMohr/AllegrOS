@@ -46,7 +46,7 @@ uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr) {
     return phys_page + offset;
 }
 
-bool i686_add_page_table(uint32_t* pageDirectory, uint32_t index)
+bool i686_add_page_table(uint32_t* pageDirectory, uint32_t index, bool user)
 {
     if (pageDirectory[index] & PAGE_PRESENT) {
         // Page Table existiert bereits
@@ -60,8 +60,11 @@ bool i686_add_page_table(uint32_t* pageDirectory, uint32_t index)
         return false;
     }
 
+    uint32_t flags = PAGE_PRESENT | PAGE_RW;
+    if (user) flags |= PAGE_USER;
+
     // Eintrag ins Page Directory schreiben
-    pageDirectory[index] = (uint32_t)newTable | PAGE_PRESENT | PAGE_RW;
+    pageDirectory[index] = (uint32_t)newTable | flags;
 
     // Page Table auf 0 setzen (alle Einträge invalid)
     uint32_t* page_table = (uint32_t*)(0xFFC00000 + (index << 12));
@@ -77,7 +80,7 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
 
     uint32_t pd_entry = pageDirectory[pd_index];
 
-    if (!i686_add_page_table(pageDirectory, pd_index)) {
+    if (!i686_add_page_table(pageDirectory, pd_index, user)) {
         return false;
     }
 
@@ -88,6 +91,8 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
     if (user) flags |= PAGE_USER;
 
     page_table[pt_index] = (physical_addr & PAGE_MASK) | flags;
+
+    log_verbose("Paging", "Mapped 0x%p to physical 0x%p with user mode (1=on,0=off) %u", virtual_addr, physical_addr, user);
 
     return true;
 }
