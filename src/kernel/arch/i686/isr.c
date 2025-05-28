@@ -51,8 +51,8 @@ void i686_ISR_Initialize()
     i686_ISR_InitializeGates();
     for (int i = 0; i < 256; i++)
         i686_IDT_EnableGate(i);
-    
-    i686_IDT_DisableGate(0x80);
+
+    i686_IDT_AddFlags(0x80, IDT_FLAG_PRESENT | IDT_FLAG_RING3);
 }
 
 void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
