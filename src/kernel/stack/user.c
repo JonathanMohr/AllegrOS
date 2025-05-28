@@ -18,7 +18,7 @@ void* page_UserStackAllocate()
             return NULL;
         }
 
-        if (!Paging_Map(stack_base + i * PAGE_SIZE, (uintptr_t)physical, true)) {
+        if (!Paging_Map(stack_base + i * PAGE_SIZE + 1, (uintptr_t)physical, true)) {
             // TODO: cleanup
             return NULL;
         }

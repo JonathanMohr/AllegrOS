@@ -92,8 +92,6 @@ bool i686_map(uint32_t* pageDirectory, uintptr_t virtual_addr, uintptr_t physica
 
     page_table[pt_index] = (physical_addr & PAGE_MASK) | flags;
 
-    log_verbose("Paging", "Mapped 0x%p to physical 0x%p with user mode (1=on,0=off) %u", virtual_addr, physical_addr, user);
-
     return true;
 }
 
