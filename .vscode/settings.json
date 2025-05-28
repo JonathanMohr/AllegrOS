@@ -72,7 +72,8 @@
         "exceptions.h": "c",
         "isr.h": "c",
         "pr77550.C": "cpp",
-        "disk.h": "c"
+        "disk.h": "c",
+        "systemcall.h": "c"
     },
     "github.copilot.enable": {
         "*": false,

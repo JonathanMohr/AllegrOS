@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/src/libs",
+                "${workspaceFolder}/src/userland/libs",
                 "${workspaceFolder}/toolchains/i686-elf/lib/gcc/i686-elf/11.2.0/include",
                 "${workspaceFolder}/toolchains/i686-elf/lib/gcc/i686-elf/11.2.0/include-fixed"
             ],

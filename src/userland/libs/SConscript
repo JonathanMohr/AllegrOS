@@ -9,10 +9,6 @@ TARGET_ENVIRONMENT: Environment
 
 env = TARGET_ENVIRONMENT.Clone()
 env.Append(
-    LINKFLAGS = [
-        '-Wl,-T', env.File('linker.ld').srcnode().path,
-        '-Wl,-Map=' + env.File('terminal.map').path
-    ],
     CPPPATH = [
         env.Dir('.').srcnode(),
         env['ROOTDIR'].Dir('src/libs').srcnode(),
@@ -25,19 +21,8 @@ sources = GlobRecursive(env, '*.c') + \
           GlobRecursive(env, '*.cpp') + \
           GlobRecursive(env, '*.asm')
 
-Import('libuser')                                                                                                                           # type: ignore
-
-static_libs = [
-    libuser                                                                                                                                 # type: ignore
-]
-
 objects = env.Object(sources)
 
-objects = [
-    *objects,
-    *static_libs
-]
+libuser = env.StaticLibrary('libuser.o', objects)
 
-terminal = env.Program('terminal.bin', objects)
-
-Export('terminal')                                                                                                                          # type: ignore
+Export('libuser')                                                                                                                           # type: ignore

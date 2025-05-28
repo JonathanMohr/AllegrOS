@@ -1,6 +1,8 @@
+#include <systemcall/systemcall.h>
+
 void main()
 {
-    __asm__ volatile("int $0x80");
+    system_call();
 
 end:
     for(;;);
