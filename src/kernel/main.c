@@ -15,6 +15,7 @@
 #include "drivers/disk/mbr.h"
 #include "drivers/fat/fat.h"
 #include "syscalls/syscall.h"
+#include "keyboard/keyboard.h"
 
 //TODO add to HAL
 #include "arch/i686/user.h"
@@ -36,10 +37,6 @@ __attribute__((section(".stack")))
 static uint8_t kernel_stack[KERNEL_STACK_SIZE];
 
 void crash_me();
-
-void keyboard_handler(Registers* regs)
-{
-}
 
 void ENTRY start(BootParams* bParams)
 {
@@ -110,7 +107,7 @@ void kernel_main()
     // Initialize handlers
     isr_registerExceptionHandlers();
     i686_IRQ_RegisterHandler(0, timer);
-    //i686_IRQ_RegisterHandler(1, keyboard_handler);
+    i686_IRQ_RegisterHandler(1, keyboard_handler);
 
     // log stuff
     log_debug("Drive", "Boot device: 0x%x", bootParams.BootDevice);
@@ -151,7 +148,7 @@ void kernel_main()
 
     FAT_Close(fd);
 
-    enter(file, stackTop);
+    //enter(file, stackTop);
 
 end:
     for (;;);
