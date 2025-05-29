@@ -38,7 +38,11 @@ def GlobRecursive(env: Environment, pattern, node='.'):
         glob = env.Glob(os.path.join(os.path.relpath(d, cwd), pattern))
         globs.append(glob)
 
-    return globs
+    flat_globs = []
+    for g in globs:
+        flat_globs.extend(g)
+    return flat_globs
+
 
 
 def FindIndex(the_list, predicate):
@@ -52,7 +56,8 @@ def IsFileName(obj, name):
     if isinstance(obj, str):
         return name in obj
     elif isinstance(obj, File) or isinstance(obj, Dir) or isinstance(obj, Entry):
-        return obj.name == name
+        base = os.path.basename(str(obj))
+        return base == name or name in base
     return False
 
 

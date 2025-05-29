@@ -41,6 +41,7 @@ isr_common:
     push esp            ; pass pointer to stack to C, so we can access all the pushes information
     call i686_ISR_Handler
     add esp, 4
+    mov ebx, eax
 
     pop eax             ; restore old segment
     mov ds, ax
@@ -48,6 +49,8 @@ isr_common:
     mov fs, ax
     mov gs, ax
 
+    mov [esp + 28], ebx ; replace saved eax with return value of i686_ISR_Handler
     popa                ; pop what we pushed with pusha
+
     add esp, 8          ; remove error code and interrupt number
     iret                ; will pop: cs, eip, eflags, ss, esp
