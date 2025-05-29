@@ -15,7 +15,7 @@
 #include "drivers/disk/mbr.h"
 #include "drivers/fat/fat.h"
 #include "syscalls/syscall.h"
-#include "keyboard/keyboard.h"
+#include "drivers/keyboard/keyboard.h"
 
 //TODO add to HAL
 #include "arch/i686/user.h"
