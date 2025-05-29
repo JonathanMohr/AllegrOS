@@ -1,17 +1,15 @@
-#include <syscall/syscall.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <syscall/read.h>
+#include <syscall/open.h>
+#include <syscall/close.h>
 
 void main()
 {
-    uint32_t value = syscall(0x1, 0xeb, 0xec, 0xed, 0x11, 0x12);
+    puts("Hello world from terminal!\n");
 
-    syscall(value, 0, 0, 0, 0, 0);
+    const char* file = "test.txt";
+    uint32_t fd = open(file, 0, 0);
 
-loop:
-    for(;;);
-}
-
-__attribute__((section(".entry")))
-void entry()
-{
-    main();
+    return;
 }

@@ -14,6 +14,7 @@
 #include "drivers/disk/disk.h"
 #include "drivers/disk/mbr.h"
 #include "drivers/fat/fat.h"
+#include "syscalls/syscall.h"
 
 //TODO add to HAL
 #include "arch/i686/user.h"
@@ -104,14 +105,14 @@ void kernel_main()
         goto end;
     }
 
+    syscall_Init(&partition);
+
     // Initialize handlers
     isr_registerExceptionHandlers();
     i686_IRQ_RegisterHandler(0, timer);
     //i686_IRQ_RegisterHandler(1, keyboard_handler);
 
-    // Run main part
-    printf("Hello world from kernel!\n");
-
+    // log stuff
     log_debug("Drive", "Boot device: 0x%x", bootParams.BootDevice);
     log_debug("Drive", "Cylinders: 0x%x, Sectors: 0x%x, Heads: 0x%x",
         partition.disk->cylinders, partition.disk->sectors, partition.disk->heads);
@@ -131,6 +132,7 @@ void kernel_main()
             bootParams.Memory.Regions[i].Type);
     }
 
+    // start terminal
     PageDirectory user = Paging_Create(&kernelPageDir);
 
     Paging_Load(&user);
@@ -147,8 +149,9 @@ void kernel_main()
     
     FAT_Read(&partition, fd, fd->Size, file);
 
+    FAT_Close(fd);
+
     enter(file, stackTop);
-    // TODO: add interrupt and syscall support
 
 end:
     for (;;);

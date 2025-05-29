@@ -74,7 +74,9 @@
         "pr77550.C": "cpp",
         "disk.h": "c",
         "systemcall.h": "c",
-        "syscall.h": "c"
+        "syscall.h": "c",
+        "write.h": "c",
+        "open.h": "c"
     },
     "github.copilot.enable": {
         "*": false,
