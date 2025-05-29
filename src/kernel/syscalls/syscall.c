@@ -26,6 +26,7 @@ void syscall(Registers* regs)
     switch (syscall)
     {
         case EXIT:
+            int code = regs->ebx;
             //TODO
             for(;;);
             break;

@@ -2,10 +2,10 @@
 
 extern int main();
 
-__attribute__((section(".entry")))
-void entry()
+void __attribute__((section(".entry"))) _start()
 {
-    main();
+    int code = main();
     //close
-    syscall(0x1, 0, 0, 0, 0, 0);
+    syscall(0x1, code, 0, 0, 0, 0);
+    while (1);
 }

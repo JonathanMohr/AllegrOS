@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-int32_t close(int fd);
+int32_t close(int32_t fd);

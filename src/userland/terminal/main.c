@@ -23,5 +23,7 @@ int main()
 
     puts(buffer);
 
+    close(fd);
+
     return 0;
 }

@@ -1,4 +1,4 @@
-ENTRY(entry)
+ENTRY(_start)
 OUTPUT_FORMAT("binary")
 addr = 0x00400000;
 
