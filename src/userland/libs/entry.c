@@ -1,6 +1,6 @@
 #include <syscall/syscall.h>
 
-extern void main();
+extern int main();
 
 __attribute__((section(".entry")))
 void entry()

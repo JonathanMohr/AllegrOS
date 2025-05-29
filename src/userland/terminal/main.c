@@ -4,12 +4,24 @@
 #include <syscall/open.h>
 #include <syscall/close.h>
 
-void main()
+char buffer[512];
+
+int main()
 {
     puts("Hello world from terminal!\n");
 
     const char* file = "test.txt";
-    uint32_t fd = open(file, 0, 0);
+    int32_t fd = open(file, 0, 0);
+    if (fd < 0)
+    {
+        return 1;
+    }
 
-    return;
+    int32_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+    if (bytesRead >= 0)
+        buffer[bytesRead] = '\0';
+
+    puts(buffer);
+
+    return 0;
 }
