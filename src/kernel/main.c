@@ -137,7 +137,7 @@ void kernel_main()
     uint8_t* stackTop = prepareUserStack();
 
     void* entry;
-    uint32_t loadProgram = ELF_Read(&partition, "system/terminal.bin", &entry);
+    uint32_t loadProgram = ELF_Read(&partition, "system/terminal.elf", &entry);
     if (loadProgram == 0)
     {
         log_err("Kernel", "ELF read failed.");

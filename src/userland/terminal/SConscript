@@ -38,6 +38,6 @@ objects = [
     *static_libs
 ]
 
-terminal = env.Program('terminal.bin', objects)
+terminal = env.Program('terminal.elf', objects)
 
 Export('terminal')                                                                                                                          # type: ignore
