@@ -1,7 +1,10 @@
 #include "file.h"
 
 #include "../drivers/fat/fat.h"
+#include "../drivers/keyboard/keyboard.h"
 #include <stddef.h>
+
+#include "debug.h"
 
 #define MAX_FD 15
 
@@ -66,7 +69,13 @@ uint32_t File_Close(uint32_t handle)
 
 uint32_t File_Read(uint32_t handle, uint8_t* buffer, uint32_t count)
 {
-    if (handle < 4)
+    if (handle == 0) // stdin = evdev Events
+    {
+        uint32_t max_events = count / sizeof(InputEvent);
+        uint32_t read_events = InputBuffer_Read((InputEvent*)buffer, max_events);
+        return read_events * sizeof(InputEvent);
+    }
+    else if (handle < 4)
     {
         return (uint32_t)-1;
     }

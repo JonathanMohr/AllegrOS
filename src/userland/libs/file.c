@@ -29,7 +29,7 @@ void finit()
     stdout->fd = 1;
 
     stderr = &streams[2];
-    stdin->fd = 2;
+    stderr->fd = 2;
 
     stddebug = &streams[3];
     stddebug->fd = 3;

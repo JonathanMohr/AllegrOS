@@ -128,5 +128,9 @@ uint32_t ELF_Read(Partition* part, const char* path, void** entryPoint)
         }
     }
 
+    memory_Free(headerBuffer);
+    memory_Free(loadBuffer);
+    memory_Free(programHeaderBuffer);
+
     return loadSize;
 }
