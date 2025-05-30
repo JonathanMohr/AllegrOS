@@ -4,6 +4,7 @@
 #include <keys/keys.h>
 #include <stdbool.h>
 #include "input/input.h"
+#include "terminal.h"
 
 int main()
 {
@@ -33,6 +34,8 @@ int main()
     uint8_t* p = (uint8_t*)&event;
     int32_t bytesRead = 0;
 
+    terminal_newLine();
+
     // evdev Input von stdin lesen und hex ausgeben:
     while (1)
     {
@@ -54,7 +57,8 @@ int main()
             if (event.type == EV_KEY)  // definiere EV_KEY entsprechend
             {
                 bool released = (event.value == 0);
-                handle_input(event.code, released);
+                if (handle_key(event.code, released) != 0)
+                    debugf("Unknown key pressed! 0x%x\n", event.value);
             }
             else
             {

@@ -97,6 +97,20 @@ void VGA_putc(char c)
             g_ScreenX = 0;
             break;
 
+        case '\b':
+            if (g_ScreenX > 0)
+            {
+                g_ScreenX--;
+                VGA_putchr(g_ScreenX, g_ScreenY, ' ');
+            }
+            else if (g_ScreenY > 0)
+            {
+                g_ScreenY--;
+                g_ScreenX = SCREEN_WIDTH - 1;
+                VGA_putchr(g_ScreenX, g_ScreenY, ' ');
+            }
+            break;
+
         default:
             VGA_putchr(g_ScreenX, g_ScreenY, c);
             g_ScreenX++;

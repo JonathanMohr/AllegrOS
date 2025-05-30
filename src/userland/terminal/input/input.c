@@ -2,69 +2,252 @@
 #include <keys/keys.h>
 #include <stdio.h>
 #include <file.h>
+#include "../terminal.h"
 
-int handle_input(uint64_t input, bool released)
+void handle_navigation(uint64_t code, bool released)
 {
-    if (released)
-        printf("Key released: code=0x%x\n", input);
-    else
-        printf("Key pressed : code=0x%x\n", input);
-    /*
-    switch (input) {
-        case ESCAPE: case TAB: case CAPS_LOCK:
-        case BACKSPACE: case ENTER:
-        case ESCAPE | KEY_RELEASED: case TAB | KEY_RELEASED: case CAPS_LOCK | KEY_RELEASED:
-        case BACKSPACE | KEY_RELEASED: case ENTER | KEY_RELEASED:
-            //handle_navigation(input);
+    switch (code)
+    {
+        case ESCAPE:
+            // Handle Escape key press
+            break;
+        case TAB:
+            // Handle Tab key press
+            break;
+        case CAPS_LOCK:
+            // Handle Caps Lock key press
+            break;
+        case BACKSPACE:
+            if (!released)
+                terminal_backspace();
+            break;
+        case ENTER:
+            if (!released)
+                terminal_enter();
+            break;
+    }
+}
+
+void handle_modifiers(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case LEFT_SHIFT: case RIGHT_SHIFT:
+            // Handle Shift key press
+            break;
+        case LEFT_CONTROL: case RIGHT_CONTROL:
+            // Handle Ctrl key press
+            break;
+        case LEFT_ALT: case RIGHT_ALT:
+            // Handle Alt key press
             break;
         
+        case LEFT_SHIFT | KEY_RELEASED: case RIGHT_SHIFT | KEY_RELEASED:
+            // Handle Shift key release
+            break;
+        case LEFT_CONTROL | KEY_RELEASED: case RIGHT_CONTROL | KEY_RELEASED:
+            // Handle Ctrl key release
+            break;
+        case LEFT_ALT | KEY_RELEASED: case RIGHT_ALT | KEY_RELEASED:
+            // Handle Alt key release
+            break;
+    }
+}
+
+void handle_alphanumeric(uint64_t code, bool released)
+{
+    switch(code)
+    {
+        case SPACE:
+            if (!released)
+                terminal_putc(' ');
+            break;
+        case A_KEY: case B_KEY: case C_KEY: case D_KEY: case E_KEY: case F_KEY:
+        case G_KEY: case H_KEY: case I_KEY: case J_KEY: case K_KEY: case L_KEY:
+        case M_KEY: case N_KEY: case O_KEY: case P_KEY: case Q_KEY: case R_KEY:
+        case S_KEY: case T_KEY: case U_KEY: case V_KEY: case W_KEY: case X_KEY:
+        case Y_KEY: case Z_KEY:
+            if (!released)
+                terminal_putc(code + 'a' - A_KEY);
+            break;
+
+        case ONE: case TWO: case THREE: case FOUR:
+        case FIVE: case SIX: case SEVEN: case EIGHT:
+        case NINE:
+            if (!released)
+                terminal_putc(code + '1' - ONE);
+            break;
+        case ZERO:
+            if (!released)
+                terminal_putc('0');
+            break;
+    }
+}
+
+void handle_special(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case GRAVE_ACCENT:
+            // Handle GRAVE_ACCENT key press
+            break;
+        case MINUS:
+            // Handle MINUS key press
+            break;
+        case EQUALS:
+            // Handle EQUALS key press
+            break;
+        case BACKSLASH:
+            // Handle BACKSLASH key press
+            break;
+        case LEFT_BRACKET:
+            // Handle LEFT_BRACKET key press
+            break;
+        case RIGHT_BRACKET:
+            // Handle RIGHT_BRACKET key press
+            break;
+        case SEMICOLON:
+            // Handle SEMICOLON key press
+            break;
+        case APOSTROPHE:
+            // Handle APOSTROPHE key press
+            break;
+        case COMMA:
+            // Handle COMMA key press
+            break;
+        case PERIOD:
+            // Handle PERIOD key press
+            break;
+        case SLASH:
+            // Handle SLASH key press
+            break;
+    }
+}
+
+void handle_function(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case F1:
+            // Handle F1 key press
+            break;
+        case F2:
+            // Handle F2 key press
+            break;
+        case F3:
+            // Handle F3 key press
+            break;
+        case F4:
+            // Handle F4 key press
+            break;
+        case F5:
+            // Handle F5 key press
+            break;
+        case F6:
+            // Handle F6 key press
+            break;
+        case F7:
+            // Handle F7 key press
+            break;
+        case F8:
+            // Handle F8 key press
+            break;
+        case F9:
+            // Handle F9 key press
+            break;
+        case F10:
+            // Handle F10 key press
+            break;
+        case F11:
+            // Handle F11 key press
+            break;
+        case F12:
+            // Handle F12 key press
+            break;
+    }
+}
+
+void handle_arrow(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case RIGHT_ARROW:
+            // Handle right arrow key press
+            break;
+        case LEFT_ARROW:
+            // Handle left arrow key press
+            break;
+        case DOWN_ARROW:
+            // Handle down arrow key press
+            break;
+        case UP_ARROW:
+            // Handle up arrow key press
+            break;
+    }
+}
+
+void handle_numpad(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case NUM_LOCK: case NUMPAD_SLASH: case NUMPAD_ASTERISK:
+        case NUMPAD_MINUS: case NUMPAD_PLUS:
+            // Handle numpad operations here if needed
+            break;
+        case NUMPAD_ENTER:
+            handle_navigation(ENTER, released);
+            break;
+        case NUMPAD_ONE: case NUMPAD_TWO: case NUMPAD_THREE:
+        case NUMPAD_FOUR: case NUMPAD_FIVE: case NUMPAD_SIX:
+        case NUMPAD_SEVEN: case NUMPAD_EIGHT: case NUMPAD_NINE:
+        case NUMPAD_ZERO: case NUMPAD_PERIOD:
+            // Handle numpad numbers here if needed
+            break;
+    }
+}
+
+void handle_system(uint64_t code, bool released)
+{
+    switch (code)
+    {
+        case LEFT_SYSTEM: case RIGHT_SYSTEM:
+            // Handle system keys
+            break;
+        case MENU:
+            // Handle menu key
+            break;
+    }
+}
+
+int handle_key(uint64_t code, bool released)
+{
+    debugf("Key: %llu\n", code);
+    switch (code)
+    {
+        case ESCAPE: case TAB: case CAPS_LOCK:
+        case BACKSPACE: case ENTER:
+            handle_navigation(code, released);
+            break;
+
         case LEFT_SHIFT: case RIGHT_SHIFT:
         case LEFT_CONTROL: case RIGHT_CONTROL:
         case LEFT_ALT: case RIGHT_ALT:
         case PRINT_SCREEN: case SCROLL_LOCK: case PAUSE:
         case INSERT: case HOME: case PAGE_UP:
         case DELETE: case END: case PAGE_DOWN:
-        case LEFT_SHIFT | KEY_RELEASED: case RIGHT_SHIFT | KEY_RELEASED:
-        case LEFT_CONTROL | KEY_RELEASED: case RIGHT_CONTROL | KEY_RELEASED:
-        case LEFT_ALT | KEY_RELEASED: case RIGHT_ALT | KEY_RELEASED:
-        case PRINT_SCREEN | KEY_RELEASED: case SCROLL_LOCK | KEY_RELEASED:
-        case INSERT | KEY_RELEASED: case HOME | KEY_RELEASED:
-        case PAGE_UP | KEY_RELEASED: case PAUSE | KEY_RELEASED:
-        case DELETE | KEY_RELEASED: case END | KEY_RELEASED:
-        case PAGE_DOWN | KEY_RELEASED:
-            //handle_modifiers(input);
+            handle_modifiers(code, released);
             break;
-            
+
         case SPACE: case A_KEY: case B_KEY: case C_KEY: case D_KEY: case E_KEY:
         case F_KEY: case G_KEY: case H_KEY: case I_KEY: case J_KEY: case K_KEY:
         case L_KEY: case M_KEY: case N_KEY: case O_KEY: case P_KEY: case Q_KEY:
         case R_KEY: case S_KEY: case T_KEY: case U_KEY: case V_KEY: case W_KEY:
         case X_KEY: case Y_KEY: case Z_KEY:
-        case SPACE | KEY_RELEASED:
-        case A_KEY | KEY_RELEASED: case B_KEY | KEY_RELEASED:
-        case C_KEY | KEY_RELEASED: case D_KEY | KEY_RELEASED:
-        case E_KEY | KEY_RELEASED: case F_KEY | KEY_RELEASED:
-        case G_KEY | KEY_RELEASED: case H_KEY | KEY_RELEASED:
-        case I_KEY | KEY_RELEASED: case J_KEY | KEY_RELEASED:
-        case K_KEY | KEY_RELEASED: case L_KEY | KEY_RELEASED:
-        case M_KEY | KEY_RELEASED: case N_KEY | KEY_RELEASED:
-        case O_KEY | KEY_RELEASED: case P_KEY | KEY_RELEASED:
-        case Q_KEY | KEY_RELEASED: case R_KEY | KEY_RELEASED:
-        case S_KEY | KEY_RELEASED: case T_KEY | KEY_RELEASED:
-        case U_KEY | KEY_RELEASED: case V_KEY | KEY_RELEASED:
-        case W_KEY | KEY_RELEASED: case X_KEY | KEY_RELEASED:
-        case Y_KEY | KEY_RELEASED: case Z_KEY | KEY_RELEASED:
-        case ONE: case TWO: case THREE: case FOUR:
-        case FIVE: case SIX: case SEVEN: case EIGHT:
-        case NINE: case ZERO:
-        case ONE | KEY_RELEASED: case TWO | KEY_RELEASED:
-        case THREE | KEY_RELEASED: case FOUR | KEY_RELEASED:
-        case FIVE | KEY_RELEASED: case SIX | KEY_RELEASED:
-        case SEVEN | KEY_RELEASED: case EIGHT | KEY_RELEASED:
-        case NINE | KEY_RELEASED: case ZERO | KEY_RELEASED:
-            //handle_alphanumeric(input);
+        case ZERO: case ONE: case TWO: case THREE: case FOUR:
+        case FIVE: case SIX: case SEVEN: case EIGHT: case NINE:
+            handle_alphanumeric(code, released);
             break;
-        
+
         case GRAVE_ACCENT: case MINUS: case EQUALS:
         case BACKSLASH: case LEFT_BRACKET: case RIGHT_BRACKET:
         case SEMICOLON: case APOSTROPHE: case COMMA:
@@ -75,59 +258,38 @@ int handle_input(uint64_t input, bool released)
         case SEMICOLON | KEY_RELEASED: case APOSTROPHE | KEY_RELEASED:
         case COMMA | KEY_RELEASED: case PERIOD | KEY_RELEASED:
         case SLASH | KEY_RELEASED:
-            //handle_special_key(input);
+            handle_special(code, released);
             break;
 
         case F1: case F2: case F3: case F4:
         case F5: case F6: case F7: case F8:
         case F9: case F10: case F11: case F12:
-        case F1 | KEY_RELEASED: case F2 | KEY_RELEASED:
-        case F3 | KEY_RELEASED: case F4 | KEY_RELEASED:
-        case F5 | KEY_RELEASED: case F6 | KEY_RELEASED:
-        case F7 | KEY_RELEASED: case F8 | KEY_RELEASED:
-        case F9 | KEY_RELEASED: case F10 | KEY_RELEASED:
-        case F11 | KEY_RELEASED: case F12 | KEY_RELEASED:
-            //handle_function(input);
+            handle_function(code, released);
             break;
 
         case RIGHT_ARROW: case LEFT_ARROW:
         case DOWN_ARROW: case UP_ARROW:
-        case RIGHT_ARROW | KEY_RELEASED: case LEFT_ARROW | KEY_RELEASED:
-        case DOWN_ARROW | KEY_RELEASED: case UP_ARROW | KEY_RELEASED:
-            //handle_arrow_key(input);
+            handle_arrow(code, released);
             break;
-        
+
         case NUM_LOCK: case NUMPAD_SLASH: case NUMPAD_ASTERISK:
         case NUMPAD_MINUS: case NUMPAD_PLUS:
-        case NUM_LOCK | KEY_RELEASED: case NUMPAD_SLASH | KEY_RELEASED:
-        case NUMPAD_ASTERISK | KEY_RELEASED: case NUMPAD_MINUS | KEY_RELEASED:
-        case NUMPAD_PLUS | KEY_RELEASED:
         case NUMPAD_ENTER:
-        case NUMPAD_ENTER | KEY_RELEASED:
         case NUMPAD_ONE: case NUMPAD_TWO: case NUMPAD_THREE:
         case NUMPAD_FOUR: case NUMPAD_FIVE: case NUMPAD_SIX:
         case NUMPAD_SEVEN: case NUMPAD_EIGHT: case NUMPAD_NINE:
         case NUMPAD_ZERO: case NUMPAD_PERIOD:
-        case NUMPAD_ONE | KEY_RELEASED: case NUMPAD_TWO | KEY_RELEASED:
-        case NUMPAD_THREE | KEY_RELEASED: case NUMPAD_FOUR | KEY_RELEASED:
-        case NUMPAD_FIVE | KEY_RELEASED: case NUMPAD_SIX | KEY_RELEASED:
-        case NUMPAD_SEVEN | KEY_RELEASED: case NUMPAD_EIGHT | KEY_RELEASED:
-        case NUMPAD_NINE | KEY_RELEASED: case NUMPAD_ZERO | KEY_RELEASED:
-        case NUMPAD_PERIOD | KEY_RELEASED:
-            //handle_numpad(input);
+            handle_numpad(code, released);
             break;
-        
 
         case LEFT_SYSTEM: case RIGHT_SYSTEM:
-        case MENU: case LEFT_SYSTEM | KEY_RELEASED:
-        case RIGHT_SYSTEM | KEY_RELEASED: case MENU | KEY_RELEASED:
-            //handle_system_key(input);
+        case MENU:
+            handle_system(code, released);
             break;
-        
+
         case UNKNOWN:
         default:
             return 1;
     }
-    */
     return 0;
 }
