@@ -45,7 +45,7 @@ void memory_Free(void* ptr)
 
 
 
-void* specific_Allocate(uint32_t bytes, void* start)
+void* specific_Allocate(uint32_t bytes, void* start, bool user)
 {
     uintptr_t virtual_start = (uintptr_t)start;
     uint32_t padding = 0;
@@ -65,7 +65,7 @@ void* specific_Allocate(uint32_t bytes, void* start)
             return NULL;
         }
 
-        if (!Paging_Map(virtual_start + i * PAGE_SIZE, (uintptr_t)physical, false))
+        if (!Paging_Map(virtual_start + i * PAGE_SIZE, (uintptr_t)physical, user))
         {
             // TODO: Fehlerbehandlung (Rollback)
             return NULL;

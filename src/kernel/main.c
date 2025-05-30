@@ -162,6 +162,8 @@ void kernel_main()
         log_err("Kernel", "ELF read failed.");
     }
 
+    log_info("Kernel", "entry: 0x%p", entry);
+
     enter(entry, stackTop);
 
 end:
