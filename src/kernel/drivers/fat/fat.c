@@ -473,7 +473,6 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
 
             if (!isLast && entry.Attributes & FAT_ATTRIBUTE_DIRECTORY == 0)
             {
-                log_err("FAT", "%s not a directory.", name);
                 return NULL;
             }
 
@@ -484,7 +483,6 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
         {
             FAT_Close(current);
 
-            log_err("FAT", "%s not found.", name);
             return NULL;
         }
     }

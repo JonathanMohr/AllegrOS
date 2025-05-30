@@ -74,17 +74,18 @@ int runCommand()
         puts("\thelp - Show this message\n");
         puts("\tclear - Clear the terminal\n");
         puts("\techo <args> - Echo arguments\n");
+        puts("\tcat <filename> - Echo content of file\n");
         putc('\n');
     }
     else if (strcmp(command, "clear") == 0)
     {
         terminal_clear();
     }
-    else if (strcmp(command, "type") == 0)
+    else if (strcmp(command, "cat") == 0)
     {
         if (argc < 1)
         {
-            puts("Usage: type <filename>\n");
+            puts("Usage: cat <filename>\n");
             return 1;
         }
 
