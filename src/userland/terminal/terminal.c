@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include <stddef.h>
+#include <file.h>
 
 #define MAX_ARGS 10
 #define MAX_ARG_LENGTH 64
@@ -73,11 +74,40 @@ int runCommand()
         puts("\thelp - Show this message\n");
         puts("\tclear - Clear the terminal\n");
         puts("\techo <args> - Echo arguments\n");
+        putc('\n');
     }
     else if (strcmp(command, "clear") == 0)
     {
         terminal_clear();
-        return 0;
+    }
+    else if (strcmp(command, "type") == 0)
+    {
+        if (argc < 1)
+        {
+            puts("Usage: type <filename>\n");
+            return 1;
+        }
+
+        FILE* file = fopen(argv[0], "r");
+
+        if (!file)
+        {
+            puts("Could not open file: ");
+            puts(argv[0]);
+            putc('\n');
+            return 1;
+        }
+
+        char line[128]; // Zeilenpuffer
+
+        while (fgets(line, sizeof(line), file) != NULL)
+        {
+            puts(line);
+        }
+
+        putc('\n');
+
+        fclose(file);
     }
     else if (strcmp(command, "echo") == 0)
     {
@@ -87,7 +117,6 @@ int runCommand()
             putc(' ');
         }
         putc('\n');
-        return 0;
     }
     else
     {
@@ -96,7 +125,7 @@ int runCommand()
         putc('\n');
     }
 
-    return 1;
+    return 0;
 }
 
 void terminal_newLine()
@@ -123,9 +152,9 @@ void terminal_putc(char c)
 void terminal_enter()
 {
     putc('\n');
-    if (runCommand())
+    if (runCommand() != 0)
     {
-        putc('\n');
+        //error executing command
     }
     terminal_newLine();
 }

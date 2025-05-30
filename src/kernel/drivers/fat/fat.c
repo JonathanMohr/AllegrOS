@@ -377,8 +377,21 @@ bool FAT_FindFile(Partition* disk, FAT_File* file, const char* name, FAT_Directo
 
     FAT_GetShortName(name, shortName);
 
+    uint64_t i = 0;
+
     while (FAT_ReadEntry(disk, file, &entry))
     {
+        // Ende des Verzeichnisses?
+        if (entry.Name[0] == 0x00) {
+            // Kein weiterer Eintrag -> Datei nicht gefunden
+            break;
+        }
+        // Gelöschter Eintrag?
+        if (entry.Name[0] == 0xE5) {
+            // überspringen
+            continue;
+        }
+
         /*
         if (entry.Attributes == FAT_ATTRIBUTE_LFN) {
             FAT_LongFileEntry* lfn = (FAT_LongFileEntry*)&entry;

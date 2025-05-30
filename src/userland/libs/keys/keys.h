@@ -127,7 +127,3 @@ typedef struct {
 #define LEFT_SYSTEM 102
 #define RIGHT_SYSTEM 103
 #define MENU 104
-
-
-
-#define KEY_RELEASED 0x100

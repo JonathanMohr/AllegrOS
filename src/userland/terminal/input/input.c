@@ -41,16 +41,6 @@ void handle_modifiers(uint64_t code, bool released)
         case LEFT_ALT: case RIGHT_ALT:
             // Handle Alt key press
             break;
-        
-        case LEFT_SHIFT | KEY_RELEASED: case RIGHT_SHIFT | KEY_RELEASED:
-            // Handle Shift key release
-            break;
-        case LEFT_CONTROL | KEY_RELEASED: case RIGHT_CONTROL | KEY_RELEASED:
-            // Handle Ctrl key release
-            break;
-        case LEFT_ALT | KEY_RELEASED: case RIGHT_ALT | KEY_RELEASED:
-            // Handle Alt key release
-            break;
     }
 }
 
@@ -113,13 +103,16 @@ void handle_special(uint64_t code, bool released)
             // Handle APOSTROPHE key press
             break;
         case COMMA:
-            // Handle COMMA key press
+            if (!released)
+                terminal_putc(',');
             break;
         case PERIOD:
-            // Handle PERIOD key press
+            if (!released)
+                terminal_putc('.');
             break;
         case SLASH:
-            // Handle SLASH key press
+            if (!released)
+                terminal_putc('/');
             break;
     }
 }
@@ -251,12 +244,6 @@ int handle_key(uint64_t code, bool released)
         case BACKSLASH: case LEFT_BRACKET: case RIGHT_BRACKET:
         case SEMICOLON: case APOSTROPHE: case COMMA:
         case PERIOD: case SLASH:
-        case GRAVE_ACCENT | KEY_RELEASED: case MINUS | KEY_RELEASED:
-        case EQUALS | KEY_RELEASED: case BACKSLASH | KEY_RELEASED:
-        case LEFT_BRACKET | KEY_RELEASED: case RIGHT_BRACKET | KEY_RELEASED:
-        case SEMICOLON | KEY_RELEASED: case APOSTROPHE | KEY_RELEASED:
-        case COMMA | KEY_RELEASED: case PERIOD | KEY_RELEASED:
-        case SLASH | KEY_RELEASED:
             handle_special(code, released);
             break;
 
