@@ -45,6 +45,41 @@ void memory_Free(void* ptr)
 
 
 
+void* specific_Allocate(uint32_t bytes, void* start)
+{
+    uintptr_t virtual_start = (uintptr_t)start;
+    uint32_t padding = 0;
+
+    if (virtual_start & (PAGE_SIZE - 1))
+    {
+        padding = virtual_start & (PAGE_SIZE - 1);
+        virtual_start = virtual_start & ~(PAGE_SIZE - 1);
+    }
+
+    uint32_t pages = (bytes + padding + PAGE_SIZE - 1) / PAGE_SIZE;  // Auf ganze Seiten aufrunden
+
+    for (uint32_t i = 0; i < pages; i++) {
+        void* physical = PhysicalAllocator_Alloc(&g_PhysicalAllocator, PAGE_SIZE, PAGE_SIZE);
+        if (!physical) {
+            // TODO: Fehlerbehandlung (Rollback schon gemappter Seiten)
+            return NULL;
+        }
+
+        if (!Paging_Map(virtual_start + i * PAGE_SIZE, (uintptr_t)physical, false))
+        {
+            // TODO: Fehlerbehandlung (Rollback)
+            return NULL;
+        }
+    }
+
+    return start;
+}
+
+void specific_Free(void* ptr)
+{
+    // TODO
+}
+
 void* page_Allocate(uint32_t pages)
 {
     uint64_t alloc_size = pages * PAGE_SIZE;

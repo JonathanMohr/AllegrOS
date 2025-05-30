@@ -14,6 +14,7 @@
 #include "drivers/disk/disk.h"
 #include "drivers/disk/mbr.h"
 #include "drivers/fat/fat.h"
+#include "drivers/elf/elf.h"
 #include "syscalls/syscall.h"
 #include "drivers/keyboard/keyboard.h"
 
@@ -135,6 +136,8 @@ void kernel_main()
     Paging_Load(&user);
     uint8_t* stackTop = prepareUserStack();
 
+    /*
+
     FAT_File* fd = FAT_Open(&partition, "system/terminal.bin");
     if (!fd)
     {
@@ -143,12 +146,23 @@ void kernel_main()
     uint32_t pages = (fd->Size + PAGE_SIZE) / PAGE_SIZE;
 
     uint8_t* file = (uint8_t*)page_UserAllocate(pages);
-    
+
     FAT_Read(&partition, fd, fd->Size, file);
 
     FAT_Close(fd);
 
-    //enter(file, stackTop);
+    enter(file, stackTop);
+
+    */
+
+    void* entry;
+    uint32_t loadProgram = ELF_Read(&partition, "system/terminal.bin", &entry);
+    if (loadProgram == 0)
+    {
+        log_err("Kernel", "ELF read failed.");
+    }
+
+    enter(entry, stackTop);
 
 end:
     for (;;);

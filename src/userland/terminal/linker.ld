@@ -1,12 +1,11 @@
 ENTRY(_start)
-OUTPUT_FORMAT("binary")
+OUTPUT_FORMAT("elf32-i386")
 addr = 0x00400000;
 
 SECTIONS
 {
     . = addr;
 
-    .entry              : { __entry_start = .;      *(.entry)   }
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }

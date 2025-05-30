@@ -10,6 +10,9 @@ void* memory_Allocate(uint64_t size, uint64_t align);
 void memory_Free(void* ptr);
 
 
+void* specific_Allocate(uint32_t bytes, void* start);
+void specific_Free(void* ptr);
+
 void* page_Allocate(uint32_t pages);
 void page_Free(uintptr_t ptr);
 
