@@ -47,6 +47,7 @@ void memory_Free(void* ptr)
 
 void* specific_Allocate(uint32_t bytes, void* start, bool user)
 {
+    //TODO: don't override anything after 0xC0000000
     uintptr_t virtual_start = (uintptr_t)start;
     uint32_t padding = 0;
 

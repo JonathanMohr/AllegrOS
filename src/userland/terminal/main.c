@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <syscall/read.h>
-#include <syscall/open.h>
-#include <syscall/close.h>
-
-char buffer[512];
+#include <file.h>
 
 int main()
 {
+    /*
     puts("Hello world from terminal!\n");
 
     const char* file = "test.txt";
@@ -24,6 +21,28 @@ int main()
     puts(buffer);
 
     close(fd);
+
+    */
+
+    puts("Hello world from terminal!\n");
+
+    const char* filename = "test.txt";
+    FILE* file = fopen(filename, "r");
+    if (!file)
+    {
+        puts("Opening failed!\n");
+        return 1;
+    }
+
+    char buffer[1024];
+
+    printf("%s:\n", filename);
+    while (fgets(buffer, sizeof(buffer), file))
+    {
+        printf("%s", buffer);
+    }
+
+    fclose(file);
 
     return 0;
 }

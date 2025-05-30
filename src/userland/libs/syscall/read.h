@@ -3,5 +3,3 @@
 #include <stdint.h>
 
 int32_t read(int fd, void* buf, uint32_t count);
-
-char* fgets(char* buf, int size, int fd);
