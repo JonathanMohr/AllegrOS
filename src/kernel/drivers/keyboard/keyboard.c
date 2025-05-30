@@ -17,6 +17,8 @@ void keyboard_handler(Registers* regs)
 {
     //TODO
     uint8_t scancode = i686_inb(0x60);
+    //TODO: remove log
+    log_verbose("Scancode", "0x%x", scancode);
 
     if (scancode == 0xE1 && !e1_sequence) {
         e1_sequence = true;
