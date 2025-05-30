@@ -221,7 +221,6 @@ void handle_system(uint64_t code, bool released)
 
 int handle_key(uint64_t code, bool released)
 {
-    debugf("Key: %llu\n", code);
     switch (code)
     {
         case ESCAPE: case TAB: case CAPS_LOCK:

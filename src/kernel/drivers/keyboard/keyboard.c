@@ -46,15 +46,20 @@ void keyboard_handler(Registers* regs)
 
     uint16_t key = get_key(scancode, extended);
 
+    extended = false;
+
     bool released = (key & KEY_RELEASED) != 0;
     key = key & ~KEY_RELEASED;
-
 
     InputEvent event;
     event.type = EV_KEY;
     event.code = key;
     event.value = released ? 0 : 1;
     InputBuffer_Push(&event);
+
+    //TODO: check if needed by anything
+    i686_outb(0x20, 0x20);
+    i686_outb(0xA0, 0x20);
 }
 
 InputEvent inputBuffer[INPUT_EVENT_BUFFER_SIZE];

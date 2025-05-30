@@ -59,6 +59,7 @@ int main()
                 bool released = (event.value == 0);
                 if (handle_key(event.code, released) != 0)
                     debugf("Unknown key pressed! 0x%x\n", event.value);
+                    released = released;
             }
             else
             {
