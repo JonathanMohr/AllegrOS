@@ -77,7 +77,8 @@ uint32_t ELF_Read(Partition* part, const char* path, void** entryPoint)
             loadSize += progHeader->MemorySize;
             uint8_t* virtAddress = (uint8_t*)progHeader->VirtualAddress;
 
-            if (!specific_Allocate(progHeader->MemorySize, virtAddress))
+            //TODO: change that it's always user
+            if (!specific_Allocate(progHeader->MemorySize, virtAddress, true))
             {
                 log_err("ELF", "Memory allocation failed for segment!");
                 return 0;

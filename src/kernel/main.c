@@ -136,31 +136,14 @@ void kernel_main()
     Paging_Load(&user);
     uint8_t* stackTop = prepareUserStack();
 
-    /*
-
-    FAT_File* fd = FAT_Open(&partition, "system/terminal.bin");
-    if (!fd)
-    {
-        log_err("Kernel", "Error while opening file.");
-    }
-    uint32_t pages = (fd->Size + PAGE_SIZE) / PAGE_SIZE;
-
-    uint8_t* file = (uint8_t*)page_UserAllocate(pages);
-
-    FAT_Read(&partition, fd, fd->Size, file);
-
-    FAT_Close(fd);
-
-    enter(file, stackTop);
-
-    */
-
     void* entry;
     uint32_t loadProgram = ELF_Read(&partition, "system/terminal.bin", &entry);
     if (loadProgram == 0)
     {
         log_err("Kernel", "ELF read failed.");
     }
+
+    log_info("Kernel", "entry: 0x%p", entry);
 
     enter(entry, stackTop);
 
