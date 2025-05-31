@@ -17,6 +17,8 @@ void keyboard_handler(Registers* regs)
 {
     //TODO
     uint8_t scancode = i686_inb(0x60);
+    //TODO: remove log
+    log_verbose("Scancode", "0x%x", scancode);
 
     if (scancode == 0xE1 && !e1_sequence) {
         e1_sequence = true;
@@ -46,8 +48,6 @@ void keyboard_handler(Registers* regs)
 
     uint16_t key = get_key(scancode, extended);
 
-    extended = false;
-
     bool released = (key & KEY_RELEASED) != 0;
     key = key & ~KEY_RELEASED;
 
@@ -56,6 +56,8 @@ void keyboard_handler(Registers* regs)
     event.code = key;
     event.value = released ? 0 : 1;
     InputBuffer_Push(&event);
+
+    extended = false;
 
     //TODO: check if needed by anything
     i686_outb(0x20, 0x20);
