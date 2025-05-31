@@ -56,3 +56,4 @@ FAT_File * FAT_Open(Partition* partition, const char* path);
 uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void* dataOut);
 bool FAT_ReadEntry(Partition* partition, FAT_File* file, FAT_DirectoryEntry* dirEntry);
 void FAT_Close(FAT_File* file);
+int64_t FAT_Seek(Partition* disk, FAT_File* file, int64_t offset, int whence);

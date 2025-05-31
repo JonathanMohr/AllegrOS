@@ -10,6 +10,17 @@ int main()
 {
     puts("Hello world from terminal!\n");
 
+    FILE* file = fopen("test.txt", "r");
+
+    fclose(file);
+
+    return 0;
+}
+
+int main2()
+{
+    puts("Hello world from terminal!\n");
+
     const char* filename = "test.txt";
     FILE* file = fopen(filename, "r");
     if (!file)

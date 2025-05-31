@@ -4,6 +4,7 @@
 #include <syscall/open.h>
 #include <syscall/read.h>
 #include <syscall/write.h>
+#include <syscall/lseek.h>
 
 #include <string.h>
 #include <stddef.h>
@@ -60,6 +61,8 @@ void fputs(const char* str, FILE* stream)
     //TODO: check result
     write(stream->fd, str, (uint32_t)strlen(str));
 }
+
+//TODO: fwrite
 
 
 // READ
@@ -224,4 +227,45 @@ int fclose(FILE* stream)
     //TODO: add free
     stream->fd = -1;
     return result;
+}
+
+
+// SEEK
+
+int64_t fseek(FILE* stream, int64_t offset, int whence)
+{
+    if (!stream)
+        return -1;
+
+    int64_t result = lseek(stream->fd, offset, whence);
+
+    if (result == -1)
+        stream->error = true;
+    else
+        stream->error = false;
+
+    stream->eof = false;
+
+    return result;
+}
+
+int64_t ftell(FILE *stream)
+{
+    if (!stream)
+        return -1;
+    return lseek(stream->fd, 0, SEEK_CUR);
+}
+
+int feof(FILE *stream)
+{
+    if (!stream)
+        return 0;
+    return stream->eof;
+}
+
+void rewind(FILE *stream)
+{
+    fseek(stream, 0, SEEK_SET);
+    stream->error = false;
+    stream->eof = false;
 }

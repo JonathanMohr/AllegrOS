@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define BUFFER_SIZE 0x200
 
@@ -9,6 +10,8 @@ typedef struct {
     char buffer[BUFFER_SIZE];
     uint32_t buf_pos;
     uint32_t buf_end;
+    bool error;
+    bool eof;
 } FILE;
 
 extern FILE* stdin;
@@ -28,3 +31,12 @@ int32_t fread(void* ptr, int32_t size, int32_t count, FILE* stream);
 FILE* fopen(const char* path, const char* mode);
 
 int fclose(FILE* stream);
+
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
+int64_t fseek(FILE* stream, int64_t offset, int whence);
+int64_t ftell(FILE *stream);
+int feof(FILE *stream);
+void rewind(FILE *stream);

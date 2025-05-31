@@ -88,3 +88,25 @@ uint32_t File_Read(uint32_t handle, uint8_t* buffer, uint32_t count)
     
     return FAT_Read(partition, fd, count, buffer);
 }
+
+int64_t File_Seek(uint32_t fd, int64_t offset, uint32_t whence)
+{
+    if (fd < 1)
+    {
+        return -1;
+    }
+    else if (fd < 4)
+    {
+        return -1;
+    }
+
+    FAT_File* file = getFile(fd);
+    if (!file)
+    {
+        return -1;
+    }
+
+    int64_t newPos = FAT_Seek(partition, file, offset, whence);
+
+    return newPos;
+}

@@ -7,3 +7,4 @@ void File_Init(Partition* part);
 uint32_t File_Open(const char* path, uint32_t flags, uint32_t mode);
 uint32_t File_Close(uint32_t handle);
 uint32_t File_Read(uint32_t handle, uint8_t* buffer, uint32_t count);
+int64_t File_Seek(uint32_t fd, int64_t offset, uint32_t whence);

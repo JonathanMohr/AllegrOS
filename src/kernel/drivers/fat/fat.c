@@ -489,3 +489,73 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
 
     return current;
 }
+
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
+int64_t FAT_Seek(Partition* disk, FAT_File* file, int64_t offset, int whence)
+{
+    FAT_FileData* fd = (file->Handle == ROOT_DIRECTORY_HANDLE)
+        ? g_Data->RootDirectory
+        : &g_Data->OpenedFiles[file->Handle];
+
+    uint64_t newPos;
+
+    switch (whence)
+    {
+        case SEEK_SET:
+            newPos = (uint64_t)offset;
+            break;
+        case SEEK_CUR:
+            newPos = fd->Public.Position + offset;
+            break;
+        case SEEK_END:
+            newPos = fd->Public.Size + offset;
+            break;
+        default:
+            return (int64_t)-1;
+    }
+
+    if (newPos < 0)
+        return -1;
+
+    if (newPos > fd->Public.Size)
+        newPos = fd->Public.Size;
+
+    fd->Public.Position = newPos;
+
+    if (fd->Public.Handle == ROOT_DIRECTORY_HANDLE && !(g_FatType == 32))
+    {
+        fd->CurrentCluster = fd->FirstCluster + (newPos / SECTOR_SIZE);
+        fd->CurrentSectorInCluster = 0;
+        if (!Partition_ReadSectors(disk, fd->CurrentCluster, 1, fd->Buffer))
+            return (int64_t)-1;
+    }
+    else
+    {
+        uint32_t clusterSizeBytes = g_Data->BootSector.SectorsPerCluster * SECTOR_SIZE;
+        uint32_t clusterIndex = newPos / clusterSizeBytes;
+        uint32_t offsetInCluster = newPos % clusterSizeBytes;
+        uint32_t sectorIndex = offsetInCluster / SECTOR_SIZE;
+        uint32_t sectorOffset = offsetInCluster % SECTOR_SIZE;
+
+        uint32_t cluster = fd->FirstCluster;
+        for (uint32_t i = 0; i < clusterIndex; i++)
+        {
+            cluster = FAT_NextCluster(disk, cluster);
+            if (cluster >= 0xFFFFFFF8)
+            {
+                return (int64_t)-1; // Ende erreicht vor seek-position
+            }
+        }
+
+        fd->CurrentCluster = cluster;
+        fd->CurrentSectorInCluster = sectorIndex;
+
+        if (!Partition_ReadSectors(disk, FAT_ClusterToLba(cluster) + sectorIndex, 1, fd->Buffer))
+            return (int64_t)-1;
+    }
+
+    return (int64_t)fd->Public.Position;
+}
