@@ -8,37 +8,35 @@
 
 int main()
 {
-    puts("Hello world from terminal!\n");
-
-    FILE* file = fopen("test.txt", "r");
-
-    fclose(file);
-
-    return 0;
-}
-
-int main2()
-{
-    puts("Hello world from terminal!\n");
+    puts("Hello world from terminal!");
 
     const char* filename = "test.txt";
     FILE* file = fopen(filename, "r");
     if (!file)
     {
-        puts("Opening failed!\n");
+        puts("Opening failed!");
         return 1;
     }
 
-    char buffer[1024];
+    int64_t size = fseek(file, 0, SEEK_END);
+    rewind(file);
 
-    printf("%s:'\n", filename);
-    while (fgets(buffer, sizeof(buffer), file))
+    if (size > 0x1000)
     {
-        printf("%s", buffer);
+        puts("File too big!");
     }
+    else
+    {
+        char buffer[size];
 
-    printf("\n'\n");
-
+        printf("%s:'\n", filename);
+        int32_t read_bytes = fread(buffer, 1, size, file);
+        if (read_bytes != size) {
+            // Fehler oder EOF
+        }
+        fwrite(buffer, 1, size, stdout);
+        puts("\n'");
+    }
     fclose(file);
 
     InputEvent event;
@@ -79,7 +77,7 @@ int main2()
         }
     }
 
-    puts("\nEnd!\n");
+    puts("\nEnd!");
 
     return 0;
 }

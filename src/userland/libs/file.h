@@ -21,8 +21,9 @@ extern FILE* stddebug;
 
 void finit();
 
-void fputc(char c, FILE* stream);
-void fputs(const char* str, FILE* stream);
+int fputc(char c, FILE* stream);
+int fputs(const char* str, FILE* stream);
+int32_t fwrite(const void* ptr, int32_t size, int32_t count, FILE* stream);
 
 int fgetc(FILE* stream);
 char* fgets(char* buf, int size, FILE* stream);

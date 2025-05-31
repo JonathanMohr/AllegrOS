@@ -6,8 +6,8 @@ void vfprintf(FILE* stream, const char* fmt, va_list args);
 void fprintf(FILE* stream, const char* fmt, ...);
 void fprint_buffer(FILE* stream, const char* msg, const void* buffer, uint32_t count);
 
-void putc(char c);
-void puts(const char* str);
+int putc(char c);
+int puts(const char* str);
 void printf(const char* fmt, ...);
 void print_buffer(const char* msg, const void* buffer, uint32_t count);
 

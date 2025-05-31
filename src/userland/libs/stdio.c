@@ -202,14 +202,21 @@ void fprint_buffer(FILE* stream, const char* msg, const void* buffer, uint32_t c
 
 
 
-void putc(char c)
+int putc(char c)
 {
-    fputc(c, stdout);
+    return fputc(c, stdout);
 }
 
-void puts(const char* str)
+int puts(const char* str)
 {
-    fputs(str, stdout);
+    int ret = fputs(str, stdout);
+    if (ret != 0)
+        return ret;
+
+    if (fputc('\n', stdout) != 0)
+        return ret;
+
+    return 0;
 }
 
 void printf(const char* fmt, ...)

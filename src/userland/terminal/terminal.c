@@ -70,11 +70,11 @@ int runCommand()
 
     if (strcmp(command, "help") == 0)
     {
-        puts("Available commands:\n");
-        puts("\thelp - Show this message\n");
-        puts("\tclear - Clear the terminal\n");
-        puts("\techo <args> - Echo arguments\n");
-        puts("\tcat <filename> - Echo content of file\n");
+        puts("Available commands:");
+        puts("\thelp - Show this message");
+        puts("\tclear - Clear the terminal");
+        puts("\techo <args> - Echo arguments");
+        puts("\tcat <filename> - Echo content of file");
         putc('\n');
     }
     else if (strcmp(command, "clear") == 0)
@@ -85,7 +85,7 @@ int runCommand()
     {
         if (argc < 1)
         {
-            puts("Usage: cat <filename>\n");
+            puts("Usage: cat <filename>");
             return 1;
         }
 
@@ -93,9 +93,8 @@ int runCommand()
 
         if (!file)
         {
-            puts("Could not open file: ");
+            fputs("Could not open file: ", stdout);
             puts(argv[0]);
-            putc('\n');
             return 1;
         }
 
@@ -103,7 +102,7 @@ int runCommand()
 
         while (fgets(line, sizeof(line), file) != NULL)
         {
-            puts(line);
+            fputs(line, stdout);
         }
 
         putc('\n');
@@ -114,16 +113,15 @@ int runCommand()
     {
         for (int k = 0; k < argc; k++)
         {
-            puts(argv[k]);
+            fputs(argv[k], stdout);
             putc(' ');
         }
         putc('\n');
     }
     else
     {
-        puts("Unknown command: ");
+        fputs("Unknown command: ", stdout);
         puts(command);
-        putc('\n');
     }
 
     return 0;
@@ -133,12 +131,12 @@ void terminal_newLine()
 {
     len = 0;
     memset(buffer, 0, sizeof(buffer));
-    puts("/ ");
+    fputs("/ ", stdout);
 }
 
 void terminal_clear()
 {
-    puts("\033[2J\033[H");
+    fputs("\033[2J\033[H", stdout);
     len = 0;
     buffer[0] = '\0';
 }

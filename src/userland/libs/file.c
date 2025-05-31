@@ -17,6 +17,9 @@ FILE* stdout;
 FILE* stderr;
 FILE* stddebug;
 
+
+#define EOF -1
+
 // INIT
 
 void finit()
@@ -44,30 +47,110 @@ void finit()
 
 // WRITE
 
-void fputc(char c, FILE* stream)
+int fputc(char c, FILE* stream)
 {
     if (!stream)
-        return;
+        return EOF;
 
     //TODO: check result
     write(stream->fd, &c, 1);
+
+    return 0;
 }
 
-void fputs(const char* str, FILE* stream)
+int fputs(const char* str, FILE* stream)
 {
     if (!stream)
-        return;
+        return EOF;
 
     //TODO: check result
     write(stream->fd, str, (uint32_t)strlen(str));
+
+    return 0;
 }
 
-//TODO: fwrite
+int32_t fwrite(const void* ptr, int32_t size, int32_t count, FILE* stream)
+{
+    if (!stream || !ptr || size <= 0 || count <= 0)
+        return 0;
+
+    int32_t total_bytes = size * count;
+    int64_t n = write(stream->fd, ptr, total_bytes);
+    if (n <= 0)
+        return 0;
+
+    return (int32_t)(n / size); // Anzahl der vollständig geschriebenen Elemente
+}
 
 
 // READ
 
-#define EOF -1
+//TODO: change fgetc
+int fgetc(FILE* stream)
+{
+    if (!stream)
+        return EOF;
+
+    if (stream->buf_pos >= stream->buf_end)
+    {
+        int32_t n = read(stream->fd, stream->buffer, BUFFER_SIZE);
+        if (n <= 0)
+            return EOF; // EOF or error
+
+        stream->buf_pos = 0;
+        stream->buf_end = n;
+    }
+
+    return (int)(unsigned char) stream->buffer[stream->buf_pos++];
+}
+
+//TODO: change fgets
+char* fgets(char* buf, int size, FILE* stream)
+{
+    if (size <= 0 || buf == NULL)
+        return NULL;
+
+    int i = 0;
+    while (i < size - 1)
+    {
+        if (stream->buf_pos >= stream->buf_end)
+        {
+            int32_t n = read(stream->fd, stream->buffer, BUFFER_SIZE);
+            if (n <= 0)
+            {
+                // EOF or error
+                if (i == 0)
+                    return NULL;    // nothing read
+                break;              // read something -> cancel
+            }
+            stream->buf_pos = 0;
+            stream->buf_end = n;
+        }
+
+        char c = stream->buffer[stream->buf_pos++];
+        buf[i++] = c;
+        if (c == '\n')
+            break;
+    }
+
+    buf[i] = '\0';
+    return buf;
+}
+
+int32_t fread(void* ptr, int32_t size, int32_t count, FILE* stream)
+{
+    if (!stream || !ptr || size <= 0 || count <= 0)
+        return 0;
+
+    int32_t total_bytes = size * count;
+    int64_t n = read(stream->fd, ptr, total_bytes);
+    if (n <= 0)
+        return 0;
+
+    return (int32_t)(n / size); // Anzahl der komplett gelesenen Elemente
+}
+
+/*
 
 int fgetc(FILE* stream)
 {
@@ -119,6 +202,8 @@ char* fgets(char* buf, int size, FILE* stream)
     return buf;
 }
 
+#include <stdio.h>
+
 int32_t fread(void* ptr, int32_t size, int32_t count, FILE* stream)
 {
     if (!stream || !ptr || size == 0 || count == 0)
@@ -127,6 +212,8 @@ int32_t fread(void* ptr, int32_t size, int32_t count, FILE* stream)
     int32_t total_bytes = size * count;
     int32_t bytes_read = 0;
     unsigned char* buffer = (unsigned char*) ptr;
+
+    debugf("total bytes: 0x%x\n", total_bytes);
 
     while (bytes_read < total_bytes)
     {
@@ -160,6 +247,8 @@ int32_t fread(void* ptr, int32_t size, int32_t count, FILE* stream)
     // Anzahl gelesener Elemente zurückgeben (Bytes / size)
     return bytes_read / size;
 }
+
+*/
 
 
 // OPEN
