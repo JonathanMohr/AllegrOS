@@ -86,25 +86,18 @@ uint32_t ELF_Read(Partition* part, const char* path, void** entryPoint)
 
             memset(virtAddress, 0, progHeader->MemorySize);
 
-            // ugly nasty seeking
-            // TODO: proper seeking
+            // Seek
             fd = FAT_Open(part, path);
             if (!fd) {
                 log_err("ELF", "Failed to reopen file for segment data!");
                 return 0;
             }
 
-            uint32_t segmentOffset = progHeader->Offset;
-            uint8_t tmp[512];
-            while (segmentOffset > 0) {
-                uint32_t chunk = segmentOffset > sizeof(tmp) ? sizeof(tmp) : segmentOffset;
-                int r = FAT_Read(part, fd, chunk, tmp);
-                if (r != chunk) {
-                    log_err("ELF", "Load error while skipping segment data!");
-                    FAT_Close(fd);
-                    return 0;
-                }
-                segmentOffset -= r;
+            if (FAT_Seek(part, fd, progHeader->Offset, SEEK_SET) == 0)
+            {
+                log_err("ELF", "Failed to seek to segment offset!");
+                FAT_Close(fd);
+                return 0;
             }
 
             // read program

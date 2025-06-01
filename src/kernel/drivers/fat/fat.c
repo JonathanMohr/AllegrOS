@@ -490,10 +490,6 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
     return current;
 }
 
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-
 int64_t FAT_Seek(Partition* disk, FAT_File* file, int64_t offset, int whence)
 {
     FAT_FileData* fd = (file->Handle == ROOT_DIRECTORY_HANDLE)

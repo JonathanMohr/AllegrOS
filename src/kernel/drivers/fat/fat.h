@@ -51,6 +51,10 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
 bool FAT_Initialize(Partition* partition);
 FAT_File * FAT_Open(Partition* partition, const char* path);
 uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void* dataOut);
