@@ -9,14 +9,14 @@
 extern void set_eax(uint32_t val);
 extern void set_edx(uint32_t val);
 
-#define EXIT    1
-
-#define READ    3
-#define WRITE   4
-#define OPEN    5
-#define CLOSE   6
-
-#define LSEEK   8
+#define EXIT    0x1
+#define FORK    0x2     //TODO
+#define READ    0x3
+#define WRITE   0x4
+#define OPEN    0x5
+#define CLOSE   0x6
+#define UNLINK  0x7     //TODO
+#define LSEEK   0x8
 
 void syscall_Init(Partition* part)
 {
