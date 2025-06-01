@@ -10,12 +10,12 @@ extern void set_eax(uint32_t val);
 extern void set_edx(uint32_t val);
 
 #define EXIT    0x1
-#define FORK    0x2     //TODO
+#define FORK    0x2
 #define READ    0x3
 #define WRITE   0x4
 #define OPEN    0x5
 #define CLOSE   0x6
-#define UNLINK  0x7     //TODO
+#define UNLINK  0x7
 #define LSEEK   0x8
 
 void syscall_Init(Partition* part)
@@ -33,6 +33,10 @@ void syscall(Registers* regs)
             int code = regs->ebx;
             //TODO
             for(;;);
+            break;
+
+        case FORK:
+            //TODO
             break;
         
         case READ:
@@ -54,6 +58,10 @@ void syscall(Registers* regs)
         case CLOSE:
             uint32_t result = File_Close(regs->ebx);
             set_eax(result);
+            break;
+
+        case UNLINK:
+            //TODO
             break;
 
         case LSEEK:
