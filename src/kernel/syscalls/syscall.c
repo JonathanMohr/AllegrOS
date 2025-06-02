@@ -38,6 +38,13 @@ extern void set_edx(uint32_t val);
 #define SYS_OLDFSTAT    28
 #define SYS_PAUSE       29
 #define SYS_UTIME       30
+
+#define SYS_BRK         45
+
+#define SYS_MMAP        90
+#define SYS_MUNMAP      91
+
+#define SYS_MMAP2       192
 //... TODO: https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md#x86-32_bit
 
 
