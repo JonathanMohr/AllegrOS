@@ -3,9 +3,9 @@
 #include <core/Defs.h>
 #include <stdint.h>
 
-uint32_t ASMCALL syscall(uint32_t eax,
-                         uint32_t ebx,
-                         uint32_t ecx,
-                         uint32_t edx,
-                         uint32_t esi,
-                         uint32_t edi);
+void exit(int exit_code);
+int32_t read(int fd, void* buf, uint32_t count);
+int32_t write(int fd, const void* buf, uint32_t count);
+int32_t open(const char *pathname, int flags, uint16_t mode);
+int32_t close(int32_t fd);
+int64_t lseek(int32_t fd, int64_t offset, int whence);

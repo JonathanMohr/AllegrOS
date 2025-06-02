@@ -5,34 +5,30 @@
 ;                      uint32_t ecx,
 ;                      uint32_t edx,
 ;                      uint32_t esi,
-;                      uint32_t edi);
+;                      uint32_t edi,
+;                      uint32_t ebp);
 global syscall
 syscall:
-    ; make new call frame
-    push ebp             ; save old call frame
-    mov ebp, esp         ; initialize new call frame
-
     ; save changed regs
     push ebx
     push esi
     push edi
+    push ebp
 
-    mov eax, [ebp + 8]
-    mov ebx, [ebp + 12]
-    mov ecx, [ebp + 16]
-    mov edx, [ebp + 20]
-    mov esi, [ebp + 24]
-    mov edi, [ebp + 28]
+    mov eax, [esp + 20]
+    mov ebx, [esp + 24]
+    mov ecx, [esp + 28]
+    mov edx, [esp + 32]
+    mov esi, [esp + 36]
+    mov edi, [esp + 40]
+    mov ebp, [esp + 44]
 
     int 0x80
 
     ; restore changed regs
+    pop ebp
     pop edi
     pop esi
     pop ebx
-
-    ; restore old call frame
-    mov esp, ebp
-    pop ebp
 
     ret

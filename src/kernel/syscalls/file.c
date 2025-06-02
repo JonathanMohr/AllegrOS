@@ -3,6 +3,7 @@
 #include "../drivers/fat/fat.h"
 #include "../drivers/keyboard/keyboard.h"
 #include <stddef.h>
+#include "../hal/vfs.h"
 
 #include "debug.h"
 
@@ -45,48 +46,66 @@ FAT_File* getFile(uint32_t fd)
     return fd_table[fd];
 }
 
-uint32_t File_Open(const char* path, uint32_t flags, uint32_t mode)
+int32_t File_Open(const char* path, uint32_t flags, uint32_t mode)
 {
     //TODO: flags & mode
-    FAT_File* fd = FAT_Open(partition, path);
-    if (!fd)
+    FAT_File* file = FAT_Open(partition, path);
+    if (!file)
     {
-        return (uint32_t)-1;
+        return -1;
     }
-    return allocateFdForFile(fd);
+    return allocateFdForFile(file);
 }
 
-uint32_t File_Close(uint32_t handle)
+int32_t File_Close(uint32_t fd)
 {
-    FAT_File* fd = getFile(handle);
-    if (!fd)
+    FAT_File* file = getFile(fd);
+    if (!file)
     {
-        return 0;
+        return -1;
     }
-    FAT_Close(fd);
-    return 1;
+    FAT_Close(file);
+    return 0;
 }
 
-uint32_t File_Read(uint32_t handle, uint8_t* buffer, uint32_t count)
+int32_t File_Read(uint32_t fd, uint8_t* buffer, uint32_t count)
 {
-    if (handle == 0) // stdin = evdev Events
+    if (fd == 0) // stdin = evdev Events
     {
         uint32_t max_events = count / sizeof(InputEvent);
         uint32_t read_events = InputBuffer_Read((InputEvent*)buffer, max_events);
         return read_events * sizeof(InputEvent);
     }
-    else if (handle < 4)
+    else if (fd < 4)
+    {
+        return -1;
+    }
+
+    FAT_File* file = getFile(fd);
+    if (!file)
+    {
+        return -1;
+    }
+    
+    return FAT_Read(partition, file, count, buffer);
+}
+
+int32_t File_Write(uint32_t fd, uint8_t* buffer, uint32_t count)
+{
+    if (fd < 4)
+    {
+        // stdin, stdout, stderr, stddebug
+        return VFS_Write(fd, buffer, count);
+    }
+    
+    FAT_File* file = getFile(fd);
+    if (!file)
     {
         return (uint32_t)-1;
     }
 
-    FAT_File* fd = getFile(handle);
-    if (!fd)
-    {
-        return (uint32_t)-1;
-    }
-    
-    return FAT_Read(partition, fd, count, buffer);
+    //TODO
+    return -1;
 }
 
 int64_t File_Seek(uint32_t fd, int64_t offset, uint32_t whence)

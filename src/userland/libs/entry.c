@@ -14,7 +14,6 @@ void _start()
 
     int code = main();
 
-    //close
-    syscall(0x1, code, 0, 0, 0, 0);
+    exit(code);
     while (1);
 }

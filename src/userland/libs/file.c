@@ -1,10 +1,6 @@
 #include "file.h"
 
-#include <syscall/close.h>
-#include <syscall/open.h>
-#include <syscall/read.h>
-#include <syscall/write.h>
-#include <syscall/lseek.h>
+#include <syscall/syscall.h>
 
 #include <string.h>
 #include <stddef.h>
