@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <boot/arch/i686/paging.h>
 #include "memory.h"
+#include "../debug.h"
 
 #define PAGES_PER_ALLOC 16
 #define ALLOC_SIZE (PAGES_PER_ALLOC * PAGE_SIZE)
@@ -19,7 +20,8 @@ void* HeapAllocator_Alloc(HeapAllocator* alloc, uint64_t size, uint64_t align) {
     if (align == 0 || (align & (align - 1)) != 0) return NULL;
 
     // Special case: large allocations (>= ALLOC_SIZE)
-    if (size >= ALLOC_SIZE) {
+    if (size >= ALLOC_SIZE)
+    {
         // Calculate needed pages
         uint64_t pages_needed = (size + PAGE_SIZE - 1) / PAGE_SIZE;
         void* big_mem = page_Allocate(pages_needed);
@@ -45,20 +47,25 @@ void* HeapAllocator_Alloc(HeapAllocator* alloc, uint64_t size, uint64_t align) {
     FreeBlock** prev = &alloc->free_list;
     FreeBlock* curr = alloc->free_list;
 
-    while (curr) {
+    while (curr)
+    {
         uintptr_t raw_ptr = (uintptr_t)curr;
         uintptr_t data_ptr = raw_ptr + sizeof(uint64_t);
         uintptr_t aligned_ptr = (data_ptr + align - 1) & ~(align - 1);
         uint64_t padding = aligned_ptr - raw_ptr;
         uint64_t required = padding + total_size;
 
-        if (curr->size >= required) {
-            if (curr->size >= required + sizeof(FreeBlock) + 16) {
+        if (curr->size >= required)
+        {
+            if (curr->size >= required + sizeof(FreeBlock) + 16)
+            {
                 FreeBlock* next_block = (FreeBlock*)(uintptr_t)(raw_ptr + required);
                 next_block->size = curr->size - required;
                 next_block->next = curr->next;
                 *prev = next_block;
-            } else {
+            }
+            else
+            {
                 *prev = curr->next;
                 required = curr->size;
             }

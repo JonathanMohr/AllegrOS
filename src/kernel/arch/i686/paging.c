@@ -14,7 +14,8 @@ uint32_t ASMCALL read_cr0();
 void ASMCALL write_cr0(uint32_t val);
 void ASMCALL invlpg(uint32_t addr);
 
-uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr) {
+uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr)
+{
     // Index im Page Directory (10 Bits)
     uint32_t pd_index = (virtual_addr >> 22) & 0x3FF;
 
@@ -25,7 +26,8 @@ uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr) {
     uint32_t offset = virtual_addr & 0xFFF;
 
     uint32_t pd_entry = pageDirectory[pd_index];
-    if (!(pd_entry & PAGE_PRESENT)) {
+    if (!(pd_entry & PAGE_PRESENT))
+    {
         // Page Directory Entry nicht präsent -> kein Mapping
         return 0; // oder Fehlerwert
     }
@@ -34,10 +36,14 @@ uintptr_t i686_virt_to_phys(uint32_t* pageDirectory, uintptr_t virtual_addr) {
     uint32_t* page_table = (uint32_t*)(0xFFC00000 + (pd_index * PAGE_SIZE));
 
     uint32_t pt_entry = page_table[pt_index];
-    if (!(pt_entry & PAGE_PRESENT)) {
+    if (!(pt_entry & PAGE_PRESENT))
+    {
         // Page Table Entry nicht präsent -> kein Mapping
         return 0; // oder Fehlerwert
     }
+
+    log_crit("T", "pd_entry: 0x%x, page_table: 0x%x", pd_entry, page_table);
+    log_crit("T", "pt_index: 0x%x, pt_entry: 0x%x", pt_index, pt_entry);
 
     // Physische Seitenbasisadresse aus PTE
     uintptr_t phys_page = pt_entry & PAGE_MASK;
@@ -155,6 +161,7 @@ PageDirectory i686_create_page_directory(uint32_t* pageDirectory)
     {
         pd_virt[i] = current_pd[i];
     }
+
 
     pd_virt[1023] = (uint32_t)pd_phys | PAGE_PRESENT | PAGE_RW;
 

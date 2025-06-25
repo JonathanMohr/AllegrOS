@@ -2,7 +2,8 @@
 
 #include <core/Defs.h>
 
-typedef struct __attribute__((packed)) {
+typedef struct
+{
     uint16_t prev_task_link;
     uint16_t reserved0;
 
@@ -58,7 +59,7 @@ typedef struct __attribute__((packed)) {
     uint16_t reserved11 : 15;
 
     uint16_t io_map_base;    // Offset zur I/O-Map (oft sizeof(TSS))
-} TSS;
+} __attribute__((packed)) TSS;
 
 typedef struct
 {
@@ -168,8 +169,18 @@ void ASMCALL i686_TSS_Load(uint16_t selector);
 
 void tss_initialize(uintptr_t kernelStackTop)
 {
+    memset(&g_TSS, 0, sizeof(TSS));
+    
     g_TSS.esp0 = kernelStackTop;
     g_TSS.ss0 = i686_GDT_DATA_SEGMENT; // Kernel-Datensegment-Selector
+
+    g_TSS.cs = i686_GDT_CODE_SEGMENT | 0; // Ring 0
+    g_TSS.ds = i686_GDT_DATA_SEGMENT | 0;
+    g_TSS.es = i686_GDT_DATA_SEGMENT | 0;
+    g_TSS.fs = i686_GDT_DATA_SEGMENT | 0;
+    g_TSS.gs = i686_GDT_DATA_SEGMENT | 0;
+    g_TSS.ss = i686_GDT_DATA_SEGMENT | 0;
+
     g_TSS.io_map_base = sizeof(TSS);   // Kein IO-Map
 }
 
