@@ -3,19 +3,6 @@
 
 %define ENDL 0x0D, 0x0A
 
-%macro CREATE_MBR_HEADER 1-*
-    %rep %0
-        MBR_HEADER%1:
-            .boot           db 0
-            .chs_start      db 0, 0, 0
-            .type           db 0
-            .chs_end        db 0, 0, 0
-            .lba_start      dd 0
-            .num_sectors    dd 0
-        %rotate 1
-    %endrep
-%endmacro
-
 ; ENTRY
 
 start:
@@ -38,7 +25,6 @@ start:
     retf
 
 .after:
-
     ; DL should be drive number
     mov [drive_number], dl
 
@@ -97,23 +83,73 @@ start:
     mov byte [extensions_supported], 0
 
 .after_disk_extensions_check:
-    
-    ; load stage 2
 
-    mov si, MBR_HEADER1.lba_start
+    ; load stage 2
 
     mov ax, STAGE2_LOAD_SEGMENT
     mov es, ax
 
     mov bx, STAGE2_LOAD_OFFSET
 
-    jmp disk_read_error
+    mov eax, [MBR_HEADER1.lba_start]
+    mov esi, [MBR_HEADER1.num_sectors]
+
+    ; TODO: Currently only checking because loading into 0x0500
+    cmp esi, 59
+    ja stage2_too_big_error
+
+.read_loop:
+    cmp esi, 0
+    je .read_finish
+
+    mov ecx, esi
+    cmp ecx, 128
+    jbe .read_now
+
+    mov ecx, 128
+
+.read_now:
+    call disk_read
+
+    mov bp, cx
+    shl bp, 9
+    add bx, bp
+
+    add eax, ecx
+    sub esi, ecx
+    jmp .read_loop
+.read_finish:
+    
+    ; jump to stage 2
+    mov dl, [drive_number]
+
+    mov ax, STAGE2_LOAD_SEGMENT
+    mov ds, ax
+    mov es, ax
+
+    jmp STAGE2_LOAD_SEGMENT:STAGE2_LOAD_OFFSET
+
+    ; should never happen
+    jmp jmp_failed_error
+
+    cli
+    hlt
 
 ; TEXT
 
 ;
 ; Error handler
 ;
+
+jmp_failed_error:
+    mov si, msg_jmp_failed
+    call puts
+    jmp wait_key_and_reboot
+
+stage2_too_big_error:
+    mov si, msg_too_big
+    call puts
+    jmp wait_key_and_reboot
 
 disk_read_error:
     mov si, msg_read_failed
@@ -208,16 +244,16 @@ disk_read:
     ; save registers
     push eax
     push bx
-    push cx
+    push ecx
     push dx
-    push si
+    push esi
     push di
-
-    cmp byte [extensions_supported], 1
-    jne .no_disk_extensions
 
     ; retry count
     mov di, 3
+
+    cmp byte [extensions_supported], 1
+    jne .no_disk_extensions
 
 .disk_extensions:
     
@@ -266,9 +302,9 @@ disk_read:
 
     ; restore registers
     pop di
-    pop si
+    pop esi
     pop dx
-    pop cx
+    pop ecx
     pop bx
     pop eax
 
@@ -294,21 +330,11 @@ disk_reset:
 ; RODATA
 
 msg_read_failed db "Read failed!", ENDL, 0
+msg_too_big     db "Stage 2 is too big! (Bigger than 59 sectors)", ENDL, 0
+msg_jmp_failed  db "Couldn't jump to stage 2", ENDL, 0
 
 ; DATA
 
-STAGE2_LOAD_SEGMENT     equ 0000h
-STAGE2_LOAD_OFFSET      equ 0500h
-
-times 446-($-$$) db 0
-
-CREATE_MBR_HEADER 1, 2, 3, 4
-
-dw 0xAA55
-
-; BSS
-
-drive_number         db 0
 extensions_supported db 0
 
 extensions_dap:
@@ -319,6 +345,49 @@ extensions_dap:
     .segment:           dw 0
     .lba:               dq 0
 
-chs: ; default values
-    .heads              dw 2
-    .sectors_per_track  dw 18
+STAGE2_LOAD_SEGMENT     equ 0000h
+STAGE2_LOAD_OFFSET      equ 0500h
+
+times 446-($-$$) db 0
+
+MBR_HEADER1:
+    .boot           db 0
+    .chs_start      db 0, 0, 0
+    .type           db 0
+    .chs_end        db 0, 0, 0
+    .lba_start      dd 0
+    .num_sectors    dd 0
+
+MBR_HEADER2:
+    .boot           db 0
+    .chs_start      db 0, 0, 0
+    .type           db 0
+    .chs_end        db 0, 0, 0
+    .lba_start      dd 0
+    .num_sectors    dd 0
+
+MBR_HEADER3:
+    .boot           db 0
+    .chs_start      db 0, 0, 0
+    .type           db 0
+    .chs_end        db 0, 0, 0
+    .lba_start      dd 0
+    .num_sectors    dd 0
+
+MBR_HEADER4:
+    .boot           db 0
+    .chs_start      db 0, 0, 0
+    .type           db 0
+    .chs_end        db 0, 0, 0
+    .lba_start      dd 0
+    .num_sectors    dd 0
+
+dw 0xAA55
+
+section .bss
+
+drive_number         resb 1
+
+chs:
+    .heads              resw 1
+    .sectors_per_track  resw 1
