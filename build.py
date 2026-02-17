@@ -83,6 +83,8 @@ def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: 
                 print(f"Assembling {file} -> {target_path}")
                 subprocess.run(["nasm", "-f", "elf", str(file), "-o", str(target_path)], check=True)
 
+                buildCache.update(target_path, content_hash)
+
         except subprocess.CalledProcessError as e:
             print(f"Error: Compilation failed for {file}")
             raise e
