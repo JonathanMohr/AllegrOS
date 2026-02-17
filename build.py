@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Optional, Dict
 import hashlib
 import json
+import sys
+import shutil
 
 class BuildCache:
     def __init__(self, cache_file: Path):
@@ -45,18 +47,6 @@ class BuildCache:
         self.stored_version = version
         return up_to_date
 
-def parse_gcc_dep_file(dep_path: Path) -> list[str]:
-    if not dep_path.exists():
-        return []
-    
-    content = dep_path.read_text()
-    content = content.replace('\\\n', ' ')
-    parts = content.split()
-    if not parts: return []
-    
-    # first part is target
-    return parts[1:]
-
 def hash_files(files: list[Path]) -> str:
     hasher = hashlib.new("sha256")
 
@@ -70,30 +60,74 @@ def hash_files(files: list[Path]) -> str:
                 
     return hasher.hexdigest()
 
-def compile_bootloader_stage1() -> Path:
-    nasm = "nasm"
+def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+    patterns = ["*.asm"]
+
+    files: list[Path] = []
+    for pattern in patterns:
+        files.extend(source_dir.rglob(pattern))
+
+    objects: list[Path] = []
+    for file in files:
+        rel_path = file.relative_to(source_dir)
+
+        target_path = build_dir / rel_path.with_suffix(".o")
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        objects.append(target_path)
+
+        try:
+            content_hash = hash_files([file])
+
+            if not buildCache.is_up_to_date(target_path, content_hash):
+                print(f"Assembling {file} -> {target_path}")
+                subprocess.run(["nasm", "-f", "elf", str(file), "-o", str(target_path)], check=True)
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Compilation failed for {file}")
+            raise e
+        
+    return objects
+
+def compile_bootloader_stage1(buildCache: BuildCache) -> Path:
+    src_dir = Path("src/bootloader/stage1")
+    build_dir = Path("build/bootloader/stage1")
+    linker_script = src_dir / "linker.ld"
+
+    out = Path("build/bootloader/stage1.bin")
+    #map_path = Path("build/bootloader/stage1.map")
     
-    src = Path("src/bootloader/stage1/boot.asm")
-    out = Path("build/bootloader/stage1/stage1.bin")
-    map_path = Path("build/bootloader/stage1/stage1.lst")
+    objects = build_assembly_sources(buildCache, build_dir, src_dir)
 
-    out.parent.mkdir(parents=True, exist_ok=True)
+    ld_lld = shutil.which("ld.lld")
 
-    print(f"Assembling {src} -> {out}")
-    subprocess.run([nasm, "-f", "bin", str(src), "-o", str(out), "-l", str(map_path)])
+    print(f"Linking {out}")
+    subprocess.run([
+        ld_lld, "-T", str(linker_script),
+        *[str(o) for o in objects],
+        "-o", str(out)
+    ], check=True)
 
     return out
 
-def compile_bootloader_stage2() -> Path:
-    nasm = "nasm"
+def compile_bootloader_stage2(buildCache: BuildCache) -> Path:
+    src_dir = Path("src/bootloader/stage2")
+    build_dir = Path("build/bootloader/stage2")
+    linker_script = src_dir / "linker.ld"
 
-    src = Path("src/bootloader/stage2/main.asm")
     out = Path("build/bootloader/stage2.bin")
+    #map_path = Path("build/bootloader/stage2.map")
+    
+    objects = build_assembly_sources(buildCache, build_dir, src_dir)
 
-    out.parent.mkdir(parents=True, exist_ok=True)
+    ld_lld = shutil.which("ld.lld")
 
-    print(f"Assembling {src} -> {out}")
-    subprocess.run([nasm, "-f", "bin", str(src), "-o", str(out)])
+    print(f"Linking {out}")
+    subprocess.run([
+        ld_lld, "-T", str(linker_script),
+        *[str(o) for o in objects],
+        "-o", str(out)
+    ], check=True)
 
     return out
 
@@ -113,10 +147,30 @@ def run_qemu(image: Path):
     ])
 
 if __name__ == "__main__":
-    stage1 = compile_bootloader_stage1()
-    stage2 = compile_bootloader_stage2()
+    buildCache: BuildCache = BuildCache(Path(".buildcache.json"))
+
+    stage1: Path
+    try:
+        stage1 = compile_bootloader_stage1(buildCache)
+
+    except Exception as e:
+        buildCache.save()
+        print(f"Error Building stage 1 failed: {e}")
+        sys.exit(1)
+    
+    stage2: Path
+    try:
+        stage2 = compile_bootloader_stage2(buildCache)
+
+    except Exception as e:
+        buildCache.save()
+        print(f"Error Building stage 2 failed: {e}")
+        sys.exit(1)
+
+    buildCache.save()
 
     image = Path("build/disk.img")
+
 
     subprocess.run([
         "lfs", "create", str(image), "mbr", "--size", "16M", "--boot", str(stage1)

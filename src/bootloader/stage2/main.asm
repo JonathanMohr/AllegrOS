@@ -1,5 +1,4 @@
 [bits 16]
-[org 0x0500]
 
 %define ENDL 0x0D, 0x0A
 
