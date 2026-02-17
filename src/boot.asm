@@ -25,5 +25,22 @@ print_string:
 
 msg db "Hello World!", ENDL, 0
 
-times 510-($-$$) db 0
+times 446-($-$$) db 0
+
+%macro CREATE_MBR_HEADER 1-*
+    %rep %0
+        MBR_HEADER%1:
+            .boot            db 0
+            .chs_start       db 0, 0, 0
+            .type            db 0
+            .chs_end         db 0, 0, 0
+            .lba_start       dd 0
+            .size_in_sectors dd 0
+
+        %rotate 1
+    %endrep
+%endmacro
+
+CREATE_MBR_HEADER 1, 2, 3, 4
+
 dw 0xAA55
