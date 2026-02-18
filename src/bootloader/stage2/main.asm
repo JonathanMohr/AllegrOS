@@ -19,12 +19,12 @@ start:
 ;
 debug_puts:
     ; save registers we will modify
-    push si
-    push ax
-    push bx
+    push eax
+    push esi
 
 .loop:
     lodsb               ; loads next character in al
+
     or al, al           ; verify if next character is null?
     jz .done
 
@@ -33,9 +33,8 @@ debug_puts:
     jmp .loop
 
 .done:
-    pop bx
-    pop ax
-    pop si
+    pop esi
+    pop eax
 
     ret
 
