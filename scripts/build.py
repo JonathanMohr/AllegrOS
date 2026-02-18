@@ -93,7 +93,8 @@ def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir
 
 def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path):
     try:
-        content_hash = cache.hash_files(objects)
+        deps = [*objects, linker_script]
+        content_hash = cache.hash_files(deps)
 
         if not buildCache.is_up_to_date(out, content_hash):
             print(f"Linking {out}")

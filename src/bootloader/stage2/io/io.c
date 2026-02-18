@@ -34,6 +34,12 @@ void IO_PutString(stream_t s, const char* str)
     }
 }
 
+void CDECL IO_PutStringCritical(const char* str)
+{
+    VGA_ClearScreen();
+    IO_PutString(vgaout, str);
+}
+
 
 const char g_HexChars[] = "0123456789abcdef";
 

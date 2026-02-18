@@ -5,16 +5,18 @@
 extern __bss_start
 extern __end
 
-extern start
+extern setup_paging
 
 section .entry
     global entry
+
+    global bootDrive
 
 entry:
     cli
 
     ; save boot drive
-    mov [g_BootDrive], dl
+    mov [bootDrive], dl
 
     ; setup stack
 
@@ -54,12 +56,7 @@ entry:
     cld
     rep stosb
 
-    xor edx, edx
-    mov dl, [g_BootDrive]
-    push edx
-    call start
-
-    hlt
+    jmp setup_paging
 
 ; A20
 
@@ -170,4 +167,4 @@ g_GDTDesc:  dw g_GDTDesc - g_GDT - 1    ; limit = size of GDT
 
 ; DATA
 
-g_BootDrive: db 0
+bootDrive: db 0

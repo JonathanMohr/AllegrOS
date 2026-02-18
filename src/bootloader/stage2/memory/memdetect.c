@@ -14,6 +14,7 @@ void Memory_Detect(MemoryInfo* memoryInfo)
     {
         if (count >= MAX_REGIONS)
         {
+            IO_PutString(vgaout, "Warning: More regions than MAX_REGIONS!");
             IO_PutString(dbgout, "Warning: More regions than MAX_REGIONS!");
         }
         
