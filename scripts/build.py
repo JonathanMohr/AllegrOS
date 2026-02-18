@@ -1,90 +1,22 @@
 from dataclasses import dataclass, field
-import subprocess
 from pathlib import Path
-from typing import Optional, Dict
-import hashlib
-import json
+import subprocess
 import sys
 import shutil
 
-class BuildCache:
-    def __init__(self, cache_file: Path):
-        self.cache_file = cache_file
-        self.hashes: Dict[str, str] = {}
-        self.stored_version: Optional[str] = None
-        self.load()
-
-    def load(self):
-        if self.cache_file.exists():
-            try:
-                data = json.loads(self.cache_file.read_text())
-                self.hashes = data.get("hashes", {})
-                self.stored_version = data.get("version")
-            except Exception:
-                print(f"Warning: Failed to load build cache from {self.cache_file}")
-                self.hashes = {}
-                self.stored_version = None
-
-    def save(self):
-        data = {
-            "hashes": self.hashes,
-            "version": self.stored_version
-        }
-        self.cache_file.write_text(json.dumps(data, indent=4, ensure_ascii=False))
-
-    def get(self, target: Path) -> Optional[str]:
-        return self.hashes.get(str(target))
-
-    def update(self, target: Path, hash_value: str):
-        self.hashes[str(target)] = hash_value
-
-    def is_up_to_date(self, target: Path, hash_value: str) -> bool:
-        if not target.exists():
-            return False
-        return self.get(target) == hash_value
-    
-    def is_version_up_to_date(self, version: str) -> bool:
-        up_to_date = self.stored_version == version
-        self.stored_version = version
-        return up_to_date
+import scripts.cache as cache
 
 @dataclass
 class Toolchain:
     Assembler: str
-    Assembler_Flags: list[str]
-
     Compiler_C: str
-    Compiler_C_Flags: list[str]
-
     Linker: str
-    Linker_Flags: list[str]
 
-def parse_gcc_dep_file(dep_path: Path) -> list[str]:
-    if not dep_path.exists():
-        return []
-    
-    content = dep_path.read_text()
-    content = content.replace('\\\n', ' ')
-    parts = content.split()
-    if not parts: return []
-    
-    # first part is target
-    return parts[1:]
+    Assembler_Flags: list[str] = field(default_factory=list)
+    Compiler_C_Flags: list[str] = field(default_factory=list)
+    Linker_Flags: list[str] = field(default_factory=list)
 
-def hash_files(files: list[Path]) -> str:
-    hasher = hashlib.new("sha256")
-
-    for file in sorted(files, key=lambda f: str(f)):
-        if not file.exists():
-            continue
-
-        with file.open("rb") as f:
-            while chunk := f.read(8192):
-                hasher.update(chunk)
-                
-    return hasher.hexdigest()
-
-def build_assembly_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_assembly_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     nasm = shutil.which("nasm")
 
     files: list[Path] = source_dir.rglob("*.asm")
@@ -99,7 +31,7 @@ def build_assembly_sources(toolchain: Toolchain,buildCache: BuildCache, build_di
         objects.append(target_path)
 
         try:
-            content_hash = hash_files([file])
+            content_hash = cache.hash_files([file])
 
             if not buildCache.is_up_to_date(target_path, content_hash):
                 print(f"Assembling {file} -> {target_path}")
@@ -118,7 +50,7 @@ def build_assembly_sources(toolchain: Toolchain,buildCache: BuildCache, build_di
         
     return objects
 
-def build_c_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     clang = shutil.which("clang")
 
     files: list[Path] = source_dir.rglob("*.c")
@@ -134,9 +66,9 @@ def build_c_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path
         objects.append(target_path)
 
         try:
-            deps = parse_gcc_dep_file(dep_path)
+            deps = cache.parse_gcc_dep_file(dep_path)
             all_deps = [file, *map(Path, deps)]
-            content_hash = hash_files(all_deps)
+            content_hash = cache.hash_files(all_deps)
 
             if not buildCache.is_up_to_date(target_path, content_hash):
                 print(f"Compiling {file} -> {target_path}")
@@ -148,9 +80,9 @@ def build_c_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path
                     "-MD", "-MF", str(dep_path)
                 ], check=True)
 
-                new_deps = parse_gcc_dep_file(dep_path)
+                new_deps = cache.parse_gcc_dep_file(dep_path)
                 new_all_deps = [file, *map(Path, new_deps)]
-                new_content_hash = hash_files(new_all_deps)
+                new_content_hash = cache.hash_files(new_all_deps)
                 buildCache.update(target_path, new_content_hash)
 
         except subprocess.CalledProcessError as e:
@@ -159,9 +91,9 @@ def build_c_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path
         
     return objects
 
-def link_objects(toolchain: Toolchain,buildCache: BuildCache, out: Path, objects: list[Path], linker_script: Path):
+def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path):
     try:
-        content_hash = hash_files(objects)
+        content_hash = cache.hash_files(objects)
 
         if not buildCache.is_up_to_date(out, content_hash):
             print(f"Linking {out}")
@@ -179,7 +111,7 @@ def link_objects(toolchain: Toolchain,buildCache: BuildCache, out: Path, objects
         print(f"Error: Linking failed for {out}")
         raise e
 
-def compile_bootloader_stage1(toolchain: Toolchain, buildCache: BuildCache) -> Path:
+def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
     src_dir = Path("src/bootloader/stage1")
     build_dir = Path("build/bootloader/stage1")
     linker_script = src_dir / "linker.ld"
@@ -193,7 +125,7 @@ def compile_bootloader_stage1(toolchain: Toolchain, buildCache: BuildCache) -> P
 
     return out
 
-def compile_bootloader_stage2(toolchain: Toolchain, buildCache: BuildCache) -> Path:
+def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
     src_dir = Path("src/bootloader/stage2")
     build_dir = Path("build/bootloader/stage2")
     linker_script = src_dir / "linker.ld"
@@ -208,11 +140,11 @@ def compile_bootloader_stage2(toolchain: Toolchain, buildCache: BuildCache) -> P
 
     return out
 
-def create_disk_image(buildCache: BuildCache, image: Path, stage1: Path, stage2: Path):
+def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path):
     lfs = shutil.which("lfs")
 
     deps = [stage1, stage2]
-    content_hash = hash_files(deps)
+    content_hash = cache.hash_files(deps)
 
     if not buildCache.is_up_to_date(image, content_hash):
         try:
@@ -266,7 +198,7 @@ def run_qemu(image: Path):
         raise e
 
 def main() -> bool:
-    buildCache: BuildCache = BuildCache(Path(".buildcache.json"))
+    buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"))
 
     toolchain: Toolchain = Toolchain(
         Assembler = shutil.which("nasm"),
