@@ -61,11 +61,9 @@ def hash_files(files: list[Path]) -> str:
     return hasher.hexdigest()
 
 def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
-    patterns = ["*.asm"]
+    nasm = shutil.which("nasm")
 
-    files: list[Path] = []
-    for pattern in patterns:
-        files.extend(source_dir.rglob(pattern))
+    files: list[Path] = source_dir.rglob("*.asm")
 
     objects: list[Path] = []
     for file in files:
@@ -81,15 +79,41 @@ def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: 
 
             if not buildCache.is_up_to_date(target_path, content_hash):
                 print(f"Assembling {file} -> {target_path}")
-                subprocess.run(["nasm", "-f", "elf", str(file), "-o", str(target_path)], check=True)
+                subprocess.run([
+                    nasm,
+                    "-f", "elf",
+                    str(file),
+                    "-o", str(target_path)
+                ], check=True)
 
                 buildCache.update(target_path, content_hash)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Compilation failed for {file}")
+            print(f"Error: Assembling failed for {file}")
             raise e
         
     return objects
+
+def link_objects(buildCache: BuildCache, out: Path, objects: list[Path], linker_script: Path):
+    ld_lld = shutil.which("ld.lld")
+
+    try:
+        content_hash = hash_files(objects)
+
+        if not buildCache.is_up_to_date(out, content_hash):
+            print(f"Linking {out}")
+            subprocess.run([
+                ld_lld,
+                "-T", str(linker_script),
+                *[str(o) for o in objects],
+                "-o", str(out)
+            ], check=True)
+
+            buildCache.update(out, content_hash)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Linking failed for {out}")
+        raise e
 
 def compile_bootloader_stage1(buildCache: BuildCache) -> Path:
     src_dir = Path("src/bootloader/stage1")
@@ -100,15 +124,8 @@ def compile_bootloader_stage1(buildCache: BuildCache) -> Path:
     #map_path = Path("build/bootloader/stage1.map")
     
     objects = build_assembly_sources(buildCache, build_dir, src_dir)
-
-    ld_lld = shutil.which("ld.lld")
-
-    print(f"Linking {out}")
-    subprocess.run([
-        ld_lld, "-T", str(linker_script),
-        *[str(o) for o in objects],
-        "-o", str(out)
-    ], check=True)
+    
+    link_objects(buildCache, out, objects, linker_script)
 
     return out
 
@@ -122,16 +139,46 @@ def compile_bootloader_stage2(buildCache: BuildCache) -> Path:
     
     objects = build_assembly_sources(buildCache, build_dir, src_dir)
 
-    ld_lld = shutil.which("ld.lld")
-
-    print(f"Linking {out}")
-    subprocess.run([
-        ld_lld, "-T", str(linker_script),
-        *[str(o) for o in objects],
-        "-o", str(out)
-    ], check=True)
+    link_objects(buildCache, out, objects, linker_script)
 
     return out
+
+def create_disk_image(buildCache: BuildCache, image: Path, stage1: Path, stage2: Path):
+    lfs = shutil.which("lfs")
+
+    deps = [stage1, stage2]
+    content_hash = hash_files(deps)
+
+    if not buildCache.is_up_to_date(image, content_hash):
+        try:
+            print(f"Creating MBR disk image {image}")
+            subprocess.run([
+                lfs, "create", str(image), "mbr",
+                "--size", "16M",
+                "--boot", str(stage1)
+            ], check=True)
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Creating MBR disk image {image} failed")
+            raise e
+        
+        try:
+            print(f"Creating partition 1")
+            subprocess.run([
+                lfs, "create", f"{image}:1", "none",
+                "--size", str(stage2.stat().st_size + (512 - (stage2.stat().st_size % 512))),
+            ], check=True)
+
+            print(f"Writing stage 2 to partition 1")
+            subprocess.run([
+                lfs, "write", f"{image}:1", str(stage2)
+            ], check=True)
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Creating partition 1 with {stage2} failed")
+            raise e
+        
+        buildCache.update(image, content_hash)
 
 def run_qemu(image: Path):
     qemu_args = [
@@ -157,7 +204,7 @@ if __name__ == "__main__":
 
     except Exception as e:
         buildCache.save()
-        print(f"Error Building stage 1 failed: {e}")
+        print(f"Error: Building stage 1 failed: {e}")
         sys.exit(1)
     
     stage2: Path
@@ -166,24 +213,18 @@ if __name__ == "__main__":
 
     except Exception as e:
         buildCache.save()
-        print(f"Error Building stage 2 failed: {e}")
+        print(f"Error: Building stage 2 failed: {e}")
+        sys.exit(1)
+
+    image = Path("build/disk.img")
+    try:
+        create_disk_image(buildCache, image, stage1, stage2)
+
+    except Exception as e:
+        buildCache.save()
+        print(f"Error: Creating disk image: {e}")
         sys.exit(1)
 
     buildCache.save()
-
-    image = Path("build/disk.img")
-
-
-    subprocess.run([
-        "lfs", "create", str(image), "mbr", "--size", "16M", "--boot", str(stage1)
-    ])
-
-    subprocess.run([
-        "lfs", "create", f"{image}:1", "none", "--size", str(stage2.stat().st_size + (512 - (stage2.stat().st_size % 512)))
-    ])
-
-    subprocess.run([
-        "lfs", "write", f"{image}:1", str(stage2)
-    ])
 
     run_qemu(image)

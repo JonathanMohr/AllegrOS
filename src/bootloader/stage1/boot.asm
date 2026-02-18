@@ -325,7 +325,12 @@ section .text
 
 section .data
 
-    extensions_supported db 0
+    drive_number            db 0
+    extensions_supported    db 0
+
+    chs: ; default
+        .heads              dw 2
+        .sectors_per_track  dw 18
 
     extensions_dap:
         .size:              db 10h
@@ -377,11 +382,3 @@ section .mbr_partition_table
         .chs_end        db 0, 0, 0
         .lba_start      dd 0
         .num_sectors    dd 0
-
-section .bss
-
-    drive_number resb 1
-
-    chs:
-        .heads              resw 1
-        .sectors_per_track  resw 1
