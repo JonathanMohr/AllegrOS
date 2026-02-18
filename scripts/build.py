@@ -212,7 +212,7 @@ def main() -> bool:
             "-m32",
             "-ffreestanding", "-nostdinc",
             "-O2", # TODO
-            "-mno-sse", "-mno-mmx", "-mno-sse2"
+            "-mno-sse", "-mno-sse2"
         ],
 
         Linker = shutil.which("ld.lld"),
