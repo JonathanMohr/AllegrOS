@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import subprocess
 from pathlib import Path
 from typing import Optional, Dict
@@ -47,6 +48,17 @@ class BuildCache:
         self.stored_version = version
         return up_to_date
 
+@dataclass
+class Toolchain:
+    Assembler: str
+    Assembler_Flags: list[str]
+
+    Compiler_C: str
+    Compiler_C_Flags: list[str]
+
+    Linker: str
+    Linker_Flags: list[str]
+
 def parse_gcc_dep_file(dep_path: Path) -> list[str]:
     if not dep_path.exists():
         return []
@@ -72,7 +84,7 @@ def hash_files(files: list[Path]) -> str:
                 
     return hasher.hexdigest()
 
-def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_assembly_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     nasm = shutil.which("nasm")
 
     files: list[Path] = source_dir.rglob("*.asm")
@@ -92,8 +104,8 @@ def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: 
             if not buildCache.is_up_to_date(target_path, content_hash):
                 print(f"Assembling {file} -> {target_path}")
                 subprocess.run([
-                    nasm,
-                    "-f", "elf32",
+                    toolchain.Assembler,
+                    *toolchain.Assembler_Flags,
                     str(file),
                     "-o", str(target_path)
                 ], check=True)
@@ -106,7 +118,7 @@ def build_assembly_sources(buildCache: BuildCache, build_dir: Path, source_dir: 
         
     return objects
 
-def build_c_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_c_sources(toolchain: Toolchain,buildCache: BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     clang = shutil.which("clang")
 
     files: list[Path] = source_dir.rglob("*.c")
@@ -129,11 +141,8 @@ def build_c_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -
             if not buildCache.is_up_to_date(target_path, content_hash):
                 print(f"Compiling {file} -> {target_path}")
                 subprocess.run([
-                    clang,
-                    "-target", "i386-pc-none-elf",
-                    "-m32",
-                    "-ffreestanding", "-nostdinc",
-                    "-O2",
+                    toolchain.Compiler_C,
+                    *toolchain.Compiler_C_Flags,
                     "-c", str(file),
                     "-o", str(target_path),
                     "-MD", "-MF", str(dep_path)
@@ -150,18 +159,16 @@ def build_c_sources(buildCache: BuildCache, build_dir: Path, source_dir: Path) -
         
     return objects
 
-def link_objects(buildCache: BuildCache, out: Path, objects: list[Path], linker_script: Path):
-    ld_lld = shutil.which("ld.lld")
-
+def link_objects(toolchain: Toolchain,buildCache: BuildCache, out: Path, objects: list[Path], linker_script: Path):
     try:
         content_hash = hash_files(objects)
 
         if not buildCache.is_up_to_date(out, content_hash):
             print(f"Linking {out}")
             subprocess.run([
-                ld_lld,
+                toolchain.Linker,
                 "-T", str(linker_script),
-                "-nostdlib",
+                *toolchain.Linker_Flags,
                 *[str(o) for o in objects],
                 "-o", str(out)
             ], check=True)
@@ -172,7 +179,7 @@ def link_objects(buildCache: BuildCache, out: Path, objects: list[Path], linker_
         print(f"Error: Linking failed for {out}")
         raise e
 
-def compile_bootloader_stage1(buildCache: BuildCache) -> Path:
+def compile_bootloader_stage1(toolchain: Toolchain, buildCache: BuildCache) -> Path:
     src_dir = Path("src/bootloader/stage1")
     build_dir = Path("build/bootloader/stage1")
     linker_script = src_dir / "linker.ld"
@@ -180,13 +187,13 @@ def compile_bootloader_stage1(buildCache: BuildCache) -> Path:
     out = Path("build/bootloader/stage1.bin")
     #map_path = Path("build/bootloader/stage1.map")
     
-    objects = build_assembly_sources(buildCache, build_dir, src_dir)
+    objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
     
-    link_objects(buildCache, out, objects, linker_script)
+    link_objects(toolchain, buildCache, out, objects, linker_script)
 
     return out
 
-def compile_bootloader_stage2(buildCache: BuildCache) -> Path:
+def compile_bootloader_stage2(toolchain: Toolchain, buildCache: BuildCache) -> Path:
     src_dir = Path("src/bootloader/stage2")
     build_dir = Path("build/bootloader/stage2")
     linker_script = src_dir / "linker.ld"
@@ -194,10 +201,10 @@ def compile_bootloader_stage2(buildCache: BuildCache) -> Path:
     out = Path("build/bootloader/stage2.bin")
     #map_path = Path("build/bootloader/stage2.map")
     
-    asm_objects = build_assembly_sources(buildCache, build_dir, src_dir)
-    c_objects = build_c_sources(buildCache, build_dir, src_dir)
+    asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
+    c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
 
-    link_objects(buildCache, out, [*asm_objects, *c_objects], linker_script)
+    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script)
 
     return out
 
@@ -261,9 +268,29 @@ def run_qemu(image: Path):
 def main() -> bool:
     buildCache: BuildCache = BuildCache(Path(".buildcache.json"))
 
+    toolchain: Toolchain = Toolchain(
+        Assembler = shutil.which("nasm"),
+        Assembler_Flags = [
+            "-f", "elf32"
+        ],
+
+        Compiler_C = shutil.which("clang"),
+        Compiler_C_Flags = [
+            "-target", "i386-pc-none-elf",
+            "-m32",
+            "-ffreestanding", "-nostdinc",
+            "-O2"
+        ],
+
+        Linker = shutil.which("ld.lld"),
+        Linker_Flags = [
+            "-nostdlib"
+        ]
+    )
+
     stage1: Path
     try:
-        stage1 = compile_bootloader_stage1(buildCache)
+        stage1 = compile_bootloader_stage1(toolchain, buildCache)
 
     except Exception as e:
         buildCache.save()
@@ -272,7 +299,7 @@ def main() -> bool:
     
     stage2: Path
     try:
-        stage2 = compile_bootloader_stage2(buildCache)
+        stage2 = compile_bootloader_stage2(toolchain, buildCache)
 
     except Exception as e:
         buildCache.save()
