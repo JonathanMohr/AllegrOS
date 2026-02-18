@@ -98,6 +98,7 @@ void IO_PrintFormat(stream_t s, const char* fmt, ...)
                             case 'b': case 'B': radix = 2;  break;
                             case 'o': case 'O': radix = 8;  break;
                             case 'd': case 'D': radix = 10; break;
+                            case 'h': case 'H':
                             case 'x': case 'X': radix = 16; break;
 
                             default:
