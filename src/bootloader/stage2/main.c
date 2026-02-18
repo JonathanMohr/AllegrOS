@@ -17,7 +17,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory)
     stream_t stream = dbgout;
 
     IO_PrintFormat(stream, "BootDrive: 0x%uxb\n", bootParams.BootDevice);
-    IO_PrintFormat(stream, "Page Directory: %p\n\n", page_directory);
+    IO_PrintFormat(stream, "Page Directory: %p\n", page_directory);
     for (uint32_t i = 0; i < bootParams.Memory.RegionCount; i++)
     {
         const MemoryRegion* memoryRegion = &bootParams.Memory.Regions[i];
