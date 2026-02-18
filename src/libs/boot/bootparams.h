@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define MAX_REGIONS 256
+
 #define MEMORY_TYPE_USABLE              1
 #define MEMORY_TYPE_RESERVED            2
 #define MEMORY_TYPE_ACPI_RECLAIMABLE    3
@@ -20,7 +22,7 @@ typedef struct {
 
 typedef struct {
     uint32_t RegionCount;
-    MemoryRegion* Regions;
+    MemoryRegion Regions[MAX_REGIONS];
 } MemoryInfo;
 
 typedef struct {
