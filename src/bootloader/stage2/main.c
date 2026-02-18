@@ -7,16 +7,17 @@
 
 BootParams bootParams;
 
-void CDECL start(uint16_t boot_drive)
+void CDECL start(uint32_t boot_drive, uint32_t* page_directory)
 {
     IO_Init();
 
-    bootParams.BootDevice = boot_drive;
+    bootParams.BootDevice = (uint8_t)boot_drive;
     Memory_Detect(&bootParams.Memory);
 
     stream_t stream = dbgout;
 
-    IO_PrintFormat(stream, "BootDrive: 0x%uxb\n\n", bootParams.BootDevice);
+    IO_PrintFormat(stream, "BootDrive: 0x%uxb\n", bootParams.BootDevice);
+    IO_PrintFormat(stream, "Page Directory: %p\n\n", page_directory);
     for (uint32_t i = 0; i < bootParams.Memory.RegionCount; i++)
     {
         const MemoryRegion* memoryRegion = &bootParams.Memory.Regions[i];
@@ -58,7 +59,7 @@ void CDECL start(uint16_t boot_drive)
 
         IO_PrintFormat(stream, " region %udd:\n", i);
         IO_PrintFormat(stream, "\t%uxq - %uxq (%uxq)\n", memoryRegion->Begin, memoryRegion->Begin + memoryRegion->Length - 1, memoryRegion->Length);
-        IO_PrintFormat(stream, "\tACPI: %udd\n\n", memoryRegion->ACPI);
+        IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
     }
 
 end:

@@ -91,7 +91,7 @@ def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir
         
     return objects
 
-def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path):
+def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
     try:
         deps = [*objects, linker_script]
         content_hash = cache.hash_files(deps)
@@ -101,6 +101,7 @@ def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, o
             subprocess.run([
                 toolchain.Linker,
                 "-T", str(linker_script),
+                f"-Map={map}",
                 *toolchain.Linker_Flags,
                 *[str(o) for o in objects],
                 "-o", str(out)
@@ -118,11 +119,11 @@ def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache
     linker_script = src_dir / "linker.ld"
 
     out = Path("build/bootloader/stage1.bin")
-    #map_path = Path("build/bootloader/stage1.map")
+    map_path = Path("build/bootloader/stage1.map")
     
     objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
     
-    link_objects(toolchain, buildCache, out, objects, linker_script)
+    link_objects(toolchain, buildCache, out, objects, linker_script, map_path)
 
     return out
 
@@ -132,12 +133,12 @@ def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache
     linker_script = src_dir / "linker.ld"
 
     out = Path("build/bootloader/stage2.bin")
-    #map_path = Path("build/bootloader/stage2.map")
+    map_path = Path("build/bootloader/stage2.map")
     
     asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
     c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
 
-    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script)
+    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 

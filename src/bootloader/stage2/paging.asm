@@ -52,6 +52,8 @@ setup_paging:
     jmp .call_start
 
 .call_start:
+    push dword page_directory
+
     xor edx, edx
     mov dl, [bootDrive]
     push edx

@@ -110,8 +110,10 @@ section .entry
         call disk_read
 
         mov bp, cx
-        shl bp, 9
-        add bx, bp
+        shl bp, 5
+        mov di, es
+        add di, bp
+        mov es, di
 
         add eax, ecx
         sub esi, ecx

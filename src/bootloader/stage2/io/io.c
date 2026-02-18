@@ -196,6 +196,10 @@ void IO_PrintFormat(stream_t s, const char* fmt, ...)
                         break;
                     }
 
+                    case 'p':
+                        IO_PrintFormat_Unsigned(s, va_arg(args, uint32_t), 16);
+                        break;
+
                     case 'c':
                         IO_PutChar(s, (char)va_arg(args, int));
                         break;
