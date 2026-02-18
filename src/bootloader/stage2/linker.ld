@@ -1,4 +1,4 @@
-ENTRY(start)
+ENTRY(entry)
 OUTPUT_FORMAT("binary")
 phys = 0x0500;
 

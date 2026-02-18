@@ -2,9 +2,10 @@
 
 %define ENDL 0x0D, 0x0A
 
-; ENTRY
+section .entry
+    global entry
 
-start:
+entry:
     mov si, msg
     call puts
 

@@ -181,21 +181,26 @@ def create_disk_image(buildCache: BuildCache, image: Path, stage1: Path, stage2:
         buildCache.update(image, content_hash)
 
 def run_qemu(image: Path):
-    qemu_args = [
-        "-m", "32",
-#       "-spice", "port=5930,disable-ticketing",
-        "-display", "sdl,gl=on",
-        "-debugcon", "stdio"
-    ]
+    try:
+        qemu_args = [
+            "-m", "32",
+    #       "-spice", "port=5930,disable-ticketing",
+            "-display", "sdl,gl=on",
+            "-debugcon", "stdio"
+        ]
 
-    qemu = "qemu-system-i386"
+        qemu = "qemu-system-i386"
 
-    subprocess.run([
-        qemu, *qemu_args,
-        "-drive", f"format=raw,file={image},if=ide"
-    ])
+        subprocess.run([
+            qemu, *qemu_args,
+            "-drive", f"format=raw,file={image},if=ide"
+        ], check=True)
 
-if __name__ == "__main__":
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Running QEMU with {image} failed")
+        raise e
+
+def main() -> bool:
     buildCache: BuildCache = BuildCache(Path(".buildcache.json"))
 
     stage1: Path
@@ -205,7 +210,7 @@ if __name__ == "__main__":
     except Exception as e:
         buildCache.save()
         print(f"Error: Building stage 1 failed: {e}")
-        sys.exit(1)
+        return False
     
     stage2: Path
     try:
@@ -214,7 +219,7 @@ if __name__ == "__main__":
     except Exception as e:
         buildCache.save()
         print(f"Error: Building stage 2 failed: {e}")
-        sys.exit(1)
+        return False
 
     image = Path("build/disk.img")
     try:
@@ -223,8 +228,21 @@ if __name__ == "__main__":
     except Exception as e:
         buildCache.save()
         print(f"Error: Creating disk image: {e}")
-        sys.exit(1)
+        return False
 
     buildCache.save()
 
-    run_qemu(image)
+    try:
+        run_qemu(image)
+
+    except Exception as e:
+        print(f"Error: QEMU failed: {e}")
+        return False
+    
+    return True
+    
+if __name__ == "__main__":
+    if not main():
+        sys.exit(1)
+    
+    sys.exit(0)
