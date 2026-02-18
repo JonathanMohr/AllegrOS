@@ -130,9 +130,6 @@ section .entry
         ; should never happen
         jmp jmp_failed_error
 
-        cli
-        hlt
-
 section .text
 
     ;

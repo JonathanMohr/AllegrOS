@@ -1,23 +1,23 @@
-[bits 16]
+[bits 32]
 
 %define ENDL 0x0D, 0x0A
 
-section .entry
-    global entry
+section .text
+    global start
 
-entry:
-    mov si, msg
-    call puts
+start:
+    mov esi, msg
+    call debug_puts
 
     cli
     hlt
 
 ;
-; Prints a string to the screen
+; Prints a string to the host terminal
 ; Params:
-;   - ds:si points to string
+;   - esi points to string
 ;
-puts:
+debug_puts:
     ; save registers we will modify
     push si
     push ax
@@ -28,9 +28,7 @@ puts:
     or al, al           ; verify if next character is null?
     jz .done
 
-    mov ah, 0x0E        ; call bios interrupt
-    mov bh, 0           ; set page number to 0
-    int 0x10
+    out 0xE9, al
 
     jmp .loop
 
@@ -40,5 +38,8 @@ puts:
     pop si
 
     ret
+
+
+section .rodata
 
 msg db "Hello World!", ENDL, 0
