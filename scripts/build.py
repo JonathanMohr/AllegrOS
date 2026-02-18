@@ -223,7 +223,9 @@ def main() -> bool:
 
     # TODO: hardcoded
     lib_path = Path("src/libs/core")
+    toolchain.Compiler_C_Flags.append(f"-I{lib_path}")
 
+    lib_path = Path("src/libs/boot")
     toolchain.Compiler_C_Flags.append(f"-I{lib_path}")
 
     stage1: Path

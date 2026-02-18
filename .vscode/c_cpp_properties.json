@@ -2,10 +2,10 @@
     "configurations": [
         {
             "includePath": [
-                "${workspaceFolder}/src/libs/core/"
+                "${workspaceFolder}/src/libs/core/",
+                "${workspaceFolder}/src/libs/boot"
             ],
-            "defines": [
-            ],
+            "defines": [],
             "windowsSdkVersion": "10.0.22621.0",
             "cStandard": "c11",
             "cppStandard": "c++17",
