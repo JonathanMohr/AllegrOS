@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "includePath": [
+                "${workspaceFolder}/src/libs/core/"
+            ],
+            "defines": [
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compilerPath": "clang",
+            "intelliSenseMode": "clang-x86"
+        }
+    ],
+    "version": 4
+}

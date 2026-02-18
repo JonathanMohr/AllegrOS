@@ -20,8 +20,8 @@ entry:
 
     mov ax, ds
     mov ss, ax
-    mov esp, 0xFFF0
-    mov ebp, esp
+    mov sp, 0xFFF0
+    mov bp, sp
 
     ; switch to protected mode
     call EnableA20
@@ -46,8 +46,6 @@ entry:
     mov fs, ax
     mov gs, ax
 
-    sti
-
     ; clear bss
     mov edi, __bss_start
     mov ecx, __end
@@ -61,7 +59,6 @@ entry:
     push edx
     call start
 
-    cli
     hlt
 
 ; A20

@@ -211,7 +211,8 @@ def main() -> bool:
             "-target", "i386-pc-none-elf",
             "-m32",
             "-ffreestanding", "-nostdinc",
-            "-O2"
+            "-O2", # TODO
+            "-mno-sse", "-mno-mmx", "-mno-sse2"
         ],
 
         Linker = shutil.which("ld.lld"),
@@ -219,6 +220,11 @@ def main() -> bool:
             "-nostdlib"
         ]
     )
+
+    # TODO: hardcoded
+    lib_path = Path("src/libs/core")
+
+    toolchain.Compiler_C_Flags.append(f"-I{lib_path}")
 
     stage1: Path
     try:
