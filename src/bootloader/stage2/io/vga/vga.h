@@ -12,4 +12,3 @@ void VGA_Scrollback(uint8_t lines);
 
 void VGA_ClearScreen();
 void VGA_PutChar(char c);
-void VGA_PutString(const char* str);

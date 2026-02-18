@@ -1,13 +1,14 @@
 #include <abi.h>
 #include <stdint.h>
 
-#include "vga/vga.h"
+#include "io/io.h"
 
 void CDECL start(uint16_t boot_drive)
 {
-    VGA_ClearScreen();
+    IO_Init();
 
-    VGA_PutString("Hello World from C!\n");
+    IO_PutString(vgaout, "Hello World from C!\n");
+    IO_PutString(dbgout, "Hello World from C to dbgout!\n");
 
     for (;;);
 }

@@ -1,6 +1,6 @@
 #include "vga.h"
 
-#include "../x86/x86.h"
+#include "../../x86/x86.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -117,13 +117,4 @@ void VGA_PutChar(char c)
         VGA_Scrollback(1);
 
     VGA_SetCursor(vga_screenX, vga_screenY);
-}
-
-void VGA_PutString(const char* str)
-{
-    while (*str)
-    {
-        VGA_PutChar(*str);
-        str++;
-    }
 }
