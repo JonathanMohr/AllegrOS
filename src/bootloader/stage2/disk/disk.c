@@ -22,8 +22,6 @@ bool Disk_ReadSectors(Disk* disk, uint64_t lba, uint64_t sectors, void* buffer)
 {
     uintptr_t out = (uintptr_t)buffer;
 
-    IO_PrintFormat(dbgout, "buffer: %p\n", out);
-
     while (sectors != 0)
     {
         uint8_t sectorsToRead = 127;
@@ -45,16 +43,6 @@ bool Disk_ReadSectors(Disk* disk, uint64_t lba, uint64_t sectors, void* buffer)
         lba += sectorsToRead;
         sectors -= sectorsToRead;
         out += (uintptr_t)sectorsToRead * 512;
-    }
-
-    for (int i = 0; i < 512; i++)
-    {
-        IO_PrintFormat(dbgout, "%uxb%c", Disk_ReadBuffer[i], ((i + 1) % 16 == 0) ? '\n' : ' ');
-    }
-
-    for (int i = 0; i < 512; i++)
-    {
-        IO_PrintFormat(dbgout, "%uxb%c", ((uint8_t*)buffer)[i], ((i + 1) % 16 == 0) ? '\n' : ' ');
     }
 
     return true;

@@ -76,16 +76,11 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
 
     uint8_t buffer[512];
 
-    if (!Disk_ReadSectors(&disk, 0, 1, buffer))
-    {
-        IO_PutString(vgaout, "Couldn't read sector 0!\n");
-        goto end;
-    }
-
-    for (int i = 0; i < 512; i++)
-    {
-        //IO_PrintFormat(dbgout, "%uxb%c", buffer[i], ((i + 1) % 16 == 0) ? '\n' : ' ');
-    }
+    //if (!Disk_ReadSectors(&disk, 0, 1, buffer))
+    //{
+    //    IO_PutString(vgaout, "Couldn't read sector 0!\n");
+    //    goto end;
+    //}
 
 end:
     for (;;);
