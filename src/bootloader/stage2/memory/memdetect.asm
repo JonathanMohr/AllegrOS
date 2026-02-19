@@ -1,5 +1,3 @@
-[bits 32]
-
 %define ENDL 0x0D, 0x0A
 %define MAX_REGIONS 256
 
@@ -74,6 +72,7 @@ extern IO_PutStringCritical
 section .entry
     global getE820MemoryBlocks
 
+[bits 32]
 getE820MemoryBlocks:
     push ebp
     mov ebp, esp
@@ -88,17 +87,15 @@ getE820MemoryBlocks:
     push edx
     push esi
 
-    ;push eax
-    ;x86_EnterRealMode a
-    ;pop eax
+    x86_EnterRealMode a
 
-    call test
-
-    ;push eax
-    ;x86_EnterProtectedMode a
-    ;pop eax
+    call x86_E820GetNextBlock
 
     add esp, 8
+
+    push eax
+    x86_EnterProtectedMode a
+    pop eax
 .loop:
     cmp eax, 0
     jle .done
@@ -113,17 +110,15 @@ getE820MemoryBlocks:
     push edx
     push esi
 
-    ;push eax
-    ;x86_EnterRealMode b
-    ;pop eax
+    x86_EnterRealMode b
 
-    call test
-
-    ;push eax
-    ;x86_EnterProtectedMode b
-    ;pop eax
+    call x86_E820GetNextBlock
 
     add esp, 8
+
+    push eax
+    x86_EnterProtectedMode b
+    pop eax
 
     mov eax, [ebp - 4]
     cmp eax, 0
@@ -145,10 +140,7 @@ error_max_regions:
     ; TODO: Reboot
     hlt
 
-test:
-    x86_EnterRealMode a
-    jmp x86_E820GetNextBlock
-
+[bits 16]
 E820Signature   equ 0x534D4150
 
 x86_E820GetNextBlock:
@@ -166,9 +158,9 @@ x86_E820GetNextBlock:
     push es
 
     ; setup params
-    LinearToSegOffset [bp + 8], es, edi, di     ; es:di pointer to structure
+    LinearToSegOffset [bp + 6], es, edi, di     ; es:di pointer to structure
     
-    LinearToSegOffset [bp + 12], ds, esi, si    ; ebx - pointer to continuationId
+    LinearToSegOffset [bp + 10], ds, esi, si    ; ebx - pointer to continuationId
     mov ebx, ds:[si]
 
     mov eax, 0xE820                             ; eax - function
@@ -204,10 +196,6 @@ x86_E820GetNextBlock:
     ; restore old call frame
     mov esp, ebp
     pop ebp
-
-    push eax
-    x86_EnterProtectedMode a
-    pop eax
 
     ret
 
