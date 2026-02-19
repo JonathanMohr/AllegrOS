@@ -35,14 +35,19 @@ bool Disk_ReadSectors(Disk* disk, uint64_t lba, uint64_t sectors, void* buffer)
         dap.buffer_segment = (uint16_t)(((uintptr_t)Disk_ReadBuffer >> 4) & 0xFFFF);
         dap.lba = lba;
 
-        if (!Disk_ReadRaw(disk->id, &dap))
+        if (!Disk_ReadRaw((uint32_t)disk->id, &dap))
             return false;
 
-        memcpy(buffer, Disk_ReadBuffer, sectorsToRead * 512);
+        memcpy((uint8_t*)out, Disk_ReadBuffer, sectorsToRead * 512);
 
         lba += sectorsToRead;
         sectors -= sectorsToRead;
-        buffer += (uintptr_t)sectorsToRead * 512;
+        out += (uintptr_t)sectorsToRead * 512;
+    }
+
+    for (int i = 0; i < 512; i++)
+    {
+        IO_PrintFormat(dbgout, "%uxb%c", Disk_ReadBuffer[i], ((i + 1) % 16 == 0) ? '\n' : ' ');
     }
 
     return true;

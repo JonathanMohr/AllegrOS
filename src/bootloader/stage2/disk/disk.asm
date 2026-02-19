@@ -70,7 +70,7 @@ section .text
     global Disk_ReadRaw
 
 ;
-; bool CDECL Disk_ReadRaw(uint8_t drive, Disk_AddressPacket* dap);
+; bool CDECL Disk_ReadRaw(uint32_t drive, Disk_AddressPacket* dap);
 ;
 
 Disk_ReadRaw:

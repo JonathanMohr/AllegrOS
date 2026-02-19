@@ -90,7 +90,11 @@ memcpy:
     push ebp
     mov ebp, esp
 
-    mov edi, [ebp + 8]  ; dst
+    push edi
+    push esi
+
+    mov eax, [ebp + 8]  ; return value
+    mov edi, eax        ; dst
     mov esi, [ebp + 12] ; src
     mov ecx, [ebp + 16] ; count
 
@@ -101,7 +105,8 @@ memcpy:
     rep movsb
 
 .done:
-    mov eax, edi
+    pop esi
+    pop edi
 
     pop ebp
     ret

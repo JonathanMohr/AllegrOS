@@ -22,4 +22,4 @@ typedef struct {
 } __attribute__((packed)) Disk_AddressPacket;
 
 // TODO: Maybe use int 13/AH=02h
-bool CDECL Disk_ReadRaw(uint8_t drive, Disk_AddressPacket* dap);
+bool CDECL Disk_ReadRaw(uint32_t drive, Disk_AddressPacket* dap);
