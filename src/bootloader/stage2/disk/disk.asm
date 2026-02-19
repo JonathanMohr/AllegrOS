@@ -16,7 +16,10 @@
     ; 4 - setup segments
     mov ax, 0
     mov ds, ax
+    mov es, ax
     mov ss, ax
+    mov fs, ax
+    mov gs, ax
 
     ; 5 - enable interrupts
     sti
@@ -43,7 +46,10 @@
     ; 6 - setup segment registers
     mov ax, 0x10
     mov ds, ax
+    mov es, ax
     mov ss, ax
+    mov fs, ax
+    mov gs, ax
 
 %endmacro
 

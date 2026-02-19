@@ -87,26 +87,18 @@ x86_inb:
 ;
 global memcpy
 memcpy:
-    push ebp
-    mov ebp, esp
-
     push edi
     push esi
 
-    mov eax, [ebp + 8]  ; return value
-    mov edi, eax        ; dst
-    mov esi, [ebp + 12] ; src
-    mov ecx, [ebp + 16] ; count
-
-    cmp ecx, 0
-    je .done
+    mov edi, [esp + 12] ; dst
+    mov esi, [esp + 16] ; src
+    mov ecx, [esp + 20] ; count
+    mov eax, edi        ; return value
 
     cld
     rep movsb
 
-.done:
     pop esi
     pop edi
 
-    pop ebp
     ret
