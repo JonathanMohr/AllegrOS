@@ -27,6 +27,13 @@ entry:
     mov sp, 0xFFF0
     mov bp, sp
 
+    ; x86_E820MemoryBlocks pointer in eax
+    ; count in edi
+    call getE820MemoryBlocks
+
+    mov dword [memoryBlockPointer], eax
+    mov dword [memoryBlockCount], edi
+
     ; switch to protected mode
     push dword .pmode
     jmp enter_protected
@@ -42,12 +49,8 @@ entry:
     cld
     rep stosb
 
-    ; x86_E820MemoryBlocks pointer in eax
-    ; count in edi
-    call getE820MemoryBlocks
-
-    push edi
-    push eax
+    push dword [memoryBlockCount]
+    push dword [memoryBlockPointer]
 
     ; page_directory pointer in eax
     call setup_paging
@@ -65,4 +68,7 @@ entry:
 
 ; DATA
 
-bootDrive: db 0
+memoryBlockPointer dd 0
+memoryBlockCount   dd 0
+
+bootDrive db 0

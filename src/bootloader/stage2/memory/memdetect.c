@@ -29,7 +29,6 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
         uint32_t type = blocks[i].Type;
         uint32_t acpi = blocks[i].ACPI;
 
-        /*
         // Gap
         if (base > lastEnd)
         {
@@ -48,7 +47,6 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
             if (length <= overlap) continue;
             length -= overlap;
         }
-        */
 
         memoryInfo->Regions[regionCount].Begin = base;
         memoryInfo->Regions[regionCount].Length = length;
