@@ -15,3 +15,5 @@ typedef struct
     uint32_t ACPI;
 
 } __attribute__((packed)) x86_E820MemoryBlock;
+
+void* CDECL memcpy(void* dst, const void* src, uint32_t count);

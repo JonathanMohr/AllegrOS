@@ -10,13 +10,10 @@ section .entry
     global entry
 
     global bootDrive
-
-    global entry.pmode
+    global mbr_bootsector
 
 entry:
     [bits 16]
-
-    cli
 
     ; save boot drive
     mov [bootDrive], dl
@@ -24,8 +21,10 @@ entry:
     ; setup stack
     mov ax, ds
     mov ss, ax
-    mov sp, 0xFFF0
+    mov sp, 0x7BFC
     mov bp, sp
+
+    sti
 
     ; x86_E820MemoryBlocks pointer in eax
     ; count in edi
@@ -34,12 +33,21 @@ entry:
     mov dword [memoryBlockPointer], eax
     mov dword [memoryBlockCount], edi
 
+    cli
+
     ; switch to protected mode
     push dword .pmode
     jmp enter_protected
 
 .pmode:
     [bits 32]
+
+    ; copy bootsector
+    mov esi, 0x7C00
+    mov edi, mbr_bootsector
+    mov ecx, 128            ; 512 bytes = 128 dwords
+    cld
+    rep movsd
 
     ; clear bss
     mov edi, __bss_start
@@ -72,3 +80,5 @@ memoryBlockPointer dd 0
 memoryBlockCount   dd 0
 
 bootDrive db 0
+
+mbr_bootsector times 512 db 0

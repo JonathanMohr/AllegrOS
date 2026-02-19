@@ -20,8 +20,6 @@
 
 %endmacro
 
-extern IO_PutStringCritical
-
 section .entry
     global getE820MemoryBlocks
 
@@ -64,8 +62,20 @@ getE820MemoryBlocks:
 
 
 error_max_regions:
-    push dword msg_max_regions
-    call IO_PutStringCritical
+    cli
+    mov si, msg_max_regions
+
+.loop:
+    lodsb               ; loads next character in al
+    or al, al           ; verify if next character is null?
+    jz .done
+
+    mov ah, 0x0E        ; call bios interrupt
+    mov bh, 0           ; set page number to 0
+    int 0x10
+
+    jmp .loop
+.done:
 
     ; TODO: Reboot
     hlt

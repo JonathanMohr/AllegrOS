@@ -5,6 +5,8 @@
 #include "io/io.h"
 #include "memory/memdetect.h"
 #include "x86/x86.h"
+#include "disk/disk.h"
+#include "mbr/mbr.h"
 
 BootParams bootParams;
 
@@ -62,6 +64,25 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
         IO_PrintFormat(stream, "\t%uxq - %uxq (%uxq)\n", memoryRegion->Begin, memoryRegion->Begin + memoryRegion->Length - 1, memoryRegion->Length);
         IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
     }
+
+    IO_PrintFormat(stream, "Filesystem sectors: %uxd - %uxd\n", MBR_GetFSStart(), MBR_GetFSStart() + MBR_GetFSSize() - 1);
+
+    Disk disk;
+    if (!Disk_Initialize(&disk, bootParams.BootDevice))
+    {
+        IO_PutStringCritical("Couldn't initialize disk!\n");
+        goto end;
+    }
+
+    uint8_t buffer[770];
+
+    if (!Disk_ReadSectors(&disk, 0, 1, buffer))
+    {
+        IO_PutString(vgaout, "Couldn't read sector 0!\n");
+        goto end;
+    }
+
+    IO_PutString(vgaout, "Could read sector 0!\n");
 
 end:
     for (;;);

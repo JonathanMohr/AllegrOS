@@ -153,7 +153,7 @@ def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, s
             print(f"Creating MBR disk image {image}")
             subprocess.run([
                 lfs, "create", str(image), "mbr",
-                "--size", "16M",
+                "--size", "100M",
                 "--boot", str(stage1)
             ], check=True)
 
@@ -175,6 +175,16 @@ def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, s
 
         except subprocess.CalledProcessError as e:
             print(f"Error: Creating partition 1 with {stage2} failed")
+            raise e
+
+        try:
+            print(f"Creating partition 2")
+            subprocess.run([
+                lfs, "create", f"{image}:2", "fat32"
+            ], check=True)
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Creating partition 2 with {stage2} failed")
             raise e
         
         buildCache.update(image, content_hash)

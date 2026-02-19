@@ -67,41 +67,46 @@
 [bits 32]
 
 section .text
-
-global x86_outb
-x86_outb:
-    mov dx, [esp + 4]
-    mov al, [esp + 8]
-    out dx, al
-    ret
-
-global x86_inb
-x86_inb:
-    mov dx, [esp + 4]
-    xor eax, eax
-    in al, dx
-    ret
+    global Disk_ReadRaw
 
 ;
-; void* CDECL memcpy(void* dst, const void* src, uint32_t count);
+; bool CDECL Disk_ReadRaw(uint8_t drive, Disk_AddressPacket* dap);
 ;
-global memcpy
-memcpy:
+
+Disk_ReadRaw:
     push ebp
     mov ebp, esp
 
-    mov edi, [ebp + 8]  ; dst
-    mov esi, [ebp + 12] ; src
-    mov ecx, [ebp + 16] ; count
+    push ebx
+    push esi
+    push edi
+    push ds
 
-    cmp ecx, 0
-    je .done
+    mov dl, [ebp + 8]
 
-    cld
-    rep movsb
+    x86_EnterRealMode
+
+    LinearToSegOffset [ebp + 12], ds, esi, si
+
+    mov ah, 42h
+    int 13h
+    jc .error
+
+    mov eax, 1
+    jmp .done
+
+.error:
+    xor eax, eax
 
 .done:
-    mov eax, edi
+    push eax
+    x86_EnterProtectedMode
+    pop eax
+
+    pop ds
+    pop edi
+    pop esi
+    pop ebx
 
     pop ebp
     ret

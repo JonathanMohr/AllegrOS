@@ -119,6 +119,7 @@ section .entry
         sub esi, ecx
         jmp .read_loop
     .read_finish:
+        cli
         
         ; jump to stage 2
         mov dl, [drive_number]
@@ -340,7 +341,7 @@ section .data
         .lba:               dq 0
 
     STAGE2_LOAD_SEGMENT     equ 0000h
-    STAGE2_LOAD_OFFSET      equ 0500h
+    STAGE2_LOAD_OFFSET      equ 8000h
 
 section .rodata
 
