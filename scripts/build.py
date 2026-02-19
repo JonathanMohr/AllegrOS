@@ -118,8 +118,8 @@ def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache
     build_dir = Path("build/bootloader/stage1")
     linker_script = src_dir / "linker.ld"
 
-    out = Path("build/bootloader/stage1.bin")
-    map_path = Path("build/bootloader/stage1.map")
+    out = build_dir / "stage1.bin"
+    map_path = build_dir / "stage1.map"
     
     objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
     
@@ -132,8 +132,23 @@ def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache
     build_dir = Path("build/bootloader/stage2")
     linker_script = src_dir / "linker.ld"
 
-    out = Path("build/bootloader/stage2.bin")
-    map_path = Path("build/bootloader/stage2.map")
+    out = build_dir / "stage2.bin"
+    map_path = build_dir / "stage2.map"
+    
+    asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
+    c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
+
+    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
+
+    return out
+
+def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
+    src_dir = Path("src/kernel")
+    build_dir = Path("build/kernel")
+    linker_script = src_dir / "linker.ld"
+
+    out = build_dir / "kernel.bin"
+    map_path = build_dir / "kernel.map"
     
     asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
     c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
@@ -260,10 +275,31 @@ def main() -> bool:
         print(f"Error: Building stage 2 failed: {e}")
         return False
 
-    image = Path("build/disk.img")
-    fs_root = Path("fs_root")
+    kernel: Path
     try:
-        create_disk_image(buildCache, image, stage1, stage2, fs_root)
+        kernel = compile_bootloader_kernel(toolchain, buildCache)
+
+    except Exception as e:
+        buildCache.save()
+        print(f"Error: Building kernel failed: {e}")
+        return False
+    
+    build_fs_root = Path("build/fs_root")
+    shutil.rmtree(build_fs_root, ignore_errors=True)
+    build_fs_root.mkdir(parents=True, exist_ok=True)
+
+    fs_root = Path("fs_root")
+    shutil.copytree(fs_root, build_fs_root, dirs_exist_ok=True)
+
+    system_dir = build_fs_root / "system"
+    system_dir.mkdir(parents=True, exist_ok=True)
+
+    kernel_path = system_dir / "kernel.bin"
+    shutil.copy2(kernel, kernel_path)
+
+    image = Path("build/disk.img")
+    try:
+        create_disk_image(buildCache, image, stage1, stage2, build_fs_root)
 
     except Exception as e:
         buildCache.save()
