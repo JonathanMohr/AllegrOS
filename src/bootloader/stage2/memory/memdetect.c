@@ -50,7 +50,10 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
 
         memoryInfo->Regions[regionCount].Begin = base;
         memoryInfo->Regions[regionCount].Length = length;
-        memoryInfo->Regions[regionCount].Type = type;
+        if (base < 0xFFFFF && type == MEMORY_TYPE_USABLE)
+            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_RELUCTANT;
+        else
+            memoryInfo->Regions[regionCount].Type = type;
         memoryInfo->Regions[regionCount].ACPI = acpi;
 
         lastEnd = base + length;
