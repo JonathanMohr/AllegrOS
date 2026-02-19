@@ -4,15 +4,16 @@
 
 #include "io/io.h"
 #include "memory/memdetect.h"
+#include "x86/x86.h"
 
 BootParams bootParams;
 
-void CDECL start(uint32_t boot_drive, uint32_t* page_directory)
+void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBlock* memoryBlocks, uint32_t memoryBlock_count)
 {
     IO_Init();
 
     bootParams.BootDevice = (uint8_t)boot_drive;
-    Memory_Detect(&bootParams.Memory);
+    Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count);
 
     stream_t stream = dbgout;
 
@@ -57,7 +58,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory)
                 break;
         }
 
-        IO_PrintFormat(stream, " region %udd:\n", i);
+        IO_PrintFormat(stream, " region %udd:\n", i + 1);
         IO_PrintFormat(stream, "\t%uxq - %uxq (%uxq)\n", memoryRegion->Begin, memoryRegion->Begin + memoryRegion->Length - 1, memoryRegion->Length);
         IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
     }

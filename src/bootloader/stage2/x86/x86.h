@@ -14,12 +14,4 @@ typedef struct
     uint32_t Type;
     uint32_t ACPI;
 
-} x86_E820MemoryBlock;
-
-#define x86_E820_USABLE           1
-#define x86_E820_RESERVED         2
-#define x86_E820_ACPI_RECLAIMABLE 3
-#define x86_E820_ACPI_NVS         4
-#define x86_E820_BAD_MEMORY       5
-
-int CDECL x86_E820GetNextBlock(x86_E820MemoryBlock* block, uint32_t* continuationId);
+} __attribute__((packed)) x86_E820MemoryBlock;

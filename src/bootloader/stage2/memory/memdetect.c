@@ -1,29 +1,11 @@
 #include "memdetect.h"
 
+#include <bootparams.h>
 #include "../io/io.h"
 #include "../x86/x86.h"
 
-void Memory_Detect(MemoryInfo* memoryInfo)
+void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count)
 {
-    x86_E820MemoryBlock blocks[MAX_REGIONS];
-    uint32_t count = 0;
-    uint32_t continuation = 0;
-
-    int ret = x86_E820GetNextBlock(&blocks[count], &continuation);
-    while (ret > 0)
-    {
-        if (count >= MAX_REGIONS)
-        {
-            IO_PutString(vgaout, "Warning: More regions than MAX_REGIONS!");
-            IO_PutString(dbgout, "Warning: More regions than MAX_REGIONS!");
-        }
-        
-        count++;
-        ret = x86_E820GetNextBlock(&blocks[count], &continuation);
-
-        if (continuation == 0) break;
-    }
-
     for (uint32_t i = 0; i < count - 1; i++)
     {
         for (uint32_t j = i + 1; j < count; j++)
@@ -47,6 +29,7 @@ void Memory_Detect(MemoryInfo* memoryInfo)
         uint32_t type = blocks[i].Type;
         uint32_t acpi = blocks[i].ACPI;
 
+        /*
         // Gap
         if (base > lastEnd)
         {
@@ -65,6 +48,7 @@ void Memory_Detect(MemoryInfo* memoryInfo)
             if (length <= overlap) continue;
             length -= overlap;
         }
+        */
 
         memoryInfo->Regions[regionCount].Begin = base;
         memoryInfo->Regions[regionCount].Length = length;

@@ -6,7 +6,6 @@ extern __end
 extern bootDrive
 
 extern IO_PutStringCritical
-extern start
 
 section .text
     global setup_paging
@@ -49,19 +48,12 @@ setup_paging:
     or eax, 0x80000000
     mov cr0, eax
 
-    jmp .call_start
+    jmp .finished
 
-.call_start:
-    push dword page_directory
+.finished:
+    mov eax, page_directory
 
-    xor edx, edx
-    mov dl, [bootDrive]
-    push edx
-
-    call start
-
-    ; TODO: Reboot
-    hlt
+    ret
 
 error_stage2_too_big:
     push dword msg_stage2_too_big
