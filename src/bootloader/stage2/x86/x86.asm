@@ -102,3 +102,21 @@ memcpy:
     pop edi
 
     ret
+
+;
+; void* CDECL memset(void* dst, int32_t value, uint32_t count);
+;
+global memset
+memset:
+    push edi
+
+    mov edi, [esp + 8]  ; dst
+    mov eax, [esp + 12] ; value
+    mov ecx, [esp + 16] ; count
+    mov edx, edi        ; return value
+
+    cld
+    rep stosb
+
+    pop edi
+    ret

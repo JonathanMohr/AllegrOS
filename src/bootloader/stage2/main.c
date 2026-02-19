@@ -6,7 +6,8 @@
 #include "memory/memdetect.h"
 #include "x86/x86.h"
 #include "disk/disk.h"
-#include "mbr/mbr.h"
+#include "disk/partition.h"
+#include "fat/fat.h"
 
 BootParams bootParams;
 
@@ -65,8 +66,6 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
         IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
     }
 
-    IO_PrintFormat(stream, "Filesystem sectors: %uxd - %uxd\n", MBR_GetFSStart(), MBR_GetFSStart() + MBR_GetFSSize() - 1);
-
     Disk disk;
     if (!Disk_Initialize(&disk, bootParams.BootDevice))
     {
@@ -74,13 +73,24 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
         goto end;
     }
 
-    uint8_t buffer[512];
+    Partition partition;
+    Partition_GetFSPartition(&partition, &disk);
 
-    //if (!Disk_ReadSectors(&disk, 0, 1, buffer))
-    //{
-    //    IO_PutString(vgaout, "Couldn't read sector 0!\n");
-    //    goto end;
-    //}
+    if (!FAT_Initialize(&partition))
+    {
+        IO_PutStringCritical("Couldn't initialize FAT!\n");
+        goto end;
+    }
+
+    FAT_File* test = FAT_Open(&partition, "/test.txt");
+
+    char buffer[512];
+    uint32_t read = FAT_Read(&partition, test, 512, buffer);
+
+    for (uint32_t i = 0; i < read; i++)
+    {
+        IO_PrintFormat(vgaout, "%c", buffer[i]);
+    }
 
 end:
     for (;;);

@@ -142,10 +142,11 @@ def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache
 
     return out
 
-def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path):
+def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path, fs_root: Path):
     lfs = shutil.which("lfs")
 
-    deps = [stage1, stage2]
+    all_root_files = [f for f in fs_root.rglob("*") if f.is_file()]
+    deps = [stage1, stage2, *all_root_files]
     content_hash = cache.hash_files(deps)
 
     if not buildCache.is_up_to_date(image, content_hash):
@@ -180,7 +181,8 @@ def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, s
         try:
             print(f"Creating partition 2")
             subprocess.run([
-                lfs, "create", f"{image}:2", "fat32"
+                lfs, "create", f"{image}:2", "fat32",
+                "--root", str(fs_root)
             ], check=True)
 
         except subprocess.CalledProcessError as e:
@@ -259,8 +261,9 @@ def main() -> bool:
         return False
 
     image = Path("build/disk.img")
+    fs_root = Path("fs_root")
     try:
-        create_disk_image(buildCache, image, stage1, stage2)
+        create_disk_image(buildCache, image, stage1, stage2, fs_root)
 
     except Exception as e:
         buildCache.save()
