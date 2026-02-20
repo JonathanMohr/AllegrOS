@@ -1,4 +1,4 @@
-section .entry
+section .text
     global EnableA20
     global LoadGDT
     global enter_protected
@@ -95,6 +95,8 @@ LoadGDT:
     [bits 16]
     lgdt [g_GDTDesc]
     ret
+
+section .data
 
 g_GDT:      ; NULL descriptor
             dq 0

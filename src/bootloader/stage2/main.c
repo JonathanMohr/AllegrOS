@@ -83,13 +83,12 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
     }
 
     FAT_File* test = FAT_Open(&partition, "/test.txt");
-
-    char buffer[512];
-    uint32_t read = FAT_Read(&partition, test, 512, buffer);
-
-    for (uint32_t i = 0; i < read; i++)
+    if (test)
     {
-        IO_PrintFormat(vgaout, "%c", buffer[i]);
+        char buffer[513];
+        uint32_t read = FAT_Read(&partition, test, 512, buffer);
+        buffer[read] == '\0';
+        IO_PutString(vgaout, buffer);
     }
 
 end:

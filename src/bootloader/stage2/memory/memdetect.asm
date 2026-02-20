@@ -20,7 +20,7 @@
 
 %endmacro
 
-section .entry
+section .text
     global getE820MemoryBlocks
 
 getE820MemoryBlocks:

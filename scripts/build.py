@@ -291,7 +291,7 @@ def main() -> bool:
     fs_root = Path("fs_root")
     shutil.copytree(fs_root, build_fs_root, dirs_exist_ok=True)
 
-    system_dir = build_fs_root / "system"
+    system_dir = build_fs_root / "sys"
     system_dir.mkdir(parents=True, exist_ok=True)
 
     kernel_path = system_dir / "kernel.bin"

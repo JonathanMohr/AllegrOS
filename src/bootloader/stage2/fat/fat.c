@@ -194,13 +194,13 @@ uint32_t FAT_NextCluster(Partition* partition, uint32_t currentCluster)
             nextCluster = (*(uint16_t*)(FAT_Data.fatCache + fatIndex)) >> 4;
 
         if (nextCluster >= 0xFF8)
-            nextCluster |= 0xFFFFF000;
+            nextCluster |= 0x0FFFF000;
     }
     else if (fatType == 16)
     {
         nextCluster = *(uint16_t*)(FAT_Data.fatCache + fatIndex);
         if (nextCluster >= 0xFFF8)
-            nextCluster |= 0xFFFF0000;
+            nextCluster |= 0x0FFF0000;
     }
     else /* 32 */
         nextCluster = *(uint32_t*)(FAT_Data.fatCache + fatIndex);
@@ -246,7 +246,7 @@ uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void
                 break;
             }
 
-            if (fd->public.handle == ROOT_DIRECTORY_HANDLE && fatType != 32)
+            if (fd->public.handle == ROOT_DIRECTORY_HANDLE)
             {
                 if (!Partition_ReadSectors(partition, fd->currentCluster + fd->currentSectorInCluster, 1, fd->buffer))
                 {
@@ -256,7 +256,7 @@ uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void
             }
             else
             {
-                if (fd->currentCluster >= 0xFFFFFFF8)
+                if (fd->currentCluster >= 0x0FFFFFF8)
                 {
                     // Mark end of file
                     fd->public.size = fd->public.position;
@@ -321,10 +321,13 @@ bool FAT_FindFile(Partition* partition, FAT_File* file, const char* name, FAT_Di
     FAT_DirectoryEntry entry;
     while (FAT_ReadEntry(partition, file, &entry))
     {
+        if (entry.Name[0] == 0x00) // End of Directory
+            break;
+
         if (entry.Attributes == FAT_ATTRIBUTE_LFN)
             continue;
 
-        if (memcmp(shortName, entry.Name, 11) == 0)
+        if (memcmp(shortName, (const char*)entry.Name, 11) == 0)
         {
             *entryOut = entry;
             return true;
@@ -368,7 +371,7 @@ FAT_File* FAT_Open(Partition* partition, const char* path)
         {
             FAT_Close(current);
 
-            if (!isLast && entry.Attributes & FAT_ATTRIBUTE_DIRECTORY == 0)
+            if (!isLast && (entry.Attributes & FAT_ATTRIBUTE_DIRECTORY) == 0)
             {
                 IO_PrintFormat(dbgout, "FAT: %s not a directory\n", name);
                 return NULL;

@@ -9,9 +9,6 @@ extern getE820MemoryBlocks
 section .entry
     global entry
 
-    global bootDrive
-    global mbr_bootsector
-
 entry:
     [bits 16]
 
@@ -74,7 +71,9 @@ entry:
     ; TODO: Reboot
     hlt
 
-; DATA
+section .data
+
+global mbr_bootsector
 
 memoryBlockPointer dd 0
 memoryBlockCount   dd 0
