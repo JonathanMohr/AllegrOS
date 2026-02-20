@@ -5,7 +5,6 @@
 ;
 global enterKernel
 enterKernel:
-    ; [esp + 4] = &bootParams
     jmp dword [esp + 8] ; &kernel
 
     ; shouldn't happen

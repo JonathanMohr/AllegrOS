@@ -43,13 +43,18 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
     }
 
     uint8_t* kernelAddress = (uint8_t*)0xC0000000;
-    if (kernelInfo.start != kernelAddress)
+    if (kernelInfo.start != (uint64_t)(uintptr_t)kernelAddress)
     {
         IO_PutStringCritical("Invalid kernel start!\n");
         goto end;
     }
 
     MemoryAddresses addresses = Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count, kernelInfo.size);
+    if (!addresses.pageTableAddress || !addresses.kernelAddress)
+    {
+        IO_PutStringCritical("Not enough memory for kernel!\n");
+        goto end;
+    }
 
     // map page directory to 0xFFFFF000
     page_directory_phys[1023] = (uint32_t)page_directory_phys | 0x3;
