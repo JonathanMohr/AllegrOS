@@ -12,7 +12,8 @@
 
 #define MEMORY_TYPE_RELUCTANT           6
 #define MEMORY_TYPE_HARDWARE            7
-//#define MEMORY_TYPE_KERNEL            8
+#define MEMORY_TYPE_KERNEL_PAGETABLE    8
+#define MEMORY_TYPE_KERNEL              9
 
 typedef struct {
     uint64_t Begin, Length;

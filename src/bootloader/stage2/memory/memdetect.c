@@ -1,10 +1,11 @@
 #include "memdetect.h"
 
 #include <bootparams.h>
+#include <stddef.h>
 #include "../io/io.h"
 #include "../x86/x86.h"
 
-void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count)
+MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t kernel_size)
 {
     for (uint32_t i = 0; i < count - 1; i++)
     {
@@ -21,6 +22,12 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
 
     uint32_t regionCount = 0;
     uint64_t lastEnd = 0;
+
+    uint32_t kernel_pageTableCount = (kernel_size + 0x3FFFFF) / 0x400000;
+    uint32_t kernel_pageTableSize = kernel_pageTableCount * 0x1000;
+
+    uint8_t* page_tables = NULL;
+    uint8_t* kernel_address = NULL;
 
     for (uint32_t i = 0; i < count; i++)
     {
@@ -48,12 +55,44 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
             length -= overlap;
         }
 
+        if (base < 0xFFFFF && type == MEMORY_TYPE_USABLE)
+            type = MEMORY_TYPE_RELUCTANT;
+
+        // Page Tables
+        if (!page_tables && length >= kernel_pageTableSize && type == MEMORY_TYPE_USABLE)
+        {
+            memoryInfo->Regions[regionCount].Begin = base;
+            memoryInfo->Regions[regionCount].Length = kernel_pageTableSize;
+            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_KERNEL_PAGETABLE;
+            memoryInfo->Regions[regionCount].ACPI = 0;
+            regionCount++;
+
+            page_tables = (uint8_t*)(uintptr_t)base;
+
+            base += kernel_pageTableSize;
+            if (length == kernel_pageTableSize) continue;
+            length -= kernel_pageTableSize;
+        }
+
+        // Kernel
+        if (!kernel_address && length >= kernel_size && type == MEMORY_TYPE_USABLE)
+        {
+            memoryInfo->Regions[regionCount].Begin = base;
+            memoryInfo->Regions[regionCount].Length = kernel_size;
+            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_KERNEL;
+            memoryInfo->Regions[regionCount].ACPI = 0;
+            regionCount++;
+
+            kernel_address = (uint8_t*)(uintptr_t)base;
+
+            base += kernel_size;
+            if (length == kernel_size) continue;
+            length -= kernel_size;
+        }
+
         memoryInfo->Regions[regionCount].Begin = base;
         memoryInfo->Regions[regionCount].Length = length;
-        if (base < 0xFFFFF && type == MEMORY_TYPE_USABLE)
-            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_RELUCTANT;
-        else
-            memoryInfo->Regions[regionCount].Type = type;
+        memoryInfo->Regions[regionCount].Type = type;
         memoryInfo->Regions[regionCount].ACPI = acpi;
 
         lastEnd = base + length;
@@ -61,4 +100,10 @@ void Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t
     }
 
     memoryInfo->RegionCount = regionCount;
+
+    MemoryAddresses memoryAddresses;
+    memoryAddresses.kernelAddress = kernel_address;
+    memoryAddresses.kernelPageTableAddress = page_tables;
+
+    return memoryAddresses;
 }

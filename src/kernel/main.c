@@ -1,4 +1,7 @@
 void kmain()
 {
 
+
+end:
+    for(;;);
 }

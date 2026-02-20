@@ -16,12 +16,34 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
     IO_Init();
 
     bootParams.BootDevice = (uint8_t)boot_drive;
-    Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count);
+
+    Disk disk;
+    if (!Disk_Initialize(&disk, bootParams.BootDevice))
+    {
+        IO_PutStringCritical("Couldn't initialize disk!\n");
+        goto end;
+    }
+
+    Partition partition;
+    Partition_GetFSPartition(&partition, &disk);
+
+    if (!FAT_Initialize(&partition))
+    {
+        IO_PutStringCritical("Couldn't initialize FAT!\n");
+        goto end;
+    }
+
+    FAT_File* kernel = FAT_Open(&partition, "/sys/kernel.bin");
+    if (!kernel)
+    {
+        IO_PutStringCritical("Couldn't open kernel!\n");
+        goto end;
+    }
+
+    MemoryAddresses addresses = Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count, kernel->size);
 
     stream_t stream = dbgout;
-
     IO_PrintFormat(stream, "BootDrive: 0x%uxb\n", bootParams.BootDevice);
-    IO_PrintFormat(stream, "Page Directory: %p\n", page_directory);
     for (uint32_t i = 0; i < bootParams.Memory.RegionCount; i++)
     {
         const MemoryRegion* memoryRegion = &bootParams.Memory.Regions[i];
@@ -56,6 +78,14 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
                 IO_PutString(stream, "Hardware");
                 break;
 
+            case MEMORY_TYPE_KERNEL_PAGETABLE:
+                IO_PutString(stream, "Kernel page table");
+                break;
+
+            case MEMORY_TYPE_KERNEL:
+                IO_PutString(stream, "Kernel");
+                break;
+
             default:
                 IO_PutString(stream, "Unknown");
                 break;
@@ -64,29 +94,6 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
         IO_PrintFormat(stream, " region %udd:\n", i + 1);
         IO_PrintFormat(stream, "\t%uxq - %uxq (%uxq)\n", memoryRegion->Begin, memoryRegion->Begin + memoryRegion->Length - 1, memoryRegion->Length);
         IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
-    }
-
-    Disk disk;
-    if (!Disk_Initialize(&disk, bootParams.BootDevice))
-    {
-        IO_PutStringCritical("Couldn't initialize disk!\n");
-        goto end;
-    }
-
-    Partition partition;
-    Partition_GetFSPartition(&partition, &disk);
-
-    if (!FAT_Initialize(&partition))
-    {
-        IO_PutStringCritical("Couldn't initialize FAT!\n");
-        goto end;
-    }
-
-    FAT_File* kernel = FAT_Open(&partition, "/sys/kernel.bin");
-    if (!kernel)
-    {
-        IO_PutStringCritical("Couldn't open kernel!\n");
-        goto end;
     }
 
 end:
