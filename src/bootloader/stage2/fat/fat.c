@@ -323,6 +323,8 @@ bool FAT_FindFile(Partition* partition, FAT_File* file, const char* name, FAT_Di
     {
         if (entry.Name[0] == 0x00) // End of Directory
             break;
+        if (entry.Name[0] == 0xE5) // Deleted entry
+            continue;
 
         if (entry.Attributes == FAT_ATTRIBUTE_LFN)
             continue;
