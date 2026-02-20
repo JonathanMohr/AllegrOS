@@ -8,6 +8,7 @@
 #include "disk/disk.h"
 #include "disk/partition.h"
 #include "fat/fat.h"
+#include "elf/elf.h"
 #include "kernel.h"
 
 BootParams bootParams;
@@ -34,21 +35,28 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         goto end;
     }
 
-    FAT_File* kernel = FAT_Open(&partition, "/sys/kernel.bin");
-    if (!kernel)
+    ELFLoadInfo kernelInfo = ELF_GetSize(&partition, "/sys/kernel.elf");
+    if (!kernelInfo.size)
     {
-        IO_PutStringCritical("Couldn't open kernel!\n");
+        IO_PutStringCritical("Couldn't get kernel size!\n");
         goto end;
     }
 
-    MemoryAddresses addresses = Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count, kernel->size);
+    uint8_t* kernelAddress = (uint8_t*)0xC0000000;
+    if (kernelInfo.start != kernelAddress)
+    {
+        IO_PutStringCritical("Invalid kernel start!\n");
+        goto end;
+    }
+
+    MemoryAddresses addresses = Memory_Detect(&bootParams.Memory, memoryBlocks, memoryBlock_count, kernelInfo.size);
 
     // map page directory to 0xFFFFF000
     page_directory_phys[1023] = (uint32_t)page_directory_phys | 0x3;
     x86_invlpg((void*)0xFFFFF000);
     uint32_t* page_directory = (uint32_t*)0xFFFFF000;
 
-    uint32_t remainingPages = ((kernel->size + 0xFFF) & ~0xFFF) / 0x1000;
+    uint32_t remainingPages = ((kernelInfo.size + 0xFFF) & ~0xFFF) / 0x1000;
     for (uint32_t i = 0; i < addresses.pageTableCount; i++)
     {
         uint32_t ptPhysAddr = (uint32_t)addresses.pageTableAddress + i * 0x1000;
@@ -64,17 +72,10 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         }
     }
 
-    uint8_t* kernelAddress = (uint8_t*)0xC0000000;
+    uint8_t* kernelEntry = ELF_Load(&partition, "/sys/kernel.elf");
 
-    uint32_t bytesRead = FAT_Read(&partition, kernel, kernel->size, kernelAddress);
-    if (bytesRead != kernel->size)
-    {
-        IO_PutStringCritical("Couldn't read kernel!\n");
-        goto end;
-    }
+    enterKernel(&bootParams, kernelEntry);
 
-    enterKernel(kernelAddress, &bootParams);
-    
 end:
     for (;;);
 }

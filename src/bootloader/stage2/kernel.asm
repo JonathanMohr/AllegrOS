@@ -1,17 +1,12 @@
 [bits 32]
 
 ;
-; void CDECL enterKernel(void* kernel, void* bootParams);
+; void CDECL enterKernel(void* bootParams, void* kernel);
 ;
-
 global enterKernel
 enterKernel:
-    mov eax, [esp + 4] ; &kernel
-    mov ebx, [esp + 8] ; &bootParams
-
-    push ebx
-
-    jmp eax
+    ; [esp + 4] = &bootParams
+    jmp dword [esp + 8] ; &kernel
 
     ; shouldn't happen
     ; TODO: Reboot

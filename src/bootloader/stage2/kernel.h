@@ -3,4 +3,4 @@
 #include <abi.h>
 #include <stdint.h>
 
-void CDECL enterKernel(void* kernel, void* bootParams);
+void CDECL enterKernel(void* bootParams, void* kernel);

@@ -294,7 +294,7 @@ def main() -> bool:
     system_dir = build_fs_root / "sys"
     system_dir.mkdir(parents=True, exist_ok=True)
 
-    kernel_path = system_dir / "kernel.bin"
+    kernel_path = system_dir / "kernel.elf"
     shutil.copy2(kernel, kernel_path)
 
     image = Path("build/disk.img")

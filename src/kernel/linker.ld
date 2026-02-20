@@ -1,5 +1,5 @@
 ENTRY(kmain)
-OUTPUT_FORMAT("binary")
+OUTPUT_FORMAT("elf32-i386")
 addr = 0xC0000000;
 
 SECTIONS
