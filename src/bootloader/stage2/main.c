@@ -8,6 +8,7 @@
 #include "disk/disk.h"
 #include "disk/partition.h"
 #include "fat/fat.h"
+#include "kernel.h"
 
 BootParams bootParams;
 
@@ -63,60 +64,17 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         }
     }
 
-    stream_t stream = dbgout;
-    IO_PrintFormat(stream, "BootDrive: 0x%uxb\n", bootParams.BootDevice);
-    for (uint32_t i = 0; i < bootParams.Memory.RegionCount; i++)
+    uint8_t* kernelAddress = (uint8_t*)0xC0000000;
+
+    uint32_t bytesRead = FAT_Read(&partition, kernel, kernel->size, kernelAddress);
+    if (bytesRead != kernel->size)
     {
-        const MemoryRegion* memoryRegion = &bootParams.Memory.Regions[i];
-
-        switch (memoryRegion->Type)
-        {
-            case MEMORY_TYPE_USABLE:
-                IO_PutString(stream, "Usable");
-                break;
-
-            case MEMORY_TYPE_RESERVED:
-                IO_PutString(stream, "Reserved");
-                break;
-
-            case MEMORY_TYPE_ACPI_RECLAIMABLE:
-                IO_PutString(stream, "ACPI-Reclaimable");
-                break;
-
-            case MEMORY_TYPE_ACPI_NVS:
-                IO_PutString(stream, "ACPI-NVS");
-                break;
-
-            case MEMORY_TYPE_BAD:
-                IO_PutString(stream, "Bad");
-                break;
-
-            case MEMORY_TYPE_RELUCTANT:
-                IO_PutString(stream, "Reluctant");
-                break;
-
-            case MEMORY_TYPE_HARDWARE:
-                IO_PutString(stream, "Hardware");
-                break;
-
-            case MEMORY_TYPE_KERNEL_PAGETABLE:
-                IO_PutString(stream, "Kernel page table");
-                break;
-
-            case MEMORY_TYPE_KERNEL:
-                IO_PutString(stream, "Kernel");
-                break;
-
-            default:
-                IO_PutString(stream, "Unknown");
-                break;
-        }
-
-        IO_PrintFormat(stream, " region %udd:\n", i + 1);
-        IO_PrintFormat(stream, "\t%uxq - %uxq (%uxq)\n", memoryRegion->Begin, memoryRegion->Begin + memoryRegion->Length - 1, memoryRegion->Length);
-        IO_PrintFormat(stream, "\tACPI: %udd\n", memoryRegion->ACPI);
+        IO_PutStringCritical("Couldn't read kernel!\n");
+        goto end;
     }
 
+    enterKernel(kernelAddress, &bootParams);
+    
 end:
     for (;;);
 }
