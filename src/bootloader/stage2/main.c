@@ -82,13 +82,11 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory, x86_E820MemoryBl
         goto end;
     }
 
-    FAT_File* test = FAT_Open(&partition, "/test.txt");
-    if (test)
+    FAT_File* kernel = FAT_Open(&partition, "/sys/kernel.bin");
+    if (!kernel)
     {
-        char buffer[513];
-        uint32_t read = FAT_Read(&partition, test, 512, buffer);
-        buffer[read] == '\0';
-        IO_PutString(vgaout, buffer);
+        IO_PutStringCritical("Couldn't open kernel!\n");
+        goto end;
     }
 
 end:
