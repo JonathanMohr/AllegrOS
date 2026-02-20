@@ -147,7 +147,7 @@ def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache
     build_dir = Path("build/kernel")
     linker_script = src_dir / "linker.ld"
 
-    out = build_dir / "kernel.bin"
+    out = build_dir / "kernel.elf"
     map_path = build_dir / "kernel.map"
     
     asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
