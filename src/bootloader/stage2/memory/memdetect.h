@@ -5,7 +5,11 @@
 
 typedef struct {
     uint8_t* kernelAddress;
-    uint8_t* kernelPageTableAddress;
+
+    uint8_t* pageDirectoryAddress;
+
+    uint32_t pageTableCount;
+    uint8_t* pageTableAddress;
 } MemoryAddresses;
 
-MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t kernel_size);
+MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t ksize);

@@ -5,7 +5,7 @@
 #include "../io/io.h"
 #include "../x86/x86.h"
 
-MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t kernel_size)
+MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t ksize)
 {
     for (uint32_t i = 0; i < count - 1; i++)
     {
@@ -23,9 +23,12 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
     uint32_t regionCount = 0;
     uint64_t lastEnd = 0;
 
+    uint32_t kernel_size = (ksize + 0xFFF) & ~0xFFF;
+
     uint32_t kernel_pageTableCount = (kernel_size + 0x3FFFFF) / 0x400000;
     uint32_t kernel_pageTableSize = kernel_pageTableCount * 0x1000;
 
+    uint8_t* page_directory = NULL;
     uint8_t* page_tables = NULL;
     uint8_t* kernel_address = NULL;
 
@@ -102,8 +105,13 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
     memoryInfo->RegionCount = regionCount;
 
     MemoryAddresses memoryAddresses;
+    
     memoryAddresses.kernelAddress = kernel_address;
-    memoryAddresses.kernelPageTableAddress = page_tables;
+
+    memoryAddresses.pageDirectoryAddress = page_directory;
+
+    memoryAddresses.pageTableCount = kernel_pageTableCount;
+    memoryAddresses.pageTableAddress = page_tables;
 
     return memoryAddresses;
 }

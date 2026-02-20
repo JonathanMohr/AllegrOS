@@ -24,3 +24,5 @@ uint32_t CDECL strlen(const char* str);
 char* CDECL strchr(const char* str, int32_t c);
 
 int8_t CDECL toupper(int8_t c);
+
+void CDECL x86_invlpg(void* addr);

@@ -120,3 +120,12 @@ memset:
 
     pop edi
     ret
+
+;
+; void CDECL x86_invlpg(void* addr)
+;
+global x86_invlpg
+x86_invlpg:
+    mov eax, [esp + 4]
+    invlpg [eax]
+    ret
