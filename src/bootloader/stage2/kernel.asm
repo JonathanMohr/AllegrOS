@@ -10,3 +10,5 @@ enterKernel:
     ; shouldn't happen
     ; TODO: Reboot
     hlt
+
+    ret

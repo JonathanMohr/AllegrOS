@@ -25,7 +25,7 @@ ELFLoadInfo ELF_GetSize(Partition* partition, const char* path)
         return info;
     }
 
-    if (memcmp(headerBuffer.Magic, ELF_MAGIC, 4) != 0)
+    if (memcmp((const char*)headerBuffer.Magic, ELF_MAGIC, 4) != 0)
     {
         IO_PutStringCritical("ELF_GetSize: Invalid magic!\n");
         FAT_Close(fd);
@@ -135,7 +135,7 @@ uint8_t* ELF_Load(Partition* partition, const char* path)
         return NULL;
     }
 
-    if (memcmp(headerBuffer.Magic, ELF_MAGIC, 4) != 0)
+    if (memcmp((const char*)headerBuffer.Magic, ELF_MAGIC, 4) != 0)
     {
         IO_PutStringCritical("ELF_Load: Invalid magic!\n");
         FAT_Close(fd);

@@ -226,29 +226,43 @@ def run_qemu(image: Path):
         print(f"Error: Running QEMU with {image} failed")
         raise e
 
+class ToolchainError(RuntimeError):
+    pass
+
+def require_tool(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        raise ToolchainError(f"Missing required tool: {name}")
+    return path
+
 def main() -> bool:
     buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"))
 
-    toolchain: Toolchain = Toolchain(
-        Assembler = shutil.which("nasm"),
-        Assembler_Flags = [
-            "-f", "elf32"
-        ],
+    try:
+        toolchain: Toolchain = Toolchain(
+            Assembler = require_tool("nasm"),
+            Assembler_Flags = [
+                "-f", "elf32"
+            ],
 
-        Compiler_C = shutil.which("clang"),
-        Compiler_C_Flags = [
-            "-target", "i386-pc-none-elf",
-            "-m32",
-            "-ffreestanding", "-nostdinc",
-            "-O2", # TODO
-            "-mno-sse", "-mno-sse2"
-        ],
+            Compiler_C = require_tool("clang"),
+            Compiler_C_Flags = [
+                "-target", "i386-pc-none-elf",
+                "-m32",
+                "-ffreestanding", "-nostdinc",
+                "-O2", # TODO
+                "-mno-sse", "-mno-sse2"
+            ],
 
-        Linker = shutil.which("ld.lld"),
-        Linker_Flags = [
-            "-nostdlib"
-        ]
-    )
+            Linker = require_tool("ld.lld"),
+            Linker_Flags = [
+                "-nostdlib"
+            ]
+        )
+    
+    except ToolchainError as e:
+        print(f"Error: Toolchain setup failed: {e}")
+        return False
 
     # TODO: hardcoded
     lib_path = Path("src/libs/core")
