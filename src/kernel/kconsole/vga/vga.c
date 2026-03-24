@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "../../x86/x86.h"
+#include "../../arch/x86/x86.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25

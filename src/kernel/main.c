@@ -4,9 +4,13 @@
 #include "kconsole/kconsole.h"
 #include "kconsole/format.h"
 
+#include "arch/x86/x86.h"
+
 void CDECL kmain(BootParams* bParams)
 {
     BootParams bootParams = *bParams;
+
+    x86_Initialize();
 
     KernelConsole* vga_console = KernelConsole_GetVGA();
     KernelConsole* debug_console = KernelConsole_GetDebug();

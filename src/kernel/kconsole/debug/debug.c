@@ -1,6 +1,6 @@
 #include "debug.h"
 
-#include "../../x86/x86.h"
+#include "../../arch/x86/x86.h"
 
 void Debug_ClearScreen(void* context)
 {
