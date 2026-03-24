@@ -15,18 +15,18 @@
 #define MEMORY_TYPE_KERNEL_PAGETABLE    9
 #define MEMORY_TYPE_KERNEL              10
 
-typedef struct {
+typedef struct MemoryRegion {
     uint64_t Begin, Length;
     uint32_t Type;
     uint32_t ACPI;
 } MemoryRegion;
 
-typedef struct {
+typedef struct MemoryInfo {
     uint32_t RegionCount;
     MemoryRegion Regions[MAX_REGIONS];
 } MemoryInfo;
 
-typedef struct {
+typedef struct BootParams {
     MemoryInfo Memory;
     uint8_t BootDevice;
 } BootParams;
