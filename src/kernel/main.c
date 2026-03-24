@@ -19,7 +19,7 @@ void CDECL kmain(BootParams* bParams)
 
     KernelConsole_PrintFormat(mux_console, "BootDevice: 0x%uxb\n", bootParams.BootDevice);
 
-    KernelConsole_PutString(mux_console, "MemoryInfo:");
+    KernelConsole_PutString(mux_console, "MemoryInfo:\n");
     KernelConsole_PrintFormat(mux_console, "  RegionCount: %udd\n", bootParams.Memory.RegionCount);
     for (uint32_t i = 0; i < bootParams.Memory.RegionCount; i++)
     {

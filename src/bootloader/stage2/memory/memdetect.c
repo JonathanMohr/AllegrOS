@@ -61,22 +61,6 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
         if (base < 0xFFFFF && type == MEMORY_TYPE_USABLE)
             type = MEMORY_TYPE_RELUCTANT;
 
-        // Page Tables
-        if (!page_tables && length >= kernel_pageTableSize && type == MEMORY_TYPE_USABLE)
-        {
-            memoryInfo->Regions[regionCount].Begin = base;
-            memoryInfo->Regions[regionCount].Length = kernel_pageTableSize;
-            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_KERNEL_PAGETABLE;
-            memoryInfo->Regions[regionCount].ACPI = 0;
-            regionCount++;
-
-            page_tables = (uint8_t*)(uintptr_t)base;
-
-            base += kernel_pageTableSize;
-            if (length == kernel_pageTableSize) continue;
-            length -= kernel_pageTableSize;
-        }
-
         // Kernel
         if (!kernel_address && length >= kernel_size && type == MEMORY_TYPE_USABLE)
         {
@@ -91,6 +75,22 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
             base += kernel_size;
             if (length == kernel_size) continue;
             length -= kernel_size;
+        }
+
+        // Page Tables
+        if (!page_tables && length >= kernel_pageTableSize && type == MEMORY_TYPE_USABLE)
+        {
+            memoryInfo->Regions[regionCount].Begin = base;
+            memoryInfo->Regions[regionCount].Length = kernel_pageTableSize;
+            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_KERNEL_PAGETABLE;
+            memoryInfo->Regions[regionCount].ACPI = 0;
+            regionCount++;
+
+            page_tables = (uint8_t*)(uintptr_t)base;
+
+            base += kernel_pageTableSize;
+            if (length == kernel_pageTableSize) continue;
+            length -= kernel_pageTableSize;
         }
 
         memoryInfo->Regions[regionCount].Begin = base;
