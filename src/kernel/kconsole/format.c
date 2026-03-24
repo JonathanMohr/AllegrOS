@@ -1,7 +1,5 @@
 #include "format.h"
 
-#include <stdarg.h>
-
 static const char hexChars[] = "0123456789abcdef";
 
 static void PrintUnsigned(KernelConsole* kconsole, uint64_t number, uint8_t radix)
@@ -34,11 +32,8 @@ static void PrintSigned(KernelConsole* kconsole, int64_t number, uint8_t radix)
     PrintUnsigned(kconsole, u, radix);
 }
 
-void KernelConsole_PrintFormat(KernelConsole* kconsole, const char* fmt, ...)
+void KernelConsole_PrintFormatV(KernelConsole* kconsole, const char* fmt, va_list args)
 {
-    va_list args;
-    va_start(args, fmt);
-
     while (*fmt)
     {
         switch (*fmt)
@@ -147,4 +142,14 @@ void KernelConsole_PrintFormat(KernelConsole* kconsole, const char* fmt, ...)
         if (!*fmt) break;
         fmt++;
     }
+}
+
+void KernelConsole_PrintFormat(KernelConsole* kconsole, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+
+    KernelConsole_PrintFormatV(kconsole, fmt, args);
+
+    va_end(args);
 }

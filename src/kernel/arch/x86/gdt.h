@@ -49,6 +49,12 @@ typedef struct GDTDescriptor {
 
 #define GDT_FLAGS_AVAILABLE 0x10
 
+
+#define GDT_GET_SEGMENT_OFFSET(index) ((index) * 8)
+
+#define GDT_CODE_SEGMENT (GDT_GET_SEGMENT_OFFSET(1))
+#define GDT_DATA_SEGMENT (GDT_GET_SEGMENT_OFFSET(2))
+
 void CDECL x86_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
 
 void x86_GDT_Initialize();

@@ -3,7 +3,6 @@
 ; void CDECL x86_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
 global x86_GDT_Load
 x86_GDT_Load:
-
     ; load gdt
     mov eax, [esp + 4]
     lgdt [eax]

@@ -13,6 +13,7 @@ kentry:
     push eax
     call kmain
 
+    cli
     hlt
 
 section .bss

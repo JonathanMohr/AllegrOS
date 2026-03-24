@@ -54,6 +54,8 @@ void CDECL kmain(BootParams* bParams)
         KernelConsole_PrintFormat(mux_console, "      ACPI: %uxd \n", region->ACPI);
     }
 
+    __asm__("sti");
+
 end:
     for(;;);
 }

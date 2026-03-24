@@ -15,8 +15,6 @@
     GDT_BASE_HIGH(base)                         \
 }
 
-#define GDT_GET_SEGMENT_OFFSET(index) ((index) * 8)
-
 GDTEntry gdt[] = {
     // NULL descriptor
     GDT_ENTRY(0, 0, 0, 0),
