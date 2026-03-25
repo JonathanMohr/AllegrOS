@@ -21,8 +21,6 @@ void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler)
 
 void CDECL x86_ISR_Handler(Registers* regs)
 {
-    PanicMessage("[KERNEL] interrupt 0x%uxd\n", regs->interrupt);
-
     if (regs->interrupt > 255)
     {
         PanicMessage("[KERNEL] Invalid interrupt 0x%uxd\n", regs->interrupt);
