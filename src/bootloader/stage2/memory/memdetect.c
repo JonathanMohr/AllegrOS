@@ -2,6 +2,7 @@
 
 #include <bootparams.h>
 #include <stddef.h>
+#include <minmax.h>
 #include "../io/io.h"
 #include "../x86/x86.h"
 

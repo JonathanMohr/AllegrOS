@@ -8,6 +8,7 @@
 
 #include "memory/memory.h"
 #include "memory/physical/manager.h"
+#include "memory/virtual/manager.h"
 
 #include "arch/x86/x86.h"
 
@@ -64,12 +65,6 @@ void CDECL kmain(BootParams* bParams)
 
         KernelConsole_PrintFormat(mux_console, "      ACPI: %uxd \n", region->ACPI);
     }
-
-    KernelConsole_PutChar(mux_console, '\n');
-    KernelConsole_PrintFormat(mux_console, "Ptr 1: %p\n", Memory_PhysicalAllocator_AllocatePage());
-    KernelConsole_PrintFormat(mux_console, "Ptr 2: %p\n", Memory_PhysicalAllocator_AllocatePage());
-    KernelConsole_PrintFormat(mux_console, "Ptr 3: %p\n", Memory_PhysicalAllocator_AllocatePage());
-    KernelConsole_PrintFormat(mux_console, "Ptr 4: %p\n", Memory_PhysicalAllocator_AllocatePage());
 
     __asm__("sti");
 
