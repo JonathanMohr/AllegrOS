@@ -46,7 +46,7 @@ void x86_i8259_Disable()
     x86_i8259_SetMask(0xFFFF);
 }
 
-
+// TODO: Not very useful
 bool x86_i8259_Probe()
 {
     x86_i8259_Disable();
