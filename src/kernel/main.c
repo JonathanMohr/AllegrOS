@@ -1,8 +1,13 @@
 #include <bootparams.h>
 #include <abi.h>
 
+#include "panic/panic.h"
+
 #include "kconsole/kconsole.h"
 #include "kconsole/format.h"
+
+#include "memory/memory.h"
+#include "memory/physical/manager.h"
 
 #include "arch/x86/x86.h"
 
@@ -11,6 +16,12 @@ void CDECL kmain(BootParams* bParams)
     BootParams bootParams = *bParams;
 
     x86_Initialize();
+
+    if (!Memory_Initialize(&bootParams.Memory))
+    {
+        PanicMessage("[KERNEL] Could not initialize memory\n");
+        Panic();
+    }
 
     KernelConsole* vga_console = KernelConsole_GetVGA();
     KernelConsole* debug_console = KernelConsole_GetDebug();
@@ -53,6 +64,12 @@ void CDECL kmain(BootParams* bParams)
 
         KernelConsole_PrintFormat(mux_console, "      ACPI: %uxd \n", region->ACPI);
     }
+
+    KernelConsole_PutChar(mux_console, '\n');
+    KernelConsole_PrintFormat(mux_console, "Ptr 1: %p\n", Memory_PhysicalAllocator_AllocatePage());
+    KernelConsole_PrintFormat(mux_console, "Ptr 2: %p\n", Memory_PhysicalAllocator_AllocatePage());
+    KernelConsole_PrintFormat(mux_console, "Ptr 3: %p\n", Memory_PhysicalAllocator_AllocatePage());
+    KernelConsole_PrintFormat(mux_console, "Ptr 4: %p\n", Memory_PhysicalAllocator_AllocatePage());
 
     __asm__("sti");
 

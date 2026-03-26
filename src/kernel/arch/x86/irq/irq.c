@@ -9,7 +9,7 @@
 
 #define PIC_REMAP_OFFSET 0x20
 
-IRQ_Handler irqHandlers[16];
+IRQ_Handler irqHandlers[16] = {0};
 static const PIC_Driver* picDriver = NULL;
 
 void x86_IRQ_Handler(Registers* regs)
