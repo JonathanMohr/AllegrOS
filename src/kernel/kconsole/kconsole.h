@@ -10,6 +10,7 @@ typedef struct KernelConsole {
 
 KernelConsole* KernelConsole_GetVGA();
 KernelConsole* KernelConsole_GetDebug();
+KernelConsole* KernelConsole_GetOutput();
 
 void KernelConsole_ClearScreen(KernelConsole* kconsole);
 void KernelConsole_PutChar(KernelConsole* kconsole, char c);
