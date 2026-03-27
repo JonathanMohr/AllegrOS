@@ -1,5 +1,7 @@
 [bits 32]
 
+section .text
+
 extern x86_ISR_Handler
 
 global isr_common

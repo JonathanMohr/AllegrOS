@@ -1,6 +1,10 @@
 [bits 32]
 
+section .text
+
+;
 ; void CDECL x86_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
+;
 global x86_GDT_Load
 x86_GDT_Load:
     ; load gdt

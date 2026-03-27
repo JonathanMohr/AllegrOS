@@ -1,5 +1,7 @@
 [bits 32]
 
+section .text
+
 ; void CDECL x86_IDT_Load(IDTDescriptor* descriptor);
 global x86_IDT_Load
 x86_IDT_Load:

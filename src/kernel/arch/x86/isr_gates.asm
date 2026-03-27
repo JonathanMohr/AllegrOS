@@ -1,5 +1,7 @@
 [bits 32]
 
+section .text
+
 extern isr_common
 
 %macro ISR_NOERRORCODE 1

@@ -12,6 +12,8 @@
 
 #include "arch/x86/x86.h"
 
+#include "arch/x86/paging.h"
+
 void CDECL kmain(BootParams* bParams)
 {
     BootParams bootParams = *bParams;
@@ -30,6 +32,15 @@ void CDECL kmain(BootParams* bParams)
     KernelConsole_PutString(mux_console, "Hello world from kernel!\n");
 
     __asm__("sti");
+
+    uint32_t* addr = (uint32_t*)0xD0000000;
+
+    if (!x86_PageDirectory_Map((uintptr_t)addr, Memory_PhysicalAllocator_AllocatePage()))
+        PanicMessage("Could not map memory\n");
+
+    *addr = 6346;
+
+    KernelConsole_PrintFormat(mux_console, "%udd\n", *addr);
 
 end:
     for(;;);
