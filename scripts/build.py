@@ -238,7 +238,7 @@ def require_tool(name: str) -> str:
 def main() -> bool:
     buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"))
 
-    debug = True
+    debug = False
 
     try:
         toolchain: Toolchain = Toolchain(
