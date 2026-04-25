@@ -113,45 +113,45 @@ def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, o
         print(f"Error: Linking failed for {out}")
         raise e
 
-def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
-    src_dir = Path("src/bootloader/stage1")
-    build_dir = Path("build/bootloader/stage1")
-    linker_script = src_dir / "linker.ld"
+def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+    src = src_dir / "bootloader/stage1"
+    build = build_dir / "bootloader/stage1"
+    linker_script = src / "linker.ld"
 
-    out = build_dir / "stage1.bin"
-    map_path = build_dir / "stage1.map"
+    out = build / "stage1.bin"
+    map_path = build / "stage1.map"
     
-    objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
+    objects = build_assembly_sources(toolchain, buildCache, build, src)
     
     link_objects(toolchain, buildCache, out, objects, linker_script, map_path)
 
     return out
 
-def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
-    src_dir = Path("src/bootloader/stage2")
-    build_dir = Path("build/bootloader/stage2")
-    linker_script = src_dir / "linker.ld"
+def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+    src = src_dir / "bootloader/stage2"
+    build = build_dir / "bootloader/stage2"
+    linker_script = src / "linker.ld"
 
-    out = build_dir / "stage2.bin"
-    map_path = build_dir / "stage2.map"
+    out = build / "stage2.bin"
+    map_path = build / "stage2.map"
     
-    asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
-    c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
+    asm_objects = build_assembly_sources(toolchain, buildCache, build, src)
+    c_objects = build_c_sources(toolchain, buildCache, build, src)
 
     link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 
-def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache) -> Path:
-    src_dir = Path("src/kernel")
-    build_dir = Path("build/kernel")
-    linker_script = src_dir / "linker.ld"
+def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+    src = src_dir / "kernel"
+    build = build_dir / "kernel"
+    linker_script = src / "linker.ld"
 
-    out = build_dir / "kernel.elf"
-    map_path = build_dir / "kernel.map"
+    out = build / "kernel.elf"
+    map_path = build / "kernel.map"
     
-    asm_objects = build_assembly_sources(toolchain, buildCache, build_dir, src_dir)
-    c_objects = build_c_sources(toolchain, buildCache, build_dir, src_dir)
+    asm_objects = build_assembly_sources(toolchain, buildCache, build, src)
+    c_objects = build_c_sources(toolchain, buildCache, build, src)
 
     link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
@@ -238,6 +238,8 @@ def require_tool(name: str) -> str:
 def main() -> bool:
     buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"))
 
+    debug = True
+
     try:
         toolchain: Toolchain = Toolchain(
             Assembler = require_tool("nasm"),
@@ -250,7 +252,6 @@ def main() -> bool:
                 "-target", "i386-pc-none-elf",
                 "-m32",
                 "-ffreestanding", "-nostdinc",
-                "-O2", # TODO
                 "-mno-sse", "-mno-sse2"
             ],
 
@@ -263,6 +264,25 @@ def main() -> bool:
     except ToolchainError as e:
         print(f"Error: Toolchain setup failed: {e}")
         return False
+    
+    if debug:
+        toolchain.Compiler_C_Flags.extend([
+            "-O0",
+            "-g"
+        ])
+    else:
+        toolchain.Compiler_C_Flags.extend([
+            "-O2"
+        ])
+
+    
+    src_dir = Path("src")
+    build_root_dir = Path("build")
+
+    if debug:
+        build_dir = build_root_dir / "debug"
+    else:
+        build_dir = build_root_dir / "release"
 
     # TODO: hardcoded
     lib_path = Path("src/libs/core")
@@ -273,7 +293,7 @@ def main() -> bool:
 
     stage1: Path
     try:
-        stage1 = compile_bootloader_stage1(toolchain, buildCache)
+        stage1 = compile_bootloader_stage1(toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -282,7 +302,7 @@ def main() -> bool:
     
     stage2: Path
     try:
-        stage2 = compile_bootloader_stage2(toolchain, buildCache)
+        stage2 = compile_bootloader_stage2(toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -291,14 +311,14 @@ def main() -> bool:
 
     kernel: Path
     try:
-        kernel = compile_bootloader_kernel(toolchain, buildCache)
+        kernel = compile_bootloader_kernel(toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
         print(f"Error: Building kernel failed: {e}")
         return False
     
-    build_fs_root = Path("build/fs_root")
+    build_fs_root = build_dir / "fs_root"
     shutil.rmtree(build_fs_root, ignore_errors=True)
     build_fs_root.mkdir(parents=True, exist_ok=True)
 
@@ -311,7 +331,7 @@ def main() -> bool:
     kernel_path = system_dir / "kernel.elf"
     shutil.copy2(kernel, kernel_path)
 
-    image = Path("build/disk.img")
+    image = build_dir / "disk.img"
     try:
         create_disk_image(buildCache, image, stage1, stage2, build_fs_root)
 
