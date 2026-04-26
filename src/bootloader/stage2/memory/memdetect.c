@@ -3,7 +3,6 @@
 #include <bootparams.h>
 #include <stddef.h>
 #include <minmax.h>
-#include "../io/io.h"
 #include "../x86/x86.h"
 
 MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t ksize)

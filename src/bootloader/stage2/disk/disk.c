@@ -1,6 +1,6 @@
 #include "disk.h"
 
-#include "../x86/x86.h"
+#include <memory.h>
 #include "../io/io.h"
 
 uint8_t Disk_ReadBuffer[512 * 127];

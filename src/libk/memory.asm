@@ -3,6 +3,13 @@
 section .text
 
 ;
+; int CDECL memcmp(const char* a, const char* b, size_t n);
+;
+global memcmp
+memcmp:
+    
+
+;
 ; void* CDECL memcpy(void* dst, const void* src, size_t n);
 ;
 global memcpy

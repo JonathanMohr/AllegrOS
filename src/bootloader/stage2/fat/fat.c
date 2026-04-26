@@ -2,7 +2,9 @@
 
 #include <stddef.h>
 #include <minmax.h>
+#include <memory.h>
 #include "../x86/x86.h"
+
 #include "../io/io.h"
 
 #define SECTOR_SIZE             512

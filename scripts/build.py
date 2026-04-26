@@ -16,10 +16,14 @@ class Toolchain:
     Compiler_C: str
     Linker: str
     ObjectCopy: str
+    Archiver: str
 
     Assembler_Flags: list[str] = field(default_factory=list)
     Compiler_C_Flags: list[str] = field(default_factory=list)
     Linker_Flags: list[str] = field(default_factory=list)
+
+    Library_Directories: list[Path] = field(default_factory=list)
+    Libraries: list[str] = field(default_factory=list)
 
 def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.asm")
@@ -100,13 +104,15 @@ def build_c_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: ca
         
     return objects
 
-def link_objects(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
+def link_objects(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
     try:
         args = [
             "-T", str(linker_script),
             f"-Map={map}",
             *toolchain.Linker_Flags,
             *[str(o) for o in objects],
+            *[f"-L{d}" for d in toolchain.Library_Directories],
+            *[f"-l{l}" for l in toolchain.Libraries],
             "-o", str(out)
         ]
 
@@ -131,6 +137,8 @@ def link_objects_to_binary(logger: logging.Logger, toolchain: Toolchain,buildCac
             f"-Map={map}",
             *toolchain.Linker_Flags,
             *[str(o) for o in objects],
+            *[f"-L{d}" for d in toolchain.Library_Directories],
+            *[f"-l{l}" for l in toolchain.Libraries],
             "-o", str(elfOut)
         ]
 
@@ -162,6 +170,40 @@ def link_objects_to_binary(logger: logging.Logger, toolchain: Toolchain,buildCac
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Linking failed for {out}: {e}")
+
+def create_static_library(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path]):
+    try:
+        args = [
+            "rcs",
+            str(out),
+            *[str(o) for o in objects]
+        ]
+
+        content_hash = cache.hash_files(objects)
+
+        if not buildCache.is_up_to_date(out, content_hash):
+            logger.build(f"Creating static library {out}")
+            subprocess.run([
+                toolchain.Archiver, *args
+            ], check=True)
+
+            buildCache.update(out, content_hash)
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Creating static library failed for {out}: {e}")
+
+def compile_libk(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path):
+    src = src_dir / "libk"
+    build = build_dir / "libk"
+
+    out = build_dir / "libk.a"
+
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, compileCommands, build, src)
+    c_objects = build_c_sources(logger, toolchain, buildCache, compileCommands, build, src)
+
+    create_static_library(logger, toolchain, buildCache, out, [*asm_objects, *c_objects])
+
+    return out
 
 def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> tuple[Path, Path]:
     src = src_dir / "bootloader/stage1"
@@ -306,7 +348,9 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
                 "-z", "noexecstack"
             ],
 
-            ObjectCopy = require_tool("llvm-objcopy")
+            ObjectCopy = require_tool("llvm-objcopy"),
+
+            Archiver = require_tool("llvm-ar")
         )
     
     except ToolchainError as e:
@@ -344,12 +388,22 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
     else:
         build_dir = build_root_dir / "release"
 
-    # TODO: hardcoded
-    lib_path = Path("src/libs/core")
+    # Libk
+    toolchain.Library_Directories.append(build_dir)
+
+    lib_path = src_dir / "libk"
     toolchain.Compiler_C_Flags.append(f"-I{lib_path}")
 
-    lib_path = Path("src/libs/boot")
-    toolchain.Compiler_C_Flags.append(f"-I{lib_path}")
+    try:
+        compile_libk(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
+
+        toolchain.Libraries.append("k")
+
+    except Exception as e:
+        buildCache.save()
+        logger.error(f"Building libk failed: {e}")
+        return None
+    
 
     stage1: Path
     try:
