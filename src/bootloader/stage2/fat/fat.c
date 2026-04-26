@@ -331,7 +331,7 @@ bool FAT_FindFile(Partition* partition, FAT_File* file, const char* name, FAT_Di
         if (entry.Attributes == FAT_ATTRIBUTE_LFN)
             continue;
 
-        if (memcmp(shortName, (const char*)entry.Name, 11) == 0)
+        if (memcmp(shortName, entry.Name, 11) == 0)
         {
             *entryOut = entry;
             return true;

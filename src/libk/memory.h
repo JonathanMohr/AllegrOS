@@ -4,7 +4,7 @@
 #include <abi.h>
 #include <stdint.h>
 
-int CDECL memcmp(const char* a, const char* b, size_t n);
+int CDECL memcmp(const void* a, const void* b, size_t n);
 
 void* CDECL memcpy(void* dst, const void* src, size_t n);
 void* CDECL memset(void* dst, int value, size_t n);
