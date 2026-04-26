@@ -43,7 +43,7 @@ def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain, buildCa
             content_hash = cache.hash_files([file])
 
             # TODO
-            compileCommands.add("nasm", compile_commands.Language.ASSEMBLY, file, target_path, args)
+            #compileCommands.add("nasm", compile_commands.Language.ASSEMBLY, file, target_path, args)
             if not buildCache.is_up_to_date(target_path, content_hash):
                 logger.build(f"Assembling {file} -> {target_path}")
                 subprocess.run([
@@ -286,7 +286,8 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
 
                 "-mno-sse", "-mno-sse2",
 
-                #"-fno-builtin",
+                "-fno-builtin",
+
                 "-fno-stack-protector",
             ],
 

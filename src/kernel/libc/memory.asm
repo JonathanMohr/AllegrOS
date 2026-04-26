@@ -3,7 +3,7 @@
 section .text
 
 ;
-; void* CDECL memcpy(void* dst, const void* src, uint32_t count);
+; void* CDECL memcpy(void* dst, const void* src, size_t n);
 ;
 global memcpy
 memcpy:
@@ -24,7 +24,7 @@ memcpy:
     ret
 
 ;
-; void* CDECL memset(void* dst, int32_t value, uint32_t count);
+; void* CDECL memset(void* dst, int value, size_t n);
 ;
 global memset
 memset:
@@ -38,5 +38,50 @@ memset:
     cld
     rep stosb
 
+    mov eax, edx
     pop edi
+    ret
+
+;
+; void* CDECL memmove(void* dst, const void* src, size_t n);
+;
+global memmove
+memmove: ; TODO: Check
+    push edi
+    push esi
+
+    mov edi, [esp + 12] ; dst
+    mov esi, [esp + 16] ; src
+    mov ecx, [esp + 20] ; count
+    mov eax, edi        ; return value
+
+    test ecx, ecx
+    jz .done
+
+    cmp edi, esi
+    jb .forward
+
+    mov edx, esi
+    add edx, ecx          ; edx = src + n
+
+    cmp edi, edx
+    jae .forward          ; no overlap -> forward copy
+
+    ; backward copy
+    add esi, ecx
+    add edi, ecx
+    std
+    rep movsb
+    cld
+
+    jmp .done
+
+.forward:
+    cld
+    rep movsb
+
+.done:
+    pop esi
+    pop edi
+
     ret
