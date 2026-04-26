@@ -12,7 +12,26 @@ import logging
 import time
 import subprocess
 
-def run_qemu(image: Path, hostOS: OS):
+def run_debugger(stage1: Path, stage2: Path, kernel: Path):
+    try:
+        lldb = "lldb"
+
+        lldb_args = [
+            str(kernel),
+            "-o", "gdb-remote localhost:1234",
+            "-o", f"target symbols add {stage1}",
+            "-o", f"target symbols add {stage2}"
+        ]
+
+        subprocess.run([
+            lldb, *lldb_args
+        ], check=True)
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Running debugger failed: {e}")
+
+
+def run_qemu(image: Path, hostOS: OS, debugMode: False):
     if hostOS == OS.macOS:
         displayBackend = "cocoa"
     else:
@@ -25,6 +44,9 @@ def run_qemu(image: Path, hostOS: OS):
             "-display", f"{displayBackend}",
             "-debugcon", "stdio"
         ]
+
+        if debugMode:
+            qemu_args.extend(["-S", "-s"])
 
         qemu = "qemu-system-i386"
 
@@ -49,6 +71,8 @@ def printHelp():
 
     rich.print("[bold bright_blue]commands:[/bold bright_blue]")
     rich.print("  [bold bright_green]run[/bold bright_green]               Run the OS using QEMU")
+    rich.print("  [bold bright_green]debug[/bold bright_green]             Run the OS using QEMU with debug mode")
+    rich.print("  [bold bright_green]debugger[/bold bright_green]          Run the debugger")
 
     rich.print()
 
@@ -100,6 +124,8 @@ def main() -> bool:
 
     debug: bool = False
     command_run: bool = False
+    command_debug: bool = False
+    command_debugger: bool = False
 
     try:
         for arg in sys.argv[1:]:
@@ -111,6 +137,10 @@ def main() -> bool:
                 debug = True
             elif arg == "run":
                 command_run = True
+            elif arg == "debug":
+                command_debug = True
+            elif arg == "debugger":
+                command_debugger = True
             else:
                 raise ValueError(f"Invalid argument: {arg}")
     
@@ -130,12 +160,28 @@ def main() -> bool:
     
     if command_run:
         try:
-            run_qemu(image, hostOS)
+            run_qemu(image, hostOS, False)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
             return False
     
+    if command_debug:
+        try:
+            run_qemu(image, hostOS, True)
+
+        except Exception as e:
+            logger.error(f"QEMU failed: {e}")
+            return False
+        
+    if command_debugger:
+        try: # TODO
+            run_debugger(...)
+
+        except Exception as e:
+            logger.error(f"Debugger failed: {e}")
+            return False
+
     return True
 
 if not main():
