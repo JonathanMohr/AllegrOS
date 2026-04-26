@@ -2,9 +2,12 @@ from pathlib import Path
 from typing import Optional, Dict
 import json
 import hashlib
+import logging
 
 class BuildCache:
-    def __init__(self, cache_file: Path):
+    def __init__(self, cache_file: Path, logger: logging.Logger):
+        self.logger = logger
+
         self.cache_file = cache_file
         self.hashes: Dict[str, str] = {}
         self.load()
@@ -15,7 +18,7 @@ class BuildCache:
                 data = json.loads(self.cache_file.read_text())
                 self.hashes = data.get("hashes", {})
             except Exception:
-                print(f"Warning: Failed to load build cache from {self.cache_file}")
+                self.logger.warning(f"Failed to load build cache from {self.cache_file}")
                 self.hashes = {}
                 self.stored_version = None
 

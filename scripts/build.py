@@ -1,13 +1,16 @@
+from scripts.defs import OS, ARCH
+import scripts.cache as cache
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import subprocess
-import sys
 import shutil
-
-import scripts.cache as cache
+import logging
 
 @dataclass
 class Toolchain:
+    LFS: str
+
     Assembler: str
     Compiler_C: str
     Linker: str
@@ -16,9 +19,7 @@ class Toolchain:
     Compiler_C_Flags: list[str] = field(default_factory=list)
     Linker_Flags: list[str] = field(default_factory=list)
 
-def build_assembly_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
-    nasm = shutil.which("nasm")
-
+def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.asm")
 
     objects: list[Path] = []
@@ -34,7 +35,7 @@ def build_assembly_sources(toolchain: Toolchain,buildCache: cache.BuildCache, bu
             content_hash = cache.hash_files([file])
 
             if not buildCache.is_up_to_date(target_path, content_hash):
-                print(f"Assembling {file} -> {target_path}")
+                logger.build(f"Assembling {file} -> {target_path}")
                 subprocess.run([
                     toolchain.Assembler,
                     *toolchain.Assembler_Flags,
@@ -45,14 +46,11 @@ def build_assembly_sources(toolchain: Toolchain,buildCache: cache.BuildCache, bu
                 buildCache.update(target_path, content_hash)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Assembling failed for {file}")
-            raise e
+            raise RuntimeError(f"Assembling failed for {file}: {e}")
         
     return objects
 
-def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
-    clang = shutil.which("clang")
-
+def build_c_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.c")
 
     objects: list[Path] = []
@@ -71,7 +69,7 @@ def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir
             content_hash = cache.hash_files(all_deps)
 
             if not buildCache.is_up_to_date(target_path, content_hash):
-                print(f"Compiling {file} -> {target_path}")
+                logger.build(f"Compiling {file} -> {target_path}")
                 subprocess.run([
                     toolchain.Compiler_C,
                     *toolchain.Compiler_C_Flags,
@@ -86,18 +84,17 @@ def build_c_sources(toolchain: Toolchain,buildCache: cache.BuildCache, build_dir
                 buildCache.update(target_path, new_content_hash)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Compiling failed for {file}")
-            raise e
+            raise RuntimeError(f"Compiling failed for {file}: {e}")
         
     return objects
 
-def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
+def link_objects(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
     try:
         deps = [*objects, linker_script]
         content_hash = cache.hash_files(deps)
 
         if not buildCache.is_up_to_date(out, content_hash):
-            print(f"Linking {out}")
+            logger.build(f"Linking {out}")
             subprocess.run([
                 toolchain.Linker,
                 "-T", str(linker_script),
@@ -110,10 +107,9 @@ def link_objects(toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, o
             buildCache.update(out, content_hash)
 
     except subprocess.CalledProcessError as e:
-        print(f"Error: Linking failed for {out}")
-        raise e
+        raise RuntimeError(f"Error: Linking failed for {out}: {e}")
 
-def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "bootloader/stage1"
     build = build_dir / "bootloader/stage1"
     linker_script = src / "linker.ld"
@@ -121,13 +117,13 @@ def compile_bootloader_stage1(toolchain: Toolchain, buildCache: cache.BuildCache
     out = build / "stage1.bin"
     map_path = build / "stage1.map"
     
-    objects = build_assembly_sources(toolchain, buildCache, build, src)
+    objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
     
-    link_objects(toolchain, buildCache, out, objects, linker_script, map_path)
+    link_objects(logger, toolchain, buildCache, out, objects, linker_script, map_path)
 
     return out
 
-def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "bootloader/stage2"
     build = build_dir / "bootloader/stage2"
     linker_script = src / "linker.ld"
@@ -135,14 +131,14 @@ def compile_bootloader_stage2(toolchain: Toolchain, buildCache: cache.BuildCache
     out = build / "stage2.bin"
     map_path = build / "stage2.map"
     
-    asm_objects = build_assembly_sources(toolchain, buildCache, build, src)
-    c_objects = build_c_sources(toolchain, buildCache, build, src)
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
+    c_objects = build_c_sources(logger, toolchain, buildCache, build, src)
 
-    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
+    link_objects(logger, toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 
-def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "kernel"
     build = build_dir / "kernel"
     linker_script = src / "linker.ld"
@@ -150,81 +146,56 @@ def compile_bootloader_kernel(toolchain: Toolchain, buildCache: cache.BuildCache
     out = build / "kernel.elf"
     map_path = build / "kernel.map"
     
-    asm_objects = build_assembly_sources(toolchain, buildCache, build, src)
-    c_objects = build_c_sources(toolchain, buildCache, build, src)
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
+    c_objects = build_c_sources(logger, toolchain, buildCache, build, src)
 
-    link_objects(toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
+    link_objects(logger, toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 
-def create_disk_image(buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path, fs_root: Path):
-    lfs = shutil.which("lfs")
-
+def create_disk_image(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path, fs_root: Path):
     all_root_files = [f for f in fs_root.rglob("*") if f.is_file()]
     deps = [stage1, stage2, *all_root_files]
     content_hash = cache.hash_files(deps)
 
     if not buildCache.is_up_to_date(image, content_hash):
         try:
-            print(f"Creating MBR disk image {image}")
+            logger.debug(f"Creating MBR disk image {image}")
             subprocess.run([
-                lfs, "create", str(image), "mbr",
+                toolchain.LFS, "create", str(image), "mbr",
                 "--size", "100M",
                 "--boot", str(stage1)
             ], check=True)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Creating MBR disk image {image} failed")
-            raise e
+            raise RuntimeError(f"Creating MBR disk image {image} failed: {e}")
         
         try:
-            print(f"Creating partition 1")
+            logger.info(f"Creating partition 1")
             subprocess.run([
-                lfs, "create", f"{image}:1", "none",
+                toolchain.LFS, "create", f"{image}:1", "none",
                 "--size", str(stage2.stat().st_size + (512 - (stage2.stat().st_size % 512))),
             ], check=True)
 
-            print(f"Writing stage 2 to partition 1")
+            logger.debug(f"Writing stage 2 to partition 1")
             subprocess.run([
-                lfs, "write", f"{image}:1", str(stage2)
+                toolchain.LFS, "write", f"{image}:1", str(stage2)
             ], check=True)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Creating partition 1 with {stage2} failed")
-            raise e
+            raise RuntimeError(f"Creating partition 1 with {stage2} failed: {e}")
 
         try:
-            print(f"Creating partition 2")
+            logger.info(f"Creating partition 2")
             subprocess.run([
-                lfs, "create", f"{image}:2", "fat32",
+                toolchain.LFS, "create", f"{image}:2", "fat32",
                 "--root", str(fs_root)
             ], check=True)
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: Creating partition 2 with {stage2} failed")
-            raise e
+            raise RuntimeError(f"Creating partition 2 with {stage2} failed: {e}")
         
         buildCache.update(image, content_hash)
-
-def run_qemu(image: Path):
-    try:
-        qemu_args = [
-            "-m", "32",
-    #       "-spice", "port=5930,disable-ticketing",
-            "-display", "sdl,gl=on",
-            "-debugcon", "stdio"
-        ]
-
-        qemu = "qemu-system-i386"
-
-        subprocess.run([
-            qemu, *qemu_args,
-            "-drive", f"format=raw,file={image},if=ide"
-        ], check=True)
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error: Running QEMU with {image} failed")
-        raise e
 
 class ToolchainError(RuntimeError):
     pass
@@ -235,13 +206,13 @@ def require_tool(name: str) -> str:
         raise ToolchainError(f"Missing required tool: {name}")
     return path
 
-def main() -> bool:
-    buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"))
-
-    debug = False
+def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Path | None:
+    buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"), logger)
 
     try:
         toolchain: Toolchain = Toolchain(
+            LFS = require_tool("lfs"),
+
             Assembler = require_tool("nasm"),
             Assembler_Flags = [
                 "-f", "elf32"
@@ -262,8 +233,8 @@ def main() -> bool:
         )
     
     except ToolchainError as e:
-        print(f"Error: Toolchain setup failed: {e}")
-        return False
+        logger.error(f"Toolchain setup failed: {e}")
+        return None
     
     if debug:
         toolchain.Compiler_C_Flags.extend([
@@ -293,30 +264,30 @@ def main() -> bool:
 
     stage1: Path
     try:
-        stage1 = compile_bootloader_stage1(toolchain, buildCache, src_dir, build_dir)
+        stage1 = compile_bootloader_stage1(logger, toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
-        print(f"Error: Building stage 1 failed: {e}")
-        return False
+        logger.error(f"Building stage 1 failed: {e}")
+        return None
     
     stage2: Path
     try:
-        stage2 = compile_bootloader_stage2(toolchain, buildCache, src_dir, build_dir)
+        stage2 = compile_bootloader_stage2(logger, toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
-        print(f"Error: Building stage 2 failed: {e}")
-        return False
+        logger.error(f"Building stage 2 failed: {e}")
+        return None
 
     kernel: Path
     try:
-        kernel = compile_bootloader_kernel(toolchain, buildCache, src_dir, build_dir)
+        kernel = compile_bootloader_kernel(logger, toolchain, buildCache, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
-        print(f"Error: Building kernel failed: {e}")
-        return False
+        logger.error(f"Building kernel failed: {e}")
+        return None
     
     build_fs_root = build_dir / "fs_root"
     shutil.rmtree(build_fs_root, ignore_errors=True)
@@ -333,26 +304,13 @@ def main() -> bool:
 
     image = build_dir / "disk.img"
     try:
-        create_disk_image(buildCache, image, stage1, stage2, build_fs_root)
+        create_disk_image(logger, toolchain, buildCache, image, stage1, stage2, build_fs_root)
 
     except Exception as e:
         buildCache.save()
-        print(f"Error: Creating disk image: {e}")
-        return False
+        logger.error(f"Creating disk image: {e}")
+        return None
 
     buildCache.save()
-
-    try:
-        run_qemu(image)
-
-    except Exception as e:
-        print(f"Error: QEMU failed: {e}")
-        return False
     
-    return True
-    
-if __name__ == "__main__":
-    if not main():
-        sys.exit(1)
-    
-    sys.exit(0)
+    return image
