@@ -1,5 +1,6 @@
 from scripts.defs import OS, ARCH
 import scripts.cache as cache
+import scripts.compile_commands as compile_commands
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -20,7 +21,7 @@ class Toolchain:
     Compiler_C_Flags: list[str] = field(default_factory=list)
     Linker_Flags: list[str] = field(default_factory=list)
 
-def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.asm")
 
     objects: list[Path] = []
@@ -33,15 +34,20 @@ def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain,buildCac
         objects.append(target_path)
 
         try:
+            args = [
+                *toolchain.Assembler_Flags,
+                str(file),
+                "-o", str(target_path)
+            ]
+
             content_hash = cache.hash_files([file])
 
+            # TODO
+            compileCommands.add("nasm", compile_commands.Language.ASSEMBLY, file, target_path, args)
             if not buildCache.is_up_to_date(target_path, content_hash):
                 logger.build(f"Assembling {file} -> {target_path}")
                 subprocess.run([
-                    toolchain.Assembler,
-                    *toolchain.Assembler_Flags,
-                    str(file),
-                    "-o", str(target_path)
+                    toolchain.Assembler, *args
                 ], check=True)
 
                 buildCache.update(target_path, content_hash)
@@ -51,7 +57,7 @@ def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain,buildCac
         
     return objects
 
-def build_c_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, build_dir: Path, source_dir: Path) -> list[Path]:
+def build_c_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.c")
 
     objects: list[Path] = []
@@ -65,18 +71,23 @@ def build_c_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cac
         objects.append(target_path)
 
         try:
+            args = [
+                *toolchain.Compiler_C_Flags,
+                "-c", str(file),
+                "-o", str(target_path),
+                "-MD", "-MF", str(dep_path)
+            ]
+
             deps = cache.parse_gcc_dep_file(dep_path)
             all_deps = [file, *map(Path, deps)]
             content_hash = cache.hash_files(all_deps)
 
+            # TODO
+            compileCommands.add("clang", compile_commands.Language.C, file, target_path, args)
             if not buildCache.is_up_to_date(target_path, content_hash):
                 logger.build(f"Compiling {file} -> {target_path}")
                 subprocess.run([
-                    toolchain.Compiler_C,
-                    *toolchain.Compiler_C_Flags,
-                    "-c", str(file),
-                    "-o", str(target_path),
-                    "-MD", "-MF", str(dep_path)
+                    toolchain.Compiler_C, *args
                 ], check=True)
 
                 new_deps = cache.parse_gcc_dep_file(dep_path)
@@ -91,18 +102,21 @@ def build_c_sources(logger: logging.Logger, toolchain: Toolchain,buildCache: cac
 
 def link_objects(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
     try:
+        args = [
+            "-T", str(linker_script),
+            f"-Map={map}",
+            *toolchain.Linker_Flags,
+            *[str(o) for o in objects],
+            "-o", str(out)
+        ]
+
         deps = [*objects, linker_script]
         content_hash = cache.hash_files(deps)
 
         if not buildCache.is_up_to_date(out, content_hash):
             logger.build(f"Linking {out}")
             subprocess.run([
-                toolchain.Linker,
-                "-T", str(linker_script),
-                f"-Map={map}",
-                *toolchain.Linker_Flags,
-                *[str(o) for o in objects],
-                "-o", str(out)
+                toolchain.Linker, *args
             ], check=True)
 
             buildCache.update(out, content_hash)
@@ -112,30 +126,36 @@ def link_objects(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.
 
 def link_objects_to_binary(logger: logging.Logger, toolchain: Toolchain,buildCache: cache.BuildCache, elfOut: Path, out: Path, objects: list[Path], linker_script: Path, map: Path):
     try:
+        linkerArgs = [
+            "-T", str(linker_script),
+            f"-Map={map}",
+            *toolchain.Linker_Flags,
+            *[str(o) for o in objects],
+            "-o", str(elfOut)
+        ]
+
         deps = [*objects, linker_script]
         elf_content_hash = cache.hash_files(deps)
 
         if not buildCache.is_up_to_date(elfOut, elf_content_hash):
             logger.build(f"Linking ELF {elfOut}")
             subprocess.run([
-                toolchain.Linker,
-                "-T", str(linker_script),
-                f"-Map={map}",
-                *toolchain.Linker_Flags,
-                *[str(o) for o in objects],
-                "-o", str(elfOut)
+                toolchain.Linker, *linkerArgs
             ], check=True)
 
             buildCache.update(elfOut, elf_content_hash)
+
+        objectCopyArgs = [
+            "-O", "binary",
+            str(elfOut),
+            str(out)
+        ]
 
         bin_content_hash = cache.hash_files([elfOut])
         if not buildCache.is_up_to_date(out, bin_content_hash):
             logger.build(f"Creating binary {out}")
             subprocess.run([
-                toolchain.ObjectCopy,
-                "-O", "binary",
-                str(elfOut),
-                str(out)
+                toolchain.ObjectCopy, *objectCopyArgs
             ], check=True)
 
             buildCache.update(out, bin_content_hash)
@@ -143,7 +163,7 @@ def link_objects_to_binary(logger: logging.Logger, toolchain: Toolchain,buildCac
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Linking failed for {out}: {e}")
 
-def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "bootloader/stage1"
     build = build_dir / "bootloader/stage1"
     linker_script = src / "linker.ld"
@@ -152,13 +172,13 @@ def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buil
     out = build / "stage1.bin"
     map_path = build / "stage1.map"
     
-    objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
+    objects = build_assembly_sources(logger, toolchain, buildCache, compileCommands, build, src)
     
     link_objects_to_binary(logger, toolchain, buildCache, elfOut, out, objects, linker_script, map_path)
 
     return out
 
-def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "bootloader/stage2"
     build = build_dir / "bootloader/stage2"
     linker_script = src / "linker.ld"
@@ -167,14 +187,14 @@ def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buil
     out = build / "stage2.bin"
     map_path = build / "stage2.map"
     
-    asm_objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
-    c_objects = build_c_sources(logger, toolchain, buildCache, build, src)
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, compileCommands, build, src)
+    c_objects = build_c_sources(logger, toolchain, buildCache, compileCommands, build, src)
 
     link_objects_to_binary(logger, toolchain, buildCache, elfOut, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 
-def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "kernel"
     build = build_dir / "kernel"
     linker_script = src / "linker.ld"
@@ -182,14 +202,14 @@ def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buil
     out = build / "kernel.elf"
     map_path = build / "kernel.map"
     
-    asm_objects = build_assembly_sources(logger, toolchain, buildCache, build, src)
-    c_objects = build_c_sources(logger, toolchain, buildCache, build, src)
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, compileCommands, build, src)
+    c_objects = build_c_sources(logger, toolchain, buildCache, compileCommands, build, src)
 
     link_objects(logger, toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
 
-def create_disk_image(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, image: Path, stage1: Path, stage2: Path, fs_root: Path):
+def create_disk_image(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, image: Path, stage1: Path, stage2: Path, fs_root: Path):
     all_root_files = [f for f in fs_root.rglob("*") if f.is_file()]
     deps = [stage1, stage2, *all_root_files]
     content_hash = cache.hash_files(deps)
@@ -243,7 +263,8 @@ def require_tool(name: str) -> str:
     return path
 
 def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Path | None:
-    buildCache: cache.BuildCache = cache.BuildCache(Path(".buildcache.json"), logger)
+    buildCache = cache.BuildCache(Path(".buildcache.json"), logger)
+    compileCommands = compile_commands.CompileCommands()
 
     try:
         toolchain: Toolchain = Toolchain(
@@ -258,13 +279,22 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
             Compiler_C_Flags = [
                 "-target", "i386-pc-none-elf",
                 "-m32",
+
+                "-fno-pic",
+
                 "-ffreestanding", "-nostdinc",
-                "-mno-sse", "-mno-sse2"
+
+                "-mno-sse", "-mno-sse2",
+
+                #"-fno-builtin",
+                "-fno-stack-protector",
             ],
 
             Linker = require_tool("ld.lld"),
             Linker_Flags = [
-                "-nostdlib"
+                "-nostdlib",
+
+                "-z", "noexecstack"
             ],
 
             ObjectCopy = require_tool("llvm-objcopy")
@@ -282,6 +312,11 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
     else:
         toolchain.Compiler_C_Flags.extend([
             "-O2"
+        ])
+
+        toolchain.Linker_Flags.extend([
+            "--gc-sections",
+            "--strip-all"
         ])
 
     
@@ -302,7 +337,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
 
     stage1: Path
     try:
-        stage1 = compile_bootloader_stage1(logger, toolchain, buildCache, src_dir, build_dir)
+        stage1 = compile_bootloader_stage1(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -311,7 +346,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
     
     stage2: Path
     try:
-        stage2 = compile_bootloader_stage2(logger, toolchain, buildCache, src_dir, build_dir)
+        stage2 = compile_bootloader_stage2(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -320,7 +355,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
 
     kernel: Path
     try:
-        kernel = compile_bootloader_kernel(logger, toolchain, buildCache, src_dir, build_dir)
+        kernel = compile_bootloader_kernel(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -342,12 +377,15 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
 
     image = build_dir / "disk.img"
     try:
-        create_disk_image(logger, toolchain, buildCache, image, stage1, stage2, build_fs_root)
+        create_disk_image(logger, toolchain, buildCache, compileCommands, image, stage1, stage2, build_fs_root)
 
     except Exception as e:
         buildCache.save()
         logger.error(f"Creating disk image: {e}")
         return None
+
+    compileCommandsPath = Path("compile_commands.json")
+    compileCommands.write(compileCommandsPath)
 
     buildCache.save()
     
