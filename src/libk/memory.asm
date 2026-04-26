@@ -3,6 +3,47 @@
 section .text
 
 ;
+; int CDECL memcmp(const void* s1, const void* s2, size_t n);
+;
+global memcmp
+memcmp:
+    push edi
+    push esi
+
+    mov edi, [esp + 12] ; s1
+    mov esi, [esp + 16] ; s2
+    mov ecx, [esp + 20] ; count
+    
+    xor eax, eax    ; return value
+    test ecx, ecx   ; return when n == 0
+    jz .done
+
+.loop:
+    mov al, [edi]
+    mov dl, [esi]
+    cmp al, dl
+    jne .diff
+
+    inc edi
+    inc esi
+    dec ecx
+    jnz .loop
+
+    xor eax, eax
+    jmp .done
+
+.diff:
+    movzx eax, al
+    movzx edx, dl
+    sub eax, edx
+    
+.done:
+    pop esi
+    pop edi
+
+    ret
+
+;
 ; void* CDECL memcpy(void* dst, const void* src, size_t n);
 ;
 global memcpy
