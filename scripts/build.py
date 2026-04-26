@@ -163,7 +163,7 @@ def link_objects_to_binary(logger: logging.Logger, toolchain: Toolchain,buildCac
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Linking failed for {out}: {e}")
 
-def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> tuple[Path, Path]:
     src = src_dir / "bootloader/stage1"
     build = build_dir / "bootloader/stage1"
     linker_script = src / "linker.ld"
@@ -176,9 +176,9 @@ def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buil
     
     link_objects_to_binary(logger, toolchain, buildCache, elfOut, out, objects, linker_script, map_path)
 
-    return out
+    return (elfOut, out)
 
-def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
+def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> tuple[Path, Path]:
     src = src_dir / "bootloader/stage2"
     build = build_dir / "bootloader/stage2"
     linker_script = src / "linker.ld"
@@ -192,7 +192,7 @@ def compile_bootloader_stage2(logger: logging.Logger, toolchain: Toolchain, buil
 
     link_objects_to_binary(logger, toolchain, buildCache, elfOut, out, [*asm_objects, *c_objects], linker_script, map_path)
 
-    return out
+    return (elfOut, out)
 
 def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> Path:
     src = src_dir / "kernel"
@@ -262,7 +262,15 @@ def require_tool(name: str) -> str:
         raise ToolchainError(f"Missing required tool: {name}")
     return path
 
-def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Path | None:
+@dataclass
+class BuildResult:
+    Image: Path
+
+    Stage1: Path
+    Stage2: Path
+    Kernel: Path
+
+def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> BuildResult | None:
     buildCache = cache.BuildCache(Path(".buildcache.json"), logger)
     compileCommands = compile_commands.CompileCommands()
 
@@ -306,10 +314,17 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
         return None
     
     if debug:
+        toolchain.Assembler_Flags.extend([
+            "-g",
+            "-F", "dwarf"
+        ])
+
         toolchain.Compiler_C_Flags.extend([
             "-O0",
-            "-g"
+            "-g",
+            "-gdwarf-4"
         ])
+
     else:
         toolchain.Compiler_C_Flags.extend([
             "-O2"
@@ -338,7 +353,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
 
     stage1: Path
     try:
-        stage1 = compile_bootloader_stage1(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
+        elfStage1, stage1 = compile_bootloader_stage1(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -347,7 +362,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
     
     stage2: Path
     try:
-        stage2 = compile_bootloader_stage2(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
+        elfStage2, stage2 = compile_bootloader_stage2(logger, toolchain, buildCache, compileCommands, src_dir, build_dir)
 
     except Exception as e:
         buildCache.save()
@@ -389,5 +404,12 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Pa
     compileCommands.write(compileCommandsPath)
 
     buildCache.save()
+
+    result = BuildResult(
+        Image=image,
+        Stage1=elfStage1,
+        Stage2=elfStage2,
+        Kernel=kernel
+    )
     
-    return image
+    return result

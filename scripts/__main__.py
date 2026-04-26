@@ -19,8 +19,8 @@ def run_debugger(stage1: Path, stage2: Path, kernel: Path):
         lldb_args = [
             str(kernel),
             "-o", "gdb-remote localhost:1234",
-            "-o", f"target symbols add {stage1}",
-            "-o", f"target symbols add {stage2}"
+            "-o", f"target modules add {stage1}",
+            "-o", f"target modules add {stage2}"
         ]
 
         subprocess.run([
@@ -150,8 +150,8 @@ def main() -> bool:
 
 
     try:
-        image = build.build(hostOS, hostArch, logger, debug)
-        if not image:
+        result = build.build(hostOS, hostArch, logger, debug)
+        if not result:
             return False
         
     except Exception as e:
@@ -160,7 +160,7 @@ def main() -> bool:
     
     if command_run:
         try:
-            run_qemu(image, hostOS, False)
+            run_qemu(result.Image, hostOS, False)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
@@ -168,15 +168,15 @@ def main() -> bool:
     
     if command_debug:
         try:
-            run_qemu(image, hostOS, True)
+            run_qemu(result.Image, hostOS, True)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
             return False
         
     if command_debugger:
-        try: # TODO
-            run_debugger(...)
+        try:
+            run_debugger(result.Stage1, result.Stage2, result.Kernel)
 
         except Exception as e:
             logger.error(f"Debugger failed: {e}")
