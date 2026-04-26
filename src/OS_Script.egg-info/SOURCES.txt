@@ -1,6 +1,0 @@
-pyproject.toml
-src/OS_Script.egg-info/PKG-INFO
-src/OS_Script.egg-info/SOURCES.txt
-src/OS_Script.egg-info/dependency_links.txt
-src/OS_Script.egg-info/requires.txt
-src/OS_Script.egg-info/top_level.txt

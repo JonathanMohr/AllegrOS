@@ -1,5 +1,5 @@
 ENTRY(start)
-OUTPUT_FORMAT("binary")
+OUTPUT_FORMAT("elf32-i386")
 phys = 0x7C00;                  /* BIOS puts us at 0x7C00 */
 
 SECTIONS

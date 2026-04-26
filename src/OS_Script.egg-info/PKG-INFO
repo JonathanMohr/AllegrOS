@@ -1,6 +1,0 @@
-Metadata-Version: 2.4
-Name: OS-Script
-Version: 0.1.0
-Summary: The script to manage the OS building
-Requires-Python: >=3.14.3
-Requires-Dist: click>=8.1
