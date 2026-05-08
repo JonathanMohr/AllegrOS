@@ -22,15 +22,16 @@ bool Memory_VirtualAllocator_Initialize(Memory_VirtualAllocator* virtualAllocato
     return true;
 }
 
-uintptr_t Memory_VirtualAllocator_AllocatePage(Memory_VirtualAllocator* virtualAllocator)
+uintptr_t Memory_VirtualAllocator_AllocatePage(Memory_VirtualAllocator* virtualAllocator, uint64_t count)
 {
     if (!virtualAllocator->initialized) return MEMORY_VIRTUALALLOCATOR_INVALID;
 
-    if ((virtualAllocator->size - virtualAllocator->used) < virtualAllocator->pageSize)
+    if ((virtualAllocator->size - virtualAllocator->used) < (virtualAllocator->pageSize * count))
         return MEMORY_VIRTUALALLOCATOR_INVALID; // Out of space
 
-    virtualAllocator->used += virtualAllocator->pageSize;
-    return virtualAllocator->base + virtualAllocator->used - virtualAllocator->pageSize;
+    const uintptr_t address = virtualAllocator->base + virtualAllocator->used;
+    virtualAllocator->used += virtualAllocator->pageSize * count;
+    return address;
 }
 
 void Memory_VirtualAllocator_FreePage(Memory_VirtualAllocator* virtualAllocator, uintptr_t page)

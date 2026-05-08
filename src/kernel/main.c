@@ -33,14 +33,19 @@ void CDECL kmain(BootParams* bParams)
 
     __asm__("sti");
 
-    uint32_t* addr = (uint32_t*)0xD0000000;
+    for (uint64_t i = 0; i <= 128; i++)
+    {
+        uint64_t* addr = Memory_KernelAllocate(sizeof(uint64_t));
+        *addr = i;
 
-    if (!x86_PageDirectory_Map((uintptr_t)addr, Memory_PhysicalAllocator_AllocatePage()))
-        PanicMessage("Could not map memory\n");
+        if (i % 32 == 0)
+        {
+            KernelConsole_PrintFormat(mux_console, "%p\n", addr);
+            KernelConsole_PrintFormat(mux_console, "%udd\n", *addr);
+        }
 
-    *addr = 6346;
-
-    KernelConsole_PrintFormat(mux_console, "%udd\n", *addr);
+        Memory_KernelFree(addr);
+    }
 
 end:
     for(;;);
