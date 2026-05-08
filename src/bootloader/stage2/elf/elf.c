@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "../fat/fat.h"
 #include "../io/io.h"
-#include "../x86/x86.h"
+#include <memory.h>
 
 ELFHeader headerBuffer;
 

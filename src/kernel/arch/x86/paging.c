@@ -2,7 +2,7 @@
 
 #include "../../panic/panic.h"
 #include "../../memory/physical/manager.h"
-#include "../../libc/memory.h"
+#include <memory.h>
 
 #define PAGE_MASK 0xFFFFF000
 

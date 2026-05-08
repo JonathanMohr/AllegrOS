@@ -2,7 +2,9 @@
 
 #include <stddef.h>
 #include <minmax.h>
+#include <memory.h>
 #include "../x86/x86.h"
+
 #include "../io/io.h"
 
 #define SECTOR_SIZE             512
@@ -329,7 +331,7 @@ bool FAT_FindFile(Partition* partition, FAT_File* file, const char* name, FAT_Di
         if (entry.Attributes == FAT_ATTRIBUTE_LFN)
             continue;
 
-        if (memcmp(shortName, (const char*)entry.Name, 11) == 0)
+        if (memcmp(shortName, entry.Name, 11) == 0)
         {
             *entryOut = entry;
             return true;

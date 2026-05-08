@@ -2,16 +2,6 @@
 
 #include <stddef.h>
 
-int32_t CDECL memcmp(const char* a, const char* b, uint64_t n)
-{
-    int32_t diff = 0;
-    for (uint64_t i = 0; i < n && diff == 0; i++)
-    {
-        diff = (int32_t)a[i] - (int32_t)b[i];
-    }
-    return diff;
-}
-
 uint32_t CDECL strlen(const char* str)
 {
     uint32_t length = 0;
