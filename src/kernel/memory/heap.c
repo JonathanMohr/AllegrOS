@@ -4,7 +4,7 @@
 
 #include "../arch/x86/paging.h"
 
-#include "../libc/memory.h"
+#include <memory.h>
 
 void Memory_Heap_Initialize(Memory_Heap* heap, Memory_VirtualAllocator* virtualAllocator, uint64_t pageSize)
 {
