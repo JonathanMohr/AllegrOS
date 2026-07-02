@@ -318,7 +318,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
 
     try:
         toolchain: Toolchain = Toolchain(
-            LFS = require_tool("lfs"),
+            LFS = require_tool("phx-lfs"),
 
             Assembler = require_tool("nasm"),
             Assembler_Flags = [
