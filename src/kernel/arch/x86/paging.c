@@ -57,7 +57,8 @@ bool x86_PageDirectory_Map(uintptr_t virtualAddr, uintptr_t physicalAddr)
     uint32_t pageDirectoryEntry = pageDirectory[pageDirectoryIndex];
     if ((pageDirectoryEntry & PAGE_PRESENT) == 0)
     {
-        x86_PageDirectory_AddTable(pageDirectoryIndex);
+        if (!x86_PageDirectory_AddTable(pageDirectoryIndex))
+            return false;
     }
 
     uint32_t* pageTable = pageTables + pageDirectoryIndex * (PAGE_SIZE / sizeof(uint32_t));

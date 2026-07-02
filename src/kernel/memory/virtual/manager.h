@@ -17,5 +17,5 @@ typedef struct Memory_VirtualAllocator {
 bool Memory_VirtualAllocator_Initialize(Memory_VirtualAllocator* virtualAllocator, uint64_t pageSize, uintptr_t start, uintptr_t end);
 
 #define MEMORY_VIRTUALALLOCATOR_INVALID ((uintptr_t)0)
-uintptr_t Memory_VirtualAllocator_AllocatePage(Memory_VirtualAllocator* virtualAllocator);
+uintptr_t Memory_VirtualAllocator_AllocatePage(Memory_VirtualAllocator* virtualAllocator, uint64_t count);
 void Memory_VirtualAllocator_FreePage(Memory_VirtualAllocator* virtualAllocator, uintptr_t page);
