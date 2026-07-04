@@ -1,5 +1,6 @@
 #include <bootparams.h>
 #include <abi.h>
+#include <stdint.h>
 
 #include "panic/panic.h"
 
@@ -14,6 +15,8 @@
 
 #include "arch/x86/paging.h"
 
+#include "pci/pci.h"
+
 void CDECL kmain(BootParams* bParams)
 {
     BootParams bootParams = *bParams;
@@ -26,6 +29,14 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
+    uint32_t pciCount;
+    PCI_Device* pciDevices = PCI_Scan(&pciCount);
+    if (!pciDevices)
+    {
+        PanicMessage("[KERNEL] Could not scan PCI-Devices\n");
+        Panic();
+    }
+
     KernelConsole* mux_console = KernelConsole_GetOutput();
 
     KernelConsole_ClearScreen(mux_console);
@@ -33,18 +44,20 @@ void CDECL kmain(BootParams* bParams)
 
     __asm__("sti");
 
-    for (uint64_t i = 0; i <= 128; i++)
+    for (uint32_t i = 0; i < pciCount; i++)
     {
-        uint64_t* addr = Memory_KernelAllocate(sizeof(uint64_t));
-        *addr = i;
+        const PCI_Device* device = &pciDevices[i];
+        KernelConsole_PrintFormat(mux_console, "Device %udd:\n", i);
+        KernelConsole_PrintFormat(mux_console, "  Vendor ID: %uxw\n", device->vendorID);
+        KernelConsole_PrintFormat(mux_console, "  Device ID: %uxw\n", device->deviceID);
 
-        if (i % 32 == 0)
-        {
-            KernelConsole_PrintFormat(mux_console, "%p\n", addr);
-            KernelConsole_PrintFormat(mux_console, "%udd\n", *addr);
-        }
+        KernelConsole_PrintFormat(mux_console, "  Class Code: %uxb\n", device->classCode);
+        KernelConsole_PrintFormat(mux_console, "  Subclass: %uxb\n", device->subclass);
+        KernelConsole_PrintFormat(mux_console, "  progIf: %uxb\n", device->progIf);
 
-        Memory_KernelFree(addr);
+        KernelConsole_PrintFormat(mux_console, "  Bus: %uxb\n", device->classCode);
+        KernelConsole_PrintFormat(mux_console, "  Slot: %uxb\n", device->subclass);
+        KernelConsole_PrintFormat(mux_console, "  Func: %uxb\n", device->progIf);
     }
 
 end:

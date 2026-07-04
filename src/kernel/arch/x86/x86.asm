@@ -29,3 +29,16 @@ x86_inw:
     xor eax, eax
     in ax, dx
     ret
+
+global x86_outl
+x86_outl:
+    mov dx, [esp + 4]
+    mov eax, [esp + 8]
+    out dx, eax
+    ret
+
+global x86_inl
+x86_inl:
+    mov dx, [esp + 4]
+    in eax, dx
+    ret
