@@ -15,3 +15,17 @@ x86_inb:
     xor eax, eax
     in al, dx
     ret
+
+global x86_outw
+x86_outw:
+    mov dx, [esp + 4]
+    mov ax, [esp + 8]
+    out dx, ax
+    ret
+
+global x86_inw
+x86_inw:
+    mov dx, [esp + 4]
+    xor eax, eax
+    in ax, dx
+    ret

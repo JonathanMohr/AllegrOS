@@ -104,17 +104,17 @@ def build_c_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: ca
         
     return objects
 
-def link_objects(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path):
+def link_objects(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, out: Path, objects: list[Path], linker_script: Path, map: Path | None):
     try:
-        args = [
-            "-T", str(linker_script),
-            f"-Map={map}",
+        args = ["-T", str(linker_script)]
+        if map: args.append(f"-Map={map}")
+        args.extend([
             *toolchain.Linker_Flags,
             *[str(o) for o in objects],
             *[f"-L{d}" for d in toolchain.Library_Directories],
             *[f"-l{l}" for l in toolchain.Libraries],
             "-o", str(out)
-        ]
+        ])
 
         deps = [*objects, linker_script]
         content_hash = cache.hash_files(deps)
@@ -250,6 +250,14 @@ def compile_bootloader_kernel(logger: logging.Logger, toolchain: Toolchain, buil
     link_objects(logger, toolchain, buildCache, out, [*asm_objects, *c_objects], linker_script, map_path)
 
     return out
+
+def compile_userspace_bin(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, userspace_dir: Path, src_dir: Path, build_dir: Path, executable: Path):
+    linker_script = userspace_dir / "linker.ld"
+
+    asm_objects = build_assembly_sources(logger, toolchain, buildCache, compileCommands, build_dir, src_dir)
+    c_objects = build_c_sources(logger, toolchain, buildCache, compileCommands, build_dir, src_dir)
+
+    link_objects(logger, toolchain, buildCache, executable, [*asm_objects, *c_objects], linker_script, None)
 
 def create_disk_image(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, image: Path, stage1: Path, stage2: Path, fs_root: Path):
     all_root_files = [f for f in fs_root.rglob("*") if f.is_file()]
@@ -432,15 +440,31 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
         logger.error(f"Building kernel failed: {e}")
         return None
     
+    userspace_dir = src_dir / "userspace"
+    userspace_build_dir = build_dir / "userspace"
+    
+
     build_fs_root = build_dir / "fs_root"
     shutil.rmtree(build_fs_root, ignore_errors=True)
     build_fs_root.mkdir(parents=True, exist_ok=True)
 
-    fs_root = Path("fs_root")
-    shutil.copytree(fs_root, build_fs_root, dirs_exist_ok=True)
-
     system_dir = build_fs_root / "sys"
     system_dir.mkdir(parents=True, exist_ok=True)
+
+    bin_dir = build_fs_root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
+    tool_path = bin_dir / "tool"
+    try:
+        compile_userspace_bin(logger, toolchain, buildCache, compileCommands, userspace_dir, userspace_dir / "bin" / "tool", userspace_build_dir / "bin" / "tool", tool_path)
+
+    except Exception as e:
+        buildCache.save()
+        logger.error(f"Building tool failed: {e}")
+        return None
+
+    fs_root = Path("fs_root")
+    shutil.copytree(fs_root, build_fs_root, dirs_exist_ok=True)
 
     kernel_path = system_dir / "kernel.elf"
     shutil.copy2(kernel, kernel_path)
