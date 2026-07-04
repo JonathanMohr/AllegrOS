@@ -471,7 +471,7 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
         {
             FAT_Close(current);
 
-            if (!isLast && entry.Attributes & FAT_ATTRIBUTE_DIRECTORY == 0)
+            if (!isLast && entry.Attributes && FAT_ATTRIBUTE_DIRECTORY == 0)
             {
                 return NULL;
             }
