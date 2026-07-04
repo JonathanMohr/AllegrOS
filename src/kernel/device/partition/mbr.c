@@ -143,14 +143,14 @@ bool MBR_GetPartitionTable(Block_Device* device, Device_PartitionTable* table)
     if (!MBR_ReadFirstSector(device, &mbr))
         return false;
 
+    MBR_Data* data = (MBR_Data*)Memory_KernelAllocate(sizeof(MBR_Data));
+    if (!data) return false;
+
     table->parent = device;
     
     table->getPartitionCount = MBR_GetPartitionCount;
     table->getPartitionEntry = MBR_GetPartitionEntry;
     table->destroy = MBR_Destroy;
-
-    MBR_Data* data = (MBR_Data*)Memory_KernelAllocate(sizeof(MBR_Data));
-    if (!data) return false;
 
     data->count = 0;
 

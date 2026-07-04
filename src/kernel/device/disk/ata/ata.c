@@ -333,7 +333,7 @@ void ATA_Destroy(Block_Device* dev)
     Memory_KernelFree(dev->data);
 }
 
-static char ATA_Type_Str[] = "ATA-Drive";
+static char ATA_Type_Str[] = "ATA-DRIVE";
 
 bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDevice, bool primary, bool isSlave)
 {

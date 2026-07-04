@@ -32,3 +32,5 @@ typedef struct Device_PartitionTable
 
     void* data;
 } Device_PartitionTable;
+
+bool Device_PartitionTable_CreateBlockDevice(Block_Device* parent, Block_Device* device, const char* name, uint64_t start, uint64_t count);
