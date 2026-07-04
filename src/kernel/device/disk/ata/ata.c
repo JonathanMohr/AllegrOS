@@ -1,7 +1,7 @@
 #include "ata.h"
 
-#include "../../arch/x86/x86.h"
-#include "../../memory/memory.h"
+#include "../../../arch/x86/x86.h"
+#include "../../../memory/memory.h"
 #include <stdint.h>
 #include <memory.h>
 
@@ -328,6 +328,11 @@ uint64_t ATA_Write(Block_Device* dev, uint64_t sector, uint64_t count, const voi
     return totalWritten;
 }
 
+void ATA_Destroy(Block_Device* dev)
+{
+    Memory_KernelFree(dev->data);
+}
+
 static char ATA_Type_Str[] = "ATA-Drive";
 
 bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDevice, bool primary, bool isSlave)
@@ -393,6 +398,8 @@ bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDe
 
     blockDevice->read = ATA_Read;
     blockDevice->write = ATA_Write;
+
+    blockDevice->destroy = ATA_Destroy;
 
     blockDevice->data = data;
 

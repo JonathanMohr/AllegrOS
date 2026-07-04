@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdbool.h>
-#include "../../pci/pci.h"
+#include "../../../pci/pci.h"
 
-#include "../disk.h"
+#include "../../device.h"
 
 bool ATA_CheckPCIDevice(const PCI_Device* device);
 

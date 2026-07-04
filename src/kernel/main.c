@@ -2,22 +2,28 @@
 #include <abi.h>
 #include <stdint.h>
 
-#include "disk/ata/ata.h"
-#include "disk/disk.h"
 #include "panic/panic.h"
 
 #include "kconsole/kconsole.h"
 #include "kconsole/format.h"
 
 #include "memory/memory.h"
-#include "memory/physical/manager.h"
-#include "memory/virtual/manager.h"
 
 #include "arch/x86/x86.h"
 
 #include "arch/x86/paging.h"
 
+
 #include "pci/pci.h"
+
+
+#include "device/disk/ata/ata.h"
+
+#include "device/partition/mbr.h"
+
+#include "device/device.h"
+
+
 
 void CDECL kmain(BootParams* bParams)
 {
@@ -93,7 +99,8 @@ void CDECL kmain(BootParams* bParams)
 
     for (uint32_t i = 0; i < blockDeviceCount; i++)
     {
-        const Block_Device* device = &blockDevices[i];
+        Block_Device* device = &blockDevices[i];
+        const bool isMBR = MBR_CheckDisk(device);
 
         KernelConsole_PrintFormat(mux_console, "Block-Device %udd: \"%s\"\n", i + 1, device->name);
 
@@ -101,6 +108,28 @@ void CDECL kmain(BootParams* bParams)
 
         KernelConsole_PrintFormat(mux_console, "  Sector-Size: %uxqh\n", device->sectorSize);
         KernelConsole_PrintFormat(mux_console, "  Sector-Count: %uxqh\n", device->sectorCount);
+
+        Device_PartitionTable table;
+        if (!isMBR || !MBR_GetPartitionTable(device, &table))
+            KernelConsole_PutString(mux_console, "  Partitions: Partition table could not be built\n");
+        else
+        {
+            const uint64_t partitionCount = table.getPartitionCount(&table);
+            for (uint64_t j = 0; j < partitionCount; j++)
+            {
+                uint64_t start;
+                uint64_t count;
+                if (table.getPartitionEntry(&table, j, &start, &count))
+                {
+                    if (count > 1)
+                        KernelConsole_PrintFormat(mux_console, "    %udq: Sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, start, start + count - 1, count);
+                    else
+                        KernelConsole_PrintFormat(mux_console, "    %udq: Sector %uxqh\n", j + 1, start);
+                }
+                else
+                    KernelConsole_PrintFormat(mux_console, "    %udq: Could not get sectors\n", j + 1);
+            }
+        }
     }
 
 end:
