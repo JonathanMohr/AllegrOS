@@ -442,7 +442,19 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
     
     userspace_dir = src_dir / "userspace"
     userspace_build_dir = build_dir / "userspace"
-    
+
+    bin_build_dir = userspace_build_dir / "bin"
+    bin_build_dir.mkdir(parents=True, exist_ok=True)
+
+    tool_path = bin_build_dir / "tool" / "tool"
+    tool_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        compile_userspace_bin(logger, toolchain, buildCache, compileCommands, userspace_dir, bin_build_dir / "tool", bin_build_dir / "tool", tool_path)
+
+    except Exception as e:
+        buildCache.save()
+        logger.error(f"Building tool failed: {e}")
+        return None
 
     build_fs_root = build_dir / "fs_root"
     shutil.rmtree(build_fs_root, ignore_errors=True)
@@ -453,15 +465,7 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
 
     bin_dir = build_fs_root / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
-
-    tool_path = bin_dir / "tool"
-    try:
-        compile_userspace_bin(logger, toolchain, buildCache, compileCommands, userspace_dir, userspace_dir / "bin" / "tool", userspace_build_dir / "bin" / "tool", tool_path)
-
-    except Exception as e:
-        buildCache.save()
-        logger.error(f"Building tool failed: {e}")
-        return None
+    shutil.copytree(bin_build_dir, bin_dir, dirs_exist_ok=True)
 
     fs_root = Path("fs_root")
     shutil.copytree(fs_root, build_fs_root, dirs_exist_ok=True)

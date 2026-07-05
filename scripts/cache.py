@@ -35,6 +35,7 @@ class BuildCache:
         self.hashes[str(target)] = hash_value
 
     def is_up_to_date(self, target: Path, hash_value: str) -> bool:
+        # print(target.exists())
         if not target.exists():
             return False
         return self.get(target) == hash_value
