@@ -251,6 +251,8 @@ typedef struct FAT_Driver_Data
 
 typedef struct FAT_Entry_Data
 {
+    uint32_t firstCluster;
+
     bool isRoot;
 } FAT_Entry_Data;
 
