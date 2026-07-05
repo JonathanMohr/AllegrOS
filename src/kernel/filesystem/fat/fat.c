@@ -249,6 +249,16 @@ typedef struct FAT_Driver_Data
     char oemIdentifier[9];
 } FAT_Driver_Data;
 
+typedef struct FAT_Entry_Data
+{
+    bool isRoot;
+} FAT_Entry_Data;
+
+
+static void FAT_OpenRoot(Filesystem_Driver* driver, Filesystem_Entry* out)
+{
+
+}
 
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
