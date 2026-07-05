@@ -7,6 +7,12 @@ typedef uint8_t Filesystem_Entry_Type;
 #define FILESYSTEM_ENTRY_FILE       ((Filesystem_Entry_Type)0)
 #define FILESYSTEM_ENTRY_DIRECTORY  ((Filesystem_Entry_Type)1)
 
+typedef uint16_t Filesystem_Entry_Attribute;
+#define FILESYSTEM_ATTRIBUTE_READONLY   ((Filesystem_Entry_Attribute)0x01)
+#define FILESYSTEM_ATTRIBUTE_EXECUTABLE ((Filesystem_Entry_Attribute)0x02)
+#define FILESYSTEM_ATTRIBUTE_HIDDEN     ((Filesystem_Entry_Attribute)0x04)
+#define FILESYSTEM_ATTRIBUTE_SYSTEM     ((Filesystem_Entry_Attribute)0x08)
+
 typedef struct Filesystem_Entry
 {
     char name[512];
@@ -16,6 +22,8 @@ typedef struct Filesystem_Entry
 
     uint64_t handle;
     void* extra;
+
+    Filesystem_Entry_Attribute attributes;
 
     Filesystem_Entry_Type type;
 } Filesystem_Entry;
@@ -31,7 +39,7 @@ typedef struct Filesystem_Driver
     // Directories
     uint64_t    (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Entry* parent);
     bool        (*openEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, uint64_t index, Filesystem_Entry* out);
-    bool        (*createEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry_Type type, const char* name, Filesystem_Entry* out);
+    bool        (*createEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Entry* out);
 
     // Files
     uint64_t    (*read)(struct Filesystem_Driver* driver, Filesystem_Entry* entry, uint64_t size, void* buffer);
