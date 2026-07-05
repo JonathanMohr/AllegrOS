@@ -32,7 +32,7 @@ typedef struct Filesystem_Driver
 {
     Block_Device* parent;
 
-    void        (*flush)(struct Filesystem_Driver* driver);
+    void        (*destroy)(struct Filesystem_Driver* driver);
 
     bool        (*openRoot)(struct Filesystem_Driver* driver, Filesystem_Entry* out);
 

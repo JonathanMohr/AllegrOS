@@ -2,4 +2,4 @@
 
 #include "../filesystem.h"
 
-bool FAT_CheckDevice(const Block_Device* device);
+bool FAT_CheckDevice(Block_Device* device);

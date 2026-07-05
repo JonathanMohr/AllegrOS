@@ -1,5 +1,8 @@
 #include "fat.h"
+
 #include <stdint.h>
+#include <memory.h>
+#include "../../memory/memory.h"
 
 #define FAT_BOOTSECTOR_MEDIA_DESCRIPTOR_FLOPPY144     ((uint8_t)0xF0) // 1.44 MB
 #define FAT_BOOTSECTOR_MEDIA_DESCRIPTOR_FLOPPY120     ((uint8_t)0xF4) // 1.2 MB
@@ -158,7 +161,128 @@ typedef struct FAT_LFNEntry
 } __attribute__((packed)) FAT_LFNEntry;
 
 
-bool FAT_CheckDevice(const Block_Device* device)
+static bool FAT_ReadFirstSector(Block_Device* device, FAT_BootSector* bootsector)
 {
+    if (device->sectorSize == 512)
+    {
+        uint64_t read = device->read(device, 0, 1, (uint8_t*)bootsector);
+        if (read != 1) return false;
+    }
+    else if (device->sectorSize < 512)
+    {
+        uint8_t tmp[1024]; // Will be enough
+        const uint64_t sectorsToRead = (512 + device->sectorSize - 1) / device->sectorSize;
 
+        uint64_t read = device->read(device, 0, sectorsToRead, tmp);
+        if (read != sectorsToRead) return false;
+
+        memcpy((uint8_t*)bootsector, tmp, 512);
+    }
+    else if (device->sectorSize <= 4096)
+    {
+        uint8_t tmp[4096];
+
+        uint64_t read = device->read(device, 0, 1, tmp);
+        if (read != 1) return false;
+
+        memcpy((uint8_t*)bootsector, tmp, 512);
+    }
+    else // > 4096
+    {
+        uint8_t* tmp = Memory_KernelAllocate(device->sectorSize);
+        if (!tmp) return false;
+
+        uint64_t read = device->read(device, 0, 1, tmp);
+        if (read != 1)
+        {
+            Memory_KernelFree(tmp);
+            return false;
+        }
+
+        memcpy((uint8_t*)bootsector, tmp, 512);
+
+        Memory_KernelFree(tmp);
+    }
+
+    return true;
+}
+
+
+typedef uint8_t FAT_Version;
+#define FAT_VERSION_12  ((FAT_Version)0)
+#define FAT_VERSION_16  ((FAT_Version)1)
+#define FAT_VERSION_32  ((FAT_Version)2)
+
+typedef struct FAT_Driver_Data
+{
+    FAT_BootSector bootsector;
+
+    uint32_t freeClusterCount;
+    uint32_t nextFreeCluster;
+
+    uint32_t fatSize;
+
+    uint32_t dataSector; // First sector of data area
+    uint32_t dataSize;   // Size of data area in sectors
+
+    uint32_t totalSectors;
+
+    union
+    {
+        uint32_t cluster; // FAT32
+        struct
+        {
+            uint32_t sector;
+            uint16_t entryCount; // FAT12 / FAT16
+        } fixed;
+    } rootDir;
+
+    uint16_t bytesPerSector;
+    uint16_t sectorsPerCluster;
+    uint16_t reservedSectors;
+
+    FAT_Version fatVersion;
+
+    uint8_t fatCount;
+    uint8_t mediaDescriptor;
+
+    char oemIdentifier[9];
+} FAT_Driver_Data;
+
+
+static void FAT_Destroy(Filesystem_Driver* driver)
+{
+    
+
+    Memory_KernelFree(driver->data);
+}
+
+
+bool FAT_CheckDevice(Block_Device* device)
+{
+    FAT_BootSector bootsector;
+    if (!FAT_ReadFirstSector(device, &bootsector))
+        return false;
+
+    if (bootsector.signature[0] != 0x55 || bootsector.signature[1] != 0xAA)
+        return false;
+
+    // TODO: ...
+
+    return true;
+}
+
+bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
+{
+    FAT_BootSector bootsector;
+    if (!FAT_ReadFirstSector(parent, &bootsector))
+        return false;
+
+    FAT_Driver_Data* data = (FAT_Driver_Data*)Memory_KernelAllocate(sizeof(FAT_Driver_Data));
+
+    driver->parent = parent;
+
+    driver->destroy = FAT_Destroy;
+
+    driver->data = data;
 }
