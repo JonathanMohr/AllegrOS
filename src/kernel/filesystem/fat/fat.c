@@ -252,7 +252,7 @@ typedef struct FAT_Driver_Data
 
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
-    
+
 
     Memory_KernelFree(driver->data);
 }
@@ -279,10 +279,14 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
         return false;
 
     FAT_Driver_Data* data = (FAT_Driver_Data*)Memory_KernelAllocate(sizeof(FAT_Driver_Data));
+    if (!data)
+        return false;
 
     driver->parent = parent;
 
     driver->destroy = FAT_Destroy;
 
     driver->data = data;
+
+    return true;
 }
