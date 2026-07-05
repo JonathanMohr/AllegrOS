@@ -257,6 +257,9 @@ typedef struct FAT_Entry_Data
 
 static void FAT_OpenRoot(Filesystem_Driver* driver, Filesystem_Entry* out)
 {
+    memset(out->name, '\0', sizeof(out->name));
+
+    
 
 }
 
