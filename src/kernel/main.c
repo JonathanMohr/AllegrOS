@@ -23,6 +23,8 @@
 
 #include "device/device.h"
 
+#include "filesystem/fat/fat.h"
+
 
 
 void CDECL kmain(BootParams* bParams)
@@ -53,7 +55,7 @@ void CDECL kmain(BootParams* bParams)
     __asm__("sti");
 
     uint64_t blockDeviceCount = 0;
-    Block_Device blockDevices[16];
+    Block_Device blockDevices[64]; /* 16 physical, 48 logical */
 
     for (uint32_t i = 0; i < pciCount; i++)
     {
@@ -64,18 +66,22 @@ void CDECL kmain(BootParams* bParams)
         {
             for (uint8_t i = 0; i < 4; i++)
             {
-                if (blockDeviceCount >= 16)
-                {
-                    KernelConsole_PutString(mux_console, "Warning: Limit of block devices reached.\n");
-                }
-                else
+                if (blockDeviceCount < 16)
                 {
                     const bool primary = i & 1;
                     const bool slave = i & 2;
 
-                    if (ATA_GetDiskFromPCIDevice(device, &blockDevices[blockDeviceCount], primary, slave))
+                    const int ata_result = ATA_GetDiskFromPCIDevice(device, &blockDevices[blockDeviceCount], primary, slave);
+                    if (ata_result == ATA_SUCCESS)
+                    {
+                        KernelConsole_PrintFormat(mux_console, "Created block device %udq for ATA disk\n", blockDeviceCount + 1);
                         blockDeviceCount++;
+                    }
+                    else if (ata_result == ATA_ERROR)
+                        KernelConsole_PrintFormat(mux_console, "Warning: Could not create block device %udq for partition\n", blockDeviceCount + 1);
                 }
+                else
+                    KernelConsole_PutString(mux_console, "Warning: Limit of physical block devices reached.\n");
             }
         }
     }
@@ -97,7 +103,10 @@ void CDECL kmain(BootParams* bParams)
         KernelConsole_PrintFormat(mux_console, "  Func: %uxbh\n", device->func);
     }
 
-    for (uint32_t i = 0; i < blockDeviceCount; i++)
+    Memory_KernelFree(pciDevices);
+
+    const uint32_t physicalBlockDeviceCount = blockDeviceCount;
+    for (uint32_t i = 0; i < physicalBlockDeviceCount; i++)
     {
         Block_Device* device = &blockDevices[i];
         const bool isMBR = MBR_CheckDisk(device);
@@ -121,10 +130,21 @@ void CDECL kmain(BootParams* bParams)
                 uint64_t count;
                 if (table.getPartitionEntry(&table, j, &start, &count))
                 {
-                    if (count > 1)
-                        KernelConsole_PrintFormat(mux_console, "    %udq: Sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, start, start + count - 1, count);
+                    if (blockDeviceCount < 64)
+                    {
+                        if (Device_PartitionTable_CreateBlockDevice(device, &blockDevices[blockDeviceCount], "Partition", start, count))
+                        {
+                            if (count > 1)
+                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udq for sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, blockDeviceCount + 1, start, start + count - 1, count);
+                            else
+                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udq for sector %uxqh\n", j + 1, blockDeviceCount + 1, start);
+                            blockDeviceCount++;
+                        }
+                        else
+                            KernelConsole_PrintFormat(mux_console, "    %udq: Could not create block device %udq for partition\n", j + 1, blockDeviceCount + 1, j + 1);
+                    }
                     else
-                        KernelConsole_PrintFormat(mux_console, "    %udq: Sector %uxqh\n", j + 1, start);
+                        KernelConsole_PutString(mux_console, "Warning: Limit of logical block devices reached.\n");
                 }
                 else
                     KernelConsole_PrintFormat(mux_console, "    %udq: Could not get sectors\n", j + 1);

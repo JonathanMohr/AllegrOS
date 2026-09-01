@@ -335,7 +335,7 @@ void ATA_Destroy(Block_Device* dev)
 
 static char ATA_Type_Str[] = "ATA-DRIVE";
 
-bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDevice, bool primary, bool isSlave)
+int ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDevice, bool primary, bool isSlave)
 {
     const uint8_t slave = (isSlave ? 1 : 0);
 
@@ -355,13 +355,16 @@ bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDe
     }
 
     uint16_t identifyBuf[256];
-    if (ata_identify(ioBase, ctrlBase, slave, identifyBuf) != 0)
-        return false;
+    int result = ata_identify(ioBase, ctrlBase, slave, identifyBuf);
+    if (result == ATA_IDENTIFY_ERROR)
+        return ATA_ERROR;
+    if (result != ATA_IDENTIFY_SUCCESS)
+        return ATA_NOT_ATA;
 
     const bool supportsLBA48 = (identifyBuf[83] & (1 << 10)) != 0;
 
     ATA_Data* data = (ATA_Data*)Memory_KernelAllocate(sizeof(ATA_Data));
-    if (!data) return false;
+    if (!data) return ATA_ERROR;
 
     data->ioBase = ioBase;
     data->ctrlBase = ctrlBase;
@@ -403,5 +406,5 @@ bool ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDe
 
     blockDevice->data = data;
 
-    return true;
+    return ATA_SUCCESS;
 }

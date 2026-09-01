@@ -38,6 +38,7 @@ typedef struct Filesystem_Driver
 
     // Directories
     uint64_t    (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Entry* parent);
+    /* advances through the directory */
     bool        (*openEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry* out);
     bool        (*createEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Entry* out);
 
