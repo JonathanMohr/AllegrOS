@@ -1,8 +1,10 @@
 #include "fat.h"
 
 #include <stdint.h>
+#include <minmax.h>
 #include <memory.h>
 #include "../../memory/memory.h"
+#include "stddef.h"
 
 #define FAT_BOOTSECTOR_MEDIA_DESCRIPTOR_FLOPPY144     ((uint8_t)0xF0) // 1.44 MB
 #define FAT_BOOTSECTOR_MEDIA_DESCRIPTOR_FLOPPY120     ((uint8_t)0xF4) // 1.2 MB
@@ -219,6 +221,8 @@ typedef struct FAT_Driver_Data
 {
     FAT_BootSector bootsector;
 
+    uint8_t* sectorBuffer;
+
     uint32_t freeClusterCount;
     uint32_t nextFreeCluster;
 
@@ -253,22 +257,6 @@ typedef struct FAT_Driver_Data
 
     char oemIdentifier[9];
 } FAT_Driver_Data;
-
-typedef struct FAT_Entry_Data
-{
-    uint32_t firstCluster;
-    uint32_t currentCluster;
-
-    bool isRoot;
-} FAT_Entry_Data;
-
-
-static bool FAT_OpenRoot(Filesystem_Driver* driver, Filesystem_Entry* out)
-{
-    memset(out->name, '\0', sizeof(out->name));
-
-
-}
 
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
@@ -381,6 +369,15 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     }
 
     data->fatVersion = version;
+
+    if (bytesPerSector % parent->sectorSize == 0)
+        data->sectorBuffer = NULL;
+    else if (parent->sectorSize % bytesPerSector == 0)
+        data->sectorBuffer = Memory_KernelAllocate(parent->sectorSize);
+    else if (parent->sectorSize < bytesPerSector)
+        data->sectorBuffer = Memory_KernelAllocate((uint64_t)bytesPerSector + (uint64_t)parent->sectorSize);
+    else
+        data->sectorBuffer = Memory_KernelAllocate((uint64_t)parent->sectorSize * 2);
 
     data->freeClusterCount = 0; // TODO
     data->nextFreeCluster = 0; // TODO

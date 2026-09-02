@@ -381,6 +381,8 @@ int ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDev
             wordsPerSector = ((uint32_t)identifyBuf[118] << 16) | identifyBuf[117];
     }
 
+    if ((uint64_t)wordsPerSector * 2 > 0xFFFFFFFF)
+        return ATA_ERROR;
     blockDevice->sectorSize = wordsPerSector * 2;
 
     if (supportsLBA48)
@@ -394,7 +396,7 @@ int ATA_GetDiskFromPCIDevice(const PCI_Device* pciDevice, Block_Device* blockDev
     }
     else
     {
-        blockDevice->sectorSize = ((uint32_t)identifyBuf[61] << 16) | identifyBuf[60];
+        blockDevice->sectorCount = ((uint32_t)identifyBuf[61] << 16) | identifyBuf[60];
     }
 
     blockDevice->type = ATA_Type_Str;

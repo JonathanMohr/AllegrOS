@@ -7,7 +7,7 @@ typedef struct Block_Device
 {
     char name[128];
 
-    uint64_t sectorSize;
+    uint32_t sectorSize;
     uint64_t sectorCount;
 
     const char* type;

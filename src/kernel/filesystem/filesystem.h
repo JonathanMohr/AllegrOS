@@ -13,43 +13,63 @@ typedef uint16_t Filesystem_Entry_Attribute;
 #define FILESYSTEM_ATTRIBUTE_HIDDEN     ((Filesystem_Entry_Attribute)0x04)
 #define FILESYSTEM_ATTRIBUTE_SYSTEM     ((Filesystem_Entry_Attribute)0x08)
 
-typedef struct Filesystem_Entry
+typedef struct Filesystem_Inode
 {
-    char name[512];
-
+    uint64_t number;
     uint64_t size;
-    uint64_t pos;
+    uint64_t referenceCount;
 
     void* extra;
 
     Filesystem_Entry_Attribute attributes;
-
     Filesystem_Entry_Type type;
+} Filesystem_Inode;
+
+typedef struct Filesystem_Entry
+{
+    char name[512];
+    uint64_t inode;
 } Filesystem_Entry;
+
+typedef struct Filesystem_File
+{
+    uint64_t pos;
+    Filesystem_Inode* inode;
+
+    void* extra;
+} Filesystem_File;
 
 typedef struct Filesystem_Driver
 {
     Block_Device* parent;
 
-    void        (*destroy)(struct Filesystem_Driver* driver);
+    void (*destroy)(struct Filesystem_Driver* driver);
 
-    bool        (*openRoot)(struct Filesystem_Driver* driver, Filesystem_Entry* out);
+    bool (*getRoot)(struct Filesystem_Driver* driver, Filesystem_Inode* out);
+
+    // Inodes
+    bool (*getInode)(struct Filesystem_Driver* driver, uint64_t number, Filesystem_Inode* out);
+    void (*ungetInode)(struct Filesystem_Driver* driver, Filesystem_Inode* inode);
 
     // Directories
-    uint64_t    (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Entry* parent);
-    /* advances through the directory */
-    bool        (*openEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry* out);
-    bool        (*createEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* parent, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Entry* out);
+    uint64_t (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Inode* dir);
+    bool (*readEntry)(struct Filesystem_Driver* driver, Filesystem_File* dir, Filesystem_Entry* out);
+    bool (*lookupEntry)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Entry* out);
+
+    bool (*createInode)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
+                        Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out);
+    bool (*link)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Inode* target);
+    bool (*unlink)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name);
 
     // Files
-    uint64_t    (*read)(struct Filesystem_Driver* driver, Filesystem_Entry* entry, uint64_t size, void* buffer);
-    uint64_t    (*write)(struct Filesystem_Driver* driver, Filesystem_Entry* entry, uint64_t size, const void* buffer);
-    bool        (*seek)(struct Filesystem_Driver* driver, Filesystem_Entry* entry, uint64_t pos);
+    bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out);
+    void (*closeFile)(struct Filesystem_Driver* driver, Filesystem_File* file);
+    uint64_t (*read)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, uint8_t* buffer);
+    uint64_t (*write)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const uint8_t* buffer);
+    bool (*seek)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t pos);
 
     // General
-    bool        (*deleteEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* entry);
-    bool        (*moveEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* entry, Filesystem_Entry* newParent, const char* newName);
-    void        (*closeEntry)(struct Filesystem_Driver* driver, Filesystem_Entry* entry);
+    bool (*move)(struct Filesystem_Driver* driver, Filesystem_Inode* srcDir, const char* oldName, Filesystem_Inode* dstDir, const char* newName);
 
     void* data;
 } Filesystem_Driver;
