@@ -20,7 +20,6 @@ typedef struct Filesystem_Entry
     uint64_t size;
     uint64_t pos;
 
-    uint64_t handle;
     void* extra;
 
     Filesystem_Entry_Attribute attributes;

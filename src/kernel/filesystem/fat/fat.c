@@ -213,6 +213,8 @@ typedef uint8_t FAT_Version;
 #define FAT_VERSION_16  ((FAT_Version)1)
 #define FAT_VERSION_32  ((FAT_Version)2)
 
+#define FAT_ACTIVE_ALL 0xFFFF
+
 typedef struct FAT_Driver_Data
 {
     FAT_BootSector bootsector;
@@ -220,6 +222,7 @@ typedef struct FAT_Driver_Data
     uint32_t freeClusterCount;
     uint32_t nextFreeCluster;
 
+    uint32_t fatSector;
     uint32_t fatSize;
 
     uint32_t dataSector; // First sector of data area
@@ -241,6 +244,8 @@ typedef struct FAT_Driver_Data
     uint16_t sectorsPerCluster;
     uint16_t reservedSectors;
 
+    uint16_t activeFat;
+
     FAT_Version fatVersion;
 
     uint8_t fatCount;
@@ -252,6 +257,7 @@ typedef struct FAT_Driver_Data
 typedef struct FAT_Entry_Data
 {
     uint32_t firstCluster;
+    uint32_t currentCluster;
 
     bool isRoot;
 } FAT_Entry_Data;
@@ -260,7 +266,6 @@ typedef struct FAT_Entry_Data
 static bool FAT_OpenRoot(Filesystem_Driver* driver, Filesystem_Entry* out)
 {
     memset(out->name, '\0', sizeof(out->name));
-
 
 
 }
@@ -287,21 +292,147 @@ bool FAT_CheckDevice(Block_Device* device)
     return true;
 }
 
+static bool isPowerOfTwo(uint16_t v) { return v && !(v & (v - 1)); }
+
 bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 {
-    FAT_BootSector bootsector;
-    if (!FAT_ReadFirstSector(parent, &bootsector))
-        return false;
-
     FAT_Driver_Data* data = (FAT_Driver_Data*)Memory_KernelAllocate(sizeof(FAT_Driver_Data));
     if (!data)
         return false;
 
+    if (!FAT_ReadFirstSector(parent, &data->bootsector))
+    {
+        Memory_KernelFree(data);
+        return false;
+    }
+
+    if (data->bootsector.signature[0] != 0x55 || data->bootsector.signature[1] != 0xAA)
+        return false;
+
+    const uint16_t bytesPerSector = data->bootsector.header.bytesPerSector;
+    const uint16_t sectorsPerCluster = data->bootsector.header.sectorsPerCluster;
+    const uint16_t reservedSectors = data->bootsector.header.reservedSectors;
+
+    const uint16_t rootDirEntryCount = data->bootsector.header.rootDirEntryCount;
+
+    const uint16_t fatCount = data->bootsector.header.fatCount;
+    const uint32_t fatSize = data->bootsector.header.fatSize ? data->bootsector.header.fatSize :data->bootsector.header.ebpb.fat32.fatSize32;
+    const uint32_t totalSectors = data->bootsector.header.totalSectors ? data->bootsector.header.totalSectors : data->bootsector.header.largeTotalSectors;
+
+    if (bytesPerSector == 0 ||
+        sectorsPerCluster == 0 ||
+        fatSize == 0 ||
+        totalSectors == 0 ||
+        fatCount == 0 ||
+        reservedSectors == 0)
+        return false;
+
+    const uint64_t reserved = (uint64_t)reservedSectors + ((uint64_t)fatCount * fatSize);
+    if (reserved > totalSectors)
+        return false;
+
+    const uint32_t rootDirStartSector = (uint32_t)reserved;
+    const uint32_t rootDirSectors = (((uint32_t)rootDirEntryCount * 32) + (bytesPerSector - 1)) / bytesPerSector;
+
+    const uint64_t nonDataSectors = ((uint64_t)reserved + (uint64_t)rootDirSectors);
+    if (nonDataSectors > (uint64_t)totalSectors)
+        return false;
+    const uint32_t dataSectors = totalSectors - (uint32_t)nonDataSectors;
+    const uint32_t dataStartSector = (uint32_t)nonDataSectors;
+    const uint32_t clusterCount = dataSectors / sectorsPerCluster;
+
+    const uint32_t clusterSize = (uint32_t)bytesPerSector * sectorsPerCluster;
+
+    FAT_Version version;
+    if (clusterCount < 4085)
+        version = FAT_VERSION_12;
+    else if (clusterCount < 65525)
+        version = FAT_VERSION_16;
+    else // clusterCount >= 65525
+        version = FAT_VERSION_32;
+
+    if (bytesPerSector != 512 && bytesPerSector != 1024 &&
+        bytesPerSector != 2048 && bytesPerSector != 4096)
+        return false;
+
+    if (!isPowerOfTwo(sectorsPerCluster) || sectorsPerCluster > 128)
+        return false;
+
+    if (clusterSize > 32 * 1024)
+        return false;
+
+    if (version != FAT_VERSION_32 && rootDirEntryCount == 0)
+        return false;
+    if (version == FAT_VERSION_32 && rootDirEntryCount > 0)
+        return false;
+
+    if (version == FAT_VERSION_32)
+    {
+        const FAT32_EBPB* ebpb = &data->bootsector.header.ebpb.fat32;
+
+        /*
+            Bits 4-6 and 8-15
+        */
+        if (ebpb->extFlags & (0xFF70))
+            return false;
+
+        if (ebpb->fsVersion != 0)
+            return false;
+    }
+
+    data->fatVersion = version;
+
+    data->freeClusterCount = 0; // TODO
+    data->nextFreeCluster = 0; // TODO
+
+    data->fatSector = (uint32_t)reservedSectors;
+    data->fatSize = fatSize;
+    
+    data->dataSector = dataStartSector;
+    data->dataSize = dataSectors;
+
+    data->totalSectors = totalSectors;
+
+    if (version != FAT_VERSION_32)
+    {
+        data->rootDir.fixed.sector = rootDirStartSector;
+        data->rootDir.fixed.entryCount = rootDirEntryCount;
+    }
+    else
+    {
+        data->rootDir.cluster = data->bootsector.header.ebpb.fat32.rootCluster;
+    }
+
+    data->bytesPerSector = bytesPerSector;
+    data->sectorsPerCluster = sectorsPerCluster;
+    data->reservedSectors = reservedSectors;
+
+    if (version != FAT_VERSION_32)
+    {
+        data->activeFat = FAT_ACTIVE_ALL;
+    }
+    else
+    {
+        const uint16_t extFlags = data->bootsector.header.ebpb.fat32.extFlags;
+
+        /* Bit 7 */
+        if (extFlags & 0x0080)
+        {
+            /* Bits 0-3 */
+            data->activeFat = extFlags & 0x000F;
+        }
+        else
+            data->activeFat = FAT_ACTIVE_ALL;
+    }
+
+    data->fatCount = fatCount;
+    data->mediaDescriptor = data->bootsector.header.mediaDescriptor;
+
+    memcpy(data->oemIdentifier, data->bootsector.header.oemIdentifier, sizeof(data->bootsector.header.oemIdentifier));
+
     driver->parent = parent;
 
     driver->destroy = FAT_Destroy;
-
-    driver->data = data;
 
     return true;
 }
