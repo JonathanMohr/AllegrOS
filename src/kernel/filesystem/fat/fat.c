@@ -269,6 +269,8 @@ static void FAT_Destroy(Filesystem_Driver* driver)
 }
 
 
+static bool isPowerOfTwo(uint16_t v) { return v && !(v & (v - 1)); }
+
 bool FAT_CheckDevice(Block_Device* device)
 {
     FAT_BootSector bootsector;
@@ -278,12 +280,33 @@ bool FAT_CheckDevice(Block_Device* device)
     if (bootsector.signature[0] != 0x55 || bootsector.signature[1] != 0xAA)
         return false;
 
+    const uint16_t bytesPerSector = bootsector.header.bytesPerSector;
+    const uint16_t sectorsPerCluster = bootsector.header.sectorsPerCluster;
+    const uint16_t reservedSectors = bootsector.header.reservedSectors;
+
+    const uint16_t rootDirEntryCount = bootsector.header.rootDirEntryCount;
+
+    const uint16_t fatCount = bootsector.header.fatCount;
+    const uint32_t fatSize = bootsector.header.fatSize ? bootsector.header.fatSize :bootsector.header.ebpb.fat32.fatSize32;
+    const uint32_t totalSectors = bootsector.header.totalSectors ? bootsector.header.totalSectors : bootsector.header.largeTotalSectors;
+
+    if (bytesPerSector != 512 && bytesPerSector != 1024 &&
+        bytesPerSector != 2048 && bytesPerSector != 4096)
+        return false;
+
+    if (!isPowerOfTwo(sectorsPerCluster) || sectorsPerCluster > 128)
+        return false;
+
+    if (fatSize == 0 ||
+        totalSectors == 0 ||
+        fatCount == 0 ||
+        reservedSectors == 0)
+        return false;
+
     // TODO: ...
 
     return true;
 }
-
-static bool isPowerOfTwo(uint16_t v) { return v && !(v & (v - 1)); }
 
 bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 {
@@ -313,9 +336,20 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     const uint32_t fatSize = data->bootsector.header.fatSize ? data->bootsector.header.fatSize :data->bootsector.header.ebpb.fat32.fatSize32;
     const uint32_t totalSectors = data->bootsector.header.totalSectors ? data->bootsector.header.totalSectors : data->bootsector.header.largeTotalSectors;
 
-    if (bytesPerSector == 0 ||
-        sectorsPerCluster == 0 ||
-        fatSize == 0 ||
+    if (bytesPerSector != 512 && bytesPerSector != 1024 &&
+        bytesPerSector != 2048 && bytesPerSector != 4096)
+    {
+        Memory_KernelFree(data);
+        return false;
+    }
+
+    if (!isPowerOfTwo(sectorsPerCluster) || sectorsPerCluster > 128)
+    {
+        Memory_KernelFree(data);
+        return false;
+    }
+
+    if (fatSize == 0 ||
         totalSectors == 0 ||
         fatCount == 0 ||
         reservedSectors == 0)
@@ -332,7 +366,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     }
 
     const uint32_t rootDirStartSector = (uint32_t)reserved;
-    const uint32_t rootDirSectors = (((uint32_t)rootDirEntryCount * 32) + (bytesPerSector - 1)) / bytesPerSector;
+    const uint16_t rootDirSectors = (uint16_t)((((uint32_t)rootDirEntryCount * 32) + (uint32_t)(bytesPerSector - 1)) / (uint32_t)bytesPerSector);
 
     const uint64_t nonDataSectors = ((uint64_t)reserved + (uint64_t)rootDirSectors);
     if (nonDataSectors > (uint64_t)totalSectors)
@@ -345,6 +379,11 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     const uint32_t clusterCount = dataSectors / sectorsPerCluster;
 
     const uint32_t clusterSize = (uint32_t)bytesPerSector * sectorsPerCluster;
+    if (clusterSize > 32 * 1024)
+    {
+        Memory_KernelFree(data);
+        return false;
+    }
 
     FAT_Version version;
     if (clusterCount < 4085)
@@ -353,25 +392,6 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
         version = FAT_VERSION_16;
     else // clusterCount >= 65525
         version = FAT_VERSION_32;
-
-    if (bytesPerSector != 512 && bytesPerSector != 1024 &&
-        bytesPerSector != 2048 && bytesPerSector != 4096)
-    {
-        Memory_KernelFree(data);
-        return false;
-    }
-
-    if (!isPowerOfTwo(sectorsPerCluster) || sectorsPerCluster > 128)
-    {
-        Memory_KernelFree(data);
-        return false;
-    }
-
-    if (clusterSize > 32 * 1024)
-    {
-        Memory_KernelFree(data);
-        return false;
-    }
 
     if (version != FAT_VERSION_32 && rootDirEntryCount == 0)
     {

@@ -1,7 +1,10 @@
 #include <bootparams.h>
 #include <abi.h>
+#include <stddef.h>
 #include <stdint.h>
 
+#include <minmax.h>
+#include "filesystem/filesystem.h"
 #include "panic/panic.h"
 
 #include "kconsole/kconsole.h"
@@ -39,6 +42,13 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
+    KernelConsole* mux_console = KernelConsole_GetOutput();
+
+    KernelConsole_ClearScreen(mux_console);
+    KernelConsole_PutString(mux_console, "Hello world from kernel!\n");
+
+    __asm__("sti");
+
     uint32_t pciCount;
     PCI_Device* pciDevices = PCI_Scan(&pciCount);
     if (!pciDevices)
@@ -47,12 +57,22 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
-    KernelConsole* mux_console = KernelConsole_GetOutput();
+    for (uint32_t i = 0; i < pciCount; i++)
+    {
+        const PCI_Device* device = &pciDevices[i];
 
-    KernelConsole_ClearScreen(mux_console);
-    KernelConsole_PutString(mux_console, "Hello world from kernel!\n");
+        KernelConsole_PrintFormat(mux_console, "PCI-Device %udd:\n", i + 1);
+        KernelConsole_PrintFormat(mux_console, "  Vendor ID: %uxwh\n", device->vendorID);
+        KernelConsole_PrintFormat(mux_console, "  Device ID: %uxwh\n", device->deviceID);
 
-    __asm__("sti");
+        KernelConsole_PrintFormat(mux_console, "  Class Code: %uxbh\n", device->classCode);
+        KernelConsole_PrintFormat(mux_console, "  Subclass: %uxbh\n", device->subclass);
+        KernelConsole_PrintFormat(mux_console, "  progIf: %uxbh\n", device->progIf);
+
+        KernelConsole_PrintFormat(mux_console, "  Bus: %uxbh\n", device->bus);
+        KernelConsole_PrintFormat(mux_console, "  Slot: %uxbh\n", device->slot);
+        KernelConsole_PrintFormat(mux_console, "  Func: %uxbh\n", device->func);
+    }
 
     uint64_t blockDeviceCount = 0;
     Block_Device blockDevices[64]; /* 16 physical, 48 logical */
@@ -86,37 +106,19 @@ void CDECL kmain(BootParams* bParams)
         }
     }
 
-    for (uint32_t i = 0; i < pciCount; i++)
-    {
-        const PCI_Device* device = &pciDevices[i];
-
-        KernelConsole_PrintFormat(mux_console, "PCI-Device %udd:\n", i + 1);
-        KernelConsole_PrintFormat(mux_console, "  Vendor ID: %uxwh\n", device->vendorID);
-        KernelConsole_PrintFormat(mux_console, "  Device ID: %uxwh\n", device->deviceID);
-
-        KernelConsole_PrintFormat(mux_console, "  Class Code: %uxbh\n", device->classCode);
-        KernelConsole_PrintFormat(mux_console, "  Subclass: %uxbh\n", device->subclass);
-        KernelConsole_PrintFormat(mux_console, "  progIf: %uxbh\n", device->progIf);
-
-        KernelConsole_PrintFormat(mux_console, "  Bus: %uxbh\n", device->bus);
-        KernelConsole_PrintFormat(mux_console, "  Slot: %uxbh\n", device->slot);
-        KernelConsole_PrintFormat(mux_console, "  Func: %uxbh\n", device->func);
-    }
-
     Memory_KernelFree(pciDevices);
 
     const uint32_t physicalBlockDeviceCount = blockDeviceCount;
     for (uint32_t i = 0; i < physicalBlockDeviceCount; i++)
     {
         Block_Device* device = &blockDevices[i];
+        size_t blockDeviceNameLen = 0;
+        while (device->name[blockDeviceNameLen])
+            blockDeviceNameLen++;
         const bool isMBR = MBR_CheckDisk(device);
 
-        KernelConsole_PrintFormat(mux_console, "Block-Device %udd: \"%s\"\n", i + 1, device->name);
-
-        KernelConsole_PrintFormat(mux_console, "  Type: %s\n", device->type);
-
-        KernelConsole_PrintFormat(mux_console, "  Sector-Size: %uxqh\n", device->sectorSize);
-        KernelConsole_PrintFormat(mux_console, "  Sector-Count: %uxqh\n", device->sectorCount);
+        if (isMBR)
+            KernelConsole_PrintFormat(mux_console, "MBR-partitioned block device %udd found\n", i + 1);
 
         Device_PartitionTable table;
         if (!isMBR || !MBR_GetPartitionTable(device, &table))
@@ -132,7 +134,27 @@ void CDECL kmain(BootParams* bParams)
                 {
                     if (blockDeviceCount < 64)
                     {
-                        if (Device_PartitionTable_CreateBlockDevice(device, &blockDevices[blockDeviceCount], "Partition", start, count))
+                        char nameBuffer[512] = {0};
+                        const size_t nameLen = min(blockDeviceNameLen, (size_t)490);
+
+                        for (size_t k = 0; k < nameLen; k++)
+                            nameBuffer[k] = device->name[k];
+
+                        nameBuffer[nameLen] = ':';
+                        
+                        char digits[21] = {0};
+                        uint64_t n = j + 1;
+                        size_t dIdx = 0;
+                        do
+                        {
+                            digits[dIdx++] = '0' + (n % 10);
+                            n /= 10;
+                        } while (n && dIdx < 20);
+
+                        for (size_t i = 0; i < dIdx; i++)
+                            nameBuffer[nameLen + 1 + i] = digits[dIdx - 1 - i];
+
+                        if (Device_PartitionTable_CreateBlockDevice(device, &blockDevices[blockDeviceCount], nameBuffer, start, count))
                         {
                             if (count > 1)
                                 KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udq for sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, blockDeviceCount + 1, start, start + count - 1, count);
@@ -149,6 +171,44 @@ void CDECL kmain(BootParams* bParams)
                 else
                     KernelConsole_PrintFormat(mux_console, "    %udq: Could not get sectors\n", j + 1);
             }
+        }
+    }
+
+    for (uint32_t i = 0; i < blockDeviceCount; i++)
+    {
+        Block_Device* device = &blockDevices[i];
+
+        KernelConsole_PrintFormat(mux_console, "Block-Device %udd: \"%s\"\n", i + 1, device->name);
+
+        KernelConsole_PrintFormat(mux_console, "  Type: %s\n", device->type);
+
+        KernelConsole_PrintFormat(mux_console, "  Block-Size: %uxqh\n", device->sectorSize);
+        KernelConsole_PrintFormat(mux_console, "  Block-Count: %uxqh\n", device->sectorCount);
+    }
+
+    uint64_t fsDriverCount = 0;
+    Filesystem_Driver fsDrivers[8];
+
+    for (uint32_t i = 0; i < blockDeviceCount; i++)
+    {
+        Block_Device* device = &blockDevices[i];
+
+        if (FAT_CheckDevice(device))
+        {
+            if (fsDriverCount < 8)
+            {
+                KernelConsole_PrintFormat(mux_console, "FAT filesystem found for block device %udd\n", i + 1);
+                if (FAT_GetDriver(device, &fsDrivers[fsDriverCount]))
+                    fsDriverCount++;
+                else
+                    KernelConsole_PrintFormat(mux_console, "Could not get FAT driver for block device %udd\n", i +1);
+            }
+            else
+                KernelConsole_PutString(mux_console, "Warning: Limit of filesystems reached.\n");
+        }
+        else
+        {
+            KernelConsole_PrintFormat(mux_console, "No filesystem found for block device %udd\n", i + 1);
         }
     }
 
