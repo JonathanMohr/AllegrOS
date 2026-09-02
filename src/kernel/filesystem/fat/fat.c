@@ -260,7 +260,10 @@ typedef struct FAT_Driver_Data
 
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
+    FAT_Driver_Data* data = driver->data;
 
+    if (data->sectorBuffer)
+        Memory_KernelFree(data->sectorBuffer);
 
     Memory_KernelFree(driver->data);
 }
@@ -295,7 +298,10 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     }
 
     if (data->bootsector.signature[0] != 0x55 || data->bootsector.signature[1] != 0xAA)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     const uint16_t bytesPerSector = data->bootsector.header.bytesPerSector;
     const uint16_t sectorsPerCluster = data->bootsector.header.sectorsPerCluster;
@@ -313,18 +319,27 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
         totalSectors == 0 ||
         fatCount == 0 ||
         reservedSectors == 0)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     const uint64_t reserved = (uint64_t)reservedSectors + ((uint64_t)fatCount * fatSize);
     if (reserved > totalSectors)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     const uint32_t rootDirStartSector = (uint32_t)reserved;
     const uint32_t rootDirSectors = (((uint32_t)rootDirEntryCount * 32) + (bytesPerSector - 1)) / bytesPerSector;
 
     const uint64_t nonDataSectors = ((uint64_t)reserved + (uint64_t)rootDirSectors);
     if (nonDataSectors > (uint64_t)totalSectors)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
     const uint32_t dataSectors = totalSectors - (uint32_t)nonDataSectors;
     const uint32_t dataStartSector = (uint32_t)nonDataSectors;
     const uint32_t clusterCount = dataSectors / sectorsPerCluster;
@@ -341,18 +356,33 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     if (bytesPerSector != 512 && bytesPerSector != 1024 &&
         bytesPerSector != 2048 && bytesPerSector != 4096)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     if (!isPowerOfTwo(sectorsPerCluster) || sectorsPerCluster > 128)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     if (clusterSize > 32 * 1024)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     if (version != FAT_VERSION_32 && rootDirEntryCount == 0)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
     if (version == FAT_VERSION_32 && rootDirEntryCount > 0)
+    {
+        Memory_KernelFree(data);
         return false;
+    }
 
     if (version == FAT_VERSION_32)
     {
@@ -362,10 +392,16 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
             Bits 4-6 and 8-15
         */
         if (ebpb->extFlags & (0xFF70))
+        {
+            Memory_KernelFree(data);
             return false;
+        }
 
         if (ebpb->fsVersion != 0)
+        {
+            Memory_KernelFree(data);
             return false;
+        }
     }
 
     data->fatVersion = version;
@@ -378,6 +414,12 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
         data->sectorBuffer = Memory_KernelAllocate((uint64_t)bytesPerSector + (uint64_t)parent->sectorSize);
     else
         data->sectorBuffer = Memory_KernelAllocate((uint64_t)parent->sectorSize * 2);
+
+    if (bytesPerSector % parent->sectorSize != 0 && !data->sectorBuffer)
+    {
+        Memory_KernelFree(data);
+        return false;
+    }
 
     data->freeClusterCount = 0; // TODO
     data->nextFreeCluster = 0; // TODO
