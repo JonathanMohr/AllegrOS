@@ -434,5 +434,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     driver->destroy = FAT_Destroy;
 
+    driver->data = data;
+
     return true;
 }
