@@ -1,4 +1,4 @@
-ENTRY(kmain)
+ENTRY(kentry)
 OUTPUT_FORMAT("elf32-i386")
 addr = 0xC0000000;
 
