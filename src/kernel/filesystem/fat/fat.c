@@ -258,6 +258,48 @@ typedef struct FAT_Driver_Data
     char oemIdentifier[9];
 } FAT_Driver_Data;
 
+
+typedef struct FAT_Inode_Extra
+{
+    uint32_t startCluster;
+} FAT_Inode_Extra;
+
+
+typedef struct FAT_File_Extra
+{
+    uint32_t currentCluster;
+} FAT_File_Extra;
+
+
+#define FAT_INODE_NUMBER_ROOT 0xFFFFFFFFFFFFFFFF
+
+
+static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
+{
+    FAT_Driver_Data* data = driver->data;
+
+    out->number = FAT_INODE_NUMBER_ROOT;
+    
+    if (data->fatVersion == FAT_VERSION_32)
+    {
+        out->size = 0; // TODO
+    }
+    else
+    {
+        out->size = (uint64_t)data->rootDir.fixed.entryCount * sizeof(FAT_DirectoryEntry);
+    }
+
+    out->referenceCount = 1;
+
+    out->extra = Memory_KernelAllocate(sizeof(FAT_Inode_Extra));
+
+    out->attributes = 0;
+    out->type = FILESYSTEM_ENTRY_DIRECTORY;
+
+    return true;
+}
+
+
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
     FAT_Driver_Data* data = driver->data;

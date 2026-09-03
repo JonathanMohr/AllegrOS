@@ -49,7 +49,6 @@ typedef struct Filesystem_Driver
 
     // Inodes
     bool (*getInode)(struct Filesystem_Driver* driver, uint64_t number, Filesystem_Inode* out);
-    void (*ungetInode)(struct Filesystem_Driver* driver, Filesystem_Inode* inode);
 
     // Directories
     uint64_t (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Inode* dir);
