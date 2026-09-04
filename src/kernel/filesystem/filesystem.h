@@ -39,6 +39,8 @@ typedef struct Filesystem_File
     void* extra;
 } Filesystem_File;
 
+#define FILESYSTEM_UNLINK_ERROR 0xFFFFFFFFFFFFFFFF
+
 typedef struct Filesystem_Driver
 {
     Block_Device* parent;
@@ -49,6 +51,7 @@ typedef struct Filesystem_Driver
 
     // Inodes
     bool (*getInode)(struct Filesystem_Driver* driver, uint64_t number, Filesystem_Inode* out);
+    bool (*removeInode)(struct Filesystem_Driver* driver, Filesystem_Inode* inode);
 
     // Directories
     uint64_t (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Inode* dir);
@@ -58,7 +61,7 @@ typedef struct Filesystem_Driver
     bool (*createInode)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
                         Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out);
     bool (*link)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Inode* target);
-    bool (*unlink)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name);
+    uint64_t (*unlink)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name);
 
     // Files
     bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out);
