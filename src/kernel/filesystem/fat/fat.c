@@ -269,9 +269,6 @@ typedef struct FAT_Driver_Data
     uint8_t clusterBuffering;
 
     char oemIdentifier[9];
-
-
-    bool lfn;
 } FAT_Driver_Data;
 
 
@@ -1017,6 +1014,75 @@ static uint32_t FAT_UTF16ToUTF8(const uint16_t* units, uint32_t count, char* out
     return o;
 }
 
+static bool FAT_UTF8ToUTF16(const char* name, uint16_t* out, uint32_t maxOut, uint32_t* outCount)
+{
+    uint32_t count = 0;
+    const unsigned char* p = (const unsigned char*)name;
+
+    while (*p)
+    {
+        uint32_t codepoint;
+        uint32_t extraBytes;
+
+        if ((*p & 0x80) == 0x00)
+        {
+            codepoint = *p;
+            extraBytes = 0;
+        }
+        else if ((*p & 0xE0) == 0xC0)
+        {
+            codepoint = *p & 0x1F;
+            extraBytes = 1;
+        }
+        else if ((*p & 0xF0) == 0xE0)
+        {
+            codepoint = *p & 0x0F;
+            extraBytes = 2;
+        }
+        else if ((*p & 0xF8) == 0xF0)
+        {
+            codepoint = *p & 0x07;
+            extraBytes = 3;
+        }
+        else
+            return false;
+
+        p++;
+
+        for (uint32_t i = 0; i < extraBytes; i++)
+        {
+            if ((*p & 0xC0) != 0x80)
+                return false;
+            codepoint = (codepoint << 6) | (*p & 0x3F);
+            p++;
+        }
+
+        if (codepoint == 0)
+            return false;
+
+        if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF))
+            return false;
+
+        if (codepoint <= 0xFFFF)
+        {
+            if (count + 1 > maxOut)
+                return false;
+            out[count++] = (uint16_t)codepoint;
+        }
+        else
+        {
+            if (count + 2 > maxOut)
+                return false;
+            uint32_t v = codepoint - 0x10000;
+            out[count++] = (uint16_t)(0xD800 + (v >> 10));
+            out[count++] = (uint16_t)(0xDC00 + (v & 0x3FF));
+        }
+    }
+
+    *outCount = count;
+    return true;
+}
+
 static void FAT_BuildShortName(const uint8_t rawName[11], char out[13])
 {
     uint8_t base[8];
@@ -1346,7 +1412,14 @@ static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Inod
 static bool FAT_CreateInode(Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
                             Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out)
 {
-    // TODO
+    uint32_t utf16Count;
+    uint16_t utf16Name[20 * 13];
+
+    if (!FAT_UTF8ToUTF16(name, utf16Name, 255, &utf16Count))
+        return false;
+    utf16Name[utf16Count++] = 0; // Terminator
+
+
 }
 
 static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Inode* target)
@@ -1705,9 +1778,6 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     data->mediaDescriptor = data->bootsector.header.mediaDescriptor;
 
     memcpy(data->oemIdentifier, data->bootsector.header.oemIdentifier, sizeof(data->bootsector.header.oemIdentifier));
-
-
-    data->lfn = true;
 
 
     driver->parent = parent;
