@@ -101,7 +101,7 @@ void CDECL kmain(BootParams* bParams)
                         KernelConsole_PrintFormat(mux_console, "Warning: Could not create block device %udq for partition\n", blockDeviceCount + 1);
                 }
                 else
-                    KernelConsole_PutString(mux_console, "Warning: Limit of physical block devices reached.\n");
+                    KernelConsole_PutString(mux_console, "Warning: Limit of physical block devices reached\n");
             }
         }
     }
@@ -166,7 +166,7 @@ void CDECL kmain(BootParams* bParams)
                             KernelConsole_PrintFormat(mux_console, "    %udq: Could not create block device %udq for partition\n", j + 1, blockDeviceCount + 1, j + 1);
                     }
                     else
-                        KernelConsole_PutString(mux_console, "Warning: Limit of logical block devices reached.\n");
+                        KernelConsole_PutString(mux_console, "Warning: Limit of logical block devices reached\n");
                 }
                 else
                     KernelConsole_PrintFormat(mux_console, "    %udq: Could not get sectors\n", j + 1);
@@ -204,12 +204,53 @@ void CDECL kmain(BootParams* bParams)
                     KernelConsole_PrintFormat(mux_console, "Could not get FAT driver for block device %udd\n", i +1);
             }
             else
-                KernelConsole_PutString(mux_console, "Warning: Limit of filesystems reached.\n");
+                KernelConsole_PutString(mux_console, "Warning: Limit of filesystems reached\n");
         }
         else
         {
             KernelConsole_PrintFormat(mux_console, "No filesystem found for block device %udd\n", i + 1);
         }
+    }
+
+    if (fsDriverCount == 0)
+    {
+        KernelConsole_PutString(mux_console, "Could not find a filesystem\n");
+        goto end;
+    }
+
+    Filesystem_Driver* driver = &fsDrivers[0];
+
+    Filesystem_Inode rootInode;
+    if (!driver->getRoot(driver, &rootInode))
+    {
+        KernelConsole_PutString(mux_console, "Could not get root inode\n");
+        goto end;
+    }
+
+    uint64_t rootEntryCount = driver->getEntryCount(driver, &rootInode);
+    if (rootEntryCount == FILESYSTEM_ENTRY_COUNT_ERROR)
+    {
+        KernelConsole_PutString(mux_console, "Could not get root entry count\n");
+        goto end;
+    }
+    KernelConsole_PrintFormat(mux_console, "Root entry count: %udq\n", rootEntryCount);
+
+    Filesystem_File rootFile;
+    if (!driver->openFile(driver, &rootInode, &rootFile))
+    {
+        KernelConsole_PutString(mux_console, "Could not open file for root\n");
+        goto end;
+    }
+
+    uint8_t rootStatus;
+    Filesystem_Entry entry;
+    while ((rootStatus = driver->readEntry(driver, &rootFile, &entry)) == FILESYSTEM_DIR_ENTRY_FOUND)
+        KernelConsole_PrintFormat(mux_console, "Root entry: \"%s\" -> %uxq\n", entry.name, entry.inode);
+
+    if (rootStatus != FILESYSTEM_DIR_END)
+    {
+        KernelConsole_PutString(mux_console, "Could not read all entries of root\n");
+        goto end;
     }
 
 end:

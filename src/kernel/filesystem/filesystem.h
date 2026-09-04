@@ -42,6 +42,10 @@ typedef struct Filesystem_File
 #define FILESYSTEM_ENTRY_COUNT_ERROR 0xFFFFFFFFFFFFFFFF
 #define FILESYSTEM_UNLINK_ERROR 0xFFFFFFFFFFFFFFFF
 
+#define FILESYSTEM_DIR_ENTRY_FOUND 0
+#define FILESYSTEM_DIR_END         1
+#define FILESYSTEM_DIR_ERROR       2
+
 typedef struct Filesystem_Driver
 {
     Block_Device* parent;
@@ -56,8 +60,8 @@ typedef struct Filesystem_Driver
 
     // Directories
     uint64_t (*getEntryCount)(struct Filesystem_Driver* driver, Filesystem_Inode* dir);
-    bool (*readEntry)(struct Filesystem_Driver* driver, Filesystem_File* dir, Filesystem_Entry* out);
-    bool (*lookupEntry)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Entry* out);
+    uint8_t (*readEntry)(struct Filesystem_Driver* driver, Filesystem_File* dir, Filesystem_Entry* out);
+    uint8_t (*lookupEntry)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Entry* out);
 
     bool (*createInode)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
                         Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out);
@@ -65,14 +69,16 @@ typedef struct Filesystem_Driver
     uint64_t (*unlink)(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name);
 
     // Files
-    bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out);
-    void (*closeFile)(struct Filesystem_Driver* driver, Filesystem_File* file);
     uint64_t (*read)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, uint8_t* buffer);
     uint64_t (*write)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const uint8_t* buffer);
     bool (*seek)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t pos);
 
     // General
+    bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out);
+    void (*closeFile)(struct Filesystem_Driver* driver, Filesystem_File* file);
     bool (*move)(struct Filesystem_Driver* driver, Filesystem_Inode* srcDir, const char* oldName, Filesystem_Inode* dstDir, const char* newName);
 
     void* data;
+
+    bool caseSensitive;
 } Filesystem_Driver;
