@@ -220,14 +220,14 @@ void CDECL kmain(BootParams* bParams)
 
     Filesystem_Driver* driver = &fsDrivers[0];
 
-    Filesystem_Inode rootInode;
-    if (!driver->getRoot(driver, &rootInode))
+    Filesystem_Node rootNode;
+    if (!driver->getRoot(driver, &rootNode))
     {
-        KernelConsole_PutString(mux_console, "Could not get root inode\n");
+        KernelConsole_PutString(mux_console, "Could not get root node\n");
         goto end;
     }
 
-    uint64_t rootEntryCount = driver->getEntryCount(driver, &rootInode);
+    uint64_t rootEntryCount = driver->getEntryCount(driver, &rootNode);
     if (rootEntryCount == FILESYSTEM_ENTRY_COUNT_ERROR)
     {
         KernelConsole_PutString(mux_console, "Could not get root entry count\n");
@@ -236,7 +236,7 @@ void CDECL kmain(BootParams* bParams)
     KernelConsole_PrintFormat(mux_console, "Root entry count: %udq\n", rootEntryCount);
 
     Filesystem_File rootFile;
-    if (!driver->openFile(driver, &rootInode, &rootFile))
+    if (!driver->openFile(driver, &rootNode, &rootFile))
     {
         KernelConsole_PutString(mux_console, "Could not open file for root\n");
         goto end;
@@ -245,7 +245,7 @@ void CDECL kmain(BootParams* bParams)
     uint8_t rootStatus;
     Filesystem_Entry entry;
     while ((rootStatus = driver->readEntry(driver, &rootFile, &entry)) == FILESYSTEM_DIR_ENTRY_FOUND)
-        KernelConsole_PrintFormat(mux_console, "Root entry: \"%s\" -> %uxq\n", entry.name, entry.inode);
+        KernelConsole_PrintFormat(mux_console, "Root entry: \"%s\" -> %uxq\n", entry.name, entry.node);
 
     if (rootStatus != FILESYSTEM_DIR_END)
     {
