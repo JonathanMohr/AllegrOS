@@ -221,6 +221,7 @@ typedef struct FAT_Driver_Data
 {
     FAT_BootSector bootsector;
 
+    uint8_t* fatSectorBuffer;
     uint8_t* sectorBuffer;
 
     uint32_t freeClusterCount;
@@ -274,24 +275,175 @@ typedef struct FAT_File_Extra
 #define FAT_INODE_NUMBER_ROOT 0xFFFFFFFFFFFFFFFF
 
 
-static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
+#define FAT_SECTOR_NORMAL 0
+#define FAT_SECTOR_FREE   1
+#define FAT_SECTOR_BAD    2
+#define FAT_SECTOR_EOC    3
+#define FAT_SECTOR_ERROR  0xFFFFFFFF
+static inline uint32_t FAT_Cluster(FAT_Version version, uint32_t cluster)
 {
-    FAT_Driver_Data* data = driver->data;
+    if (cluster == FAT_SECTOR_ERROR)
+        return FAT_SECTOR_ERROR;
 
-    out->number = FAT_INODE_NUMBER_ROOT;
-    
-    if (data->fatVersion == FAT_VERSION_32)
+    switch (version)
     {
-        out->size = 0; // TODO
+        case FAT_VERSION_12:
+        {
+            if (cluster == 0x000)
+                return FAT_SECTOR_FREE;
+            if (cluster == 0x001)
+                return FAT_SECTOR_ERROR;
+            if (cluster <  0xFF7)
+                return FAT_SECTOR_NORMAL;
+            if (cluster == 0xFF7)
+                return FAT_SECTOR_BAD;
+            if (cluster <= 0xFFF)
+                return FAT_SECTOR_EOC;
+            return FAT_SECTOR_ERROR;
+        }
+
+        case FAT_VERSION_16:
+        {
+            if (cluster == 0x0000)
+                return FAT_SECTOR_FREE;
+            if (cluster == 0x0001)
+                return FAT_SECTOR_ERROR;
+            if (cluster <  0xFFF7)
+                return FAT_SECTOR_NORMAL;
+            if (cluster == 0xFFF7)
+                return FAT_SECTOR_BAD;
+            if (cluster <= 0xFFFF)
+                return FAT_SECTOR_EOC;
+            return FAT_SECTOR_ERROR;
+        }
+
+        case FAT_VERSION_32:
+        {
+            if (cluster == 0x00000000)
+                return FAT_SECTOR_FREE;
+            if (cluster == 0x00000001)
+                return FAT_SECTOR_ERROR;
+            if (cluster <  0x0FFFFFF7)
+                return FAT_SECTOR_NORMAL;
+            if (cluster == 0x0FFFFFF7)
+                return FAT_SECTOR_BAD;
+            if (cluster <= 0x0FFFFFFF)
+                return FAT_SECTOR_EOC;
+            return FAT_SECTOR_ERROR;
+        }
+
+        default:
+            return FAT_SECTOR_ERROR;
+    }
+}
+
+
+static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t cluster)
+{
+    uint64_t fatIndex;
+    uint8_t entrySize;
+    if (data->fatVersion == FAT_VERSION_12)
+    {
+        fatIndex = cluster * 3 / 2;
+        entrySize = 2;
+    }
+    else if (data->fatVersion == FAT_VERSION_16)
+    {
+        fatIndex = cluster * 2;
+        entrySize = 2;
     }
     else
     {
+        fatIndex = cluster * 4;
+        entrySize = 4;
+    }
+
+    uint64_t fatStartSector = data->fatSector;
+    if (data->activeFat != FAT_ACTIVE_ALL)
+        fatStartSector += (uint64_t)data->fatSize * (uint64_t)data->activeFat;
+
+    const uint64_t blockSize = device->sectorSize;
+    uint64_t fatStartByte = (uint64_t)fatStartSector * data->bytesPerSector;
+    uint64_t absoluteByteOffset = fatStartByte + fatIndex;
+
+    uint64_t blockIndex = absoluteByteOffset / blockSize;
+    uint64_t offsetInBlock = absoluteByteOffset % blockSize;
+
+    union
+    {
+        uint8_t buffer[4];
+        uint16_t e16;
+        uint32_t e32;
+    } buffer;
+
+    if ((offsetInBlock + entrySize) > blockSize)
+    {
+        const uint64_t firstPart = blockSize - offsetInBlock;
+        const uint64_t secondPart = entrySize - firstPart;
+        if (!device->read(device, blockIndex, 1, data->fatSectorBuffer))
+            return FAT_SECTOR_ERROR;
+        memcpy(buffer.buffer, data->fatSectorBuffer + offsetInBlock, firstPart);
+        if (!device->read(device, blockIndex + 1, 1, data->fatSectorBuffer))
+            return FAT_SECTOR_ERROR;
+        memcpy(buffer.buffer + firstPart, data->fatSectorBuffer, secondPart);
+    }
+    else
+    {
+        if (!device->read(device, blockIndex, 1, data->fatSectorBuffer))
+            return FAT_SECTOR_ERROR;
+        memcpy(buffer.buffer, data->fatSectorBuffer + offsetInBlock, entrySize);
+    }
+
+    uint32_t rawValue;
+    if (data->fatVersion == FAT_VERSION_12)
+        rawValue = (cluster & 1) ? (buffer.e16 >> 4) : (buffer.e16 & 0x0FFF);
+    else if (data->fatVersion == FAT_VERSION_16)
+        rawValue = buffer.e16;
+    else
+        rawValue = buffer.e32;
+
+    return rawValue;
+}
+
+
+static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
+{
+    FAT_Driver_Data* data = driver->data;
+    FAT_Inode_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Inode_Extra));
+    if (!extra)
+        return false;
+    
+    if (data->fatVersion == FAT_VERSION_32)
+    {
+        extra->startCluster = data->rootDir.cluster;
+        uint64_t size = 0;
+        uint32_t status;
+
+        uint32_t cluster = data->rootDir.cluster;
+        while ((status = FAT_Cluster(data->fatVersion, cluster)) == FAT_SECTOR_NORMAL)
+        {
+            size += (uint64_t)data->bytesPerSector * data->sectorsPerCluster;
+            cluster = FAT_ReadFAT(data, driver->parent, cluster);
+        }
+
+        if (status != FAT_SECTOR_EOC)
+        {
+            Memory_KernelFree(extra);
+            return false;
+        }
+
+        out->size = size;
+    }
+    else
+    {
+        extra->startCluster = 0;
         out->size = (uint64_t)data->rootDir.fixed.entryCount * sizeof(FAT_DirectoryEntry);
     }
 
+    out->number = FAT_INODE_NUMBER_ROOT;
     out->referenceCount = 1;
 
-    out->extra = Memory_KernelAllocate(sizeof(FAT_Inode_Extra));
+    out->extra = extra;
 
     out->attributes = 0;
     out->type = FILESYSTEM_ENTRY_DIRECTORY;
@@ -303,6 +455,8 @@ static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
     FAT_Driver_Data* data = driver->data;
+
+    Memory_KernelFree(data->fatSectorBuffer);
 
     if (data->sectorBuffer)
         Memory_KernelFree(data->sectorBuffer);
@@ -375,7 +529,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     const uint16_t rootDirEntryCount = data->bootsector.header.rootDirEntryCount;
 
     const uint16_t fatCount = data->bootsector.header.fatCount;
-    const uint32_t fatSize = data->bootsector.header.fatSize ? data->bootsector.header.fatSize :data->bootsector.header.ebpb.fat32.fatSize32;
+    const uint32_t fatSize = data->bootsector.header.fatSize ? data->bootsector.header.fatSize : data->bootsector.header.ebpb.fat32.fatSize32;
     const uint32_t totalSectors = data->bootsector.header.totalSectors ? data->bootsector.header.totalSectors : data->bootsector.header.largeTotalSectors;
 
     if (bytesPerSector != 512 && bytesPerSector != 1024 &&
@@ -479,6 +633,14 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     if (bytesPerSector % parent->sectorSize != 0 && !data->sectorBuffer)
     {
+        Memory_KernelFree(data);
+        return false;
+    }
+
+    data->fatSectorBuffer = Memory_KernelAllocate(parent->sectorSize);
+    if (!data->fatSectorBuffer)
+    {
+        if (data->sectorBuffer) Memory_KernelFree(data->sectorBuffer);
         Memory_KernelFree(data);
         return false;
     }
