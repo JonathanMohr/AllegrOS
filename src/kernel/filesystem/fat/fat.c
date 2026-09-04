@@ -272,10 +272,10 @@ typedef struct FAT_Driver_Data
 } FAT_Driver_Data;
 
 
-typedef struct FAT_Inode_Extra
+typedef struct FAT_Node_Extra
 {
     uint32_t startCluster;
-} FAT_Inode_Extra;
+} FAT_Node_Extra;
 
 
 typedef struct FAT_File_Extra
@@ -284,7 +284,7 @@ typedef struct FAT_File_Extra
 } FAT_File_Extra;
 
 
-#define FAT_INODE_NUMBER_ROOT 0xFFFFFFFFFFFFFFFF
+#define FAT_NODE_NUMBER_ROOT 0xFFFFFFFFFFFFFFFF
 
 
 #define FAT_SECTOR_NORMAL 0
@@ -417,6 +417,8 @@ static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_
 
 static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t cluster, uint32_t value)
 {
+    // TODO: Active FAT
+    
     uint64_t fatIndex;
     uint8_t entrySize;
     if (data->fatVersion == FAT_VERSION_12)
@@ -744,10 +746,10 @@ static bool FAT_WriteCluster(FAT_Driver_Data* data, Block_Device* device, uint32
 }
 
 
-static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
+static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Node* out)
 {
     FAT_Driver_Data* data = driver->data;
-    FAT_Inode_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Inode_Extra));
+    FAT_Node_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Node_Extra));
     if (!extra)
         return false;
     
@@ -778,7 +780,7 @@ static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
         out->size = (uint64_t)data->rootDir.fixed.entryCount * sizeof(FAT_DirectoryEntry);
     }
 
-    out->number = FAT_INODE_NUMBER_ROOT;
+    out->number = FAT_NODE_NUMBER_ROOT;
     out->referenceCount = 1;
 
     out->extra = extra;
@@ -790,11 +792,11 @@ static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Inode* out)
 }
 
 
-static bool FAT_GetInode(Filesystem_Driver* driver, uint64_t number, Filesystem_Inode* out)
+static bool FAT_GetNode(Filesystem_Driver* driver, uint64_t number, Filesystem_Node* out)
 {
     FAT_Driver_Data* data = driver->data;
 
-    if (number == FAT_INODE_NUMBER_ROOT)
+    if (number == FAT_NODE_NUMBER_ROOT)
         return FAT_GetRoot(driver, out);
 
     uint32_t cluster = (uint32_t)(number >> 32);
@@ -823,7 +825,7 @@ static bool FAT_GetInode(Filesystem_Driver* driver, uint64_t number, Filesystem_
         memcpy(&entry, data->clusterBuffer + offsetInCluster, sizeof(FAT_DirectoryEntry));
     }
 
-    FAT_Inode_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Inode_Extra));
+    FAT_Node_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Node_Extra));
     if (!extra)
         return false;
 
@@ -873,10 +875,10 @@ static bool FAT_GetInode(Filesystem_Driver* driver, uint64_t number, Filesystem_
     return true;
 }
 
-static bool FAT_RemoveInode(Filesystem_Driver* driver, Filesystem_Inode* inode)
+static bool FAT_RemoveNode(Filesystem_Driver* driver, Filesystem_Node* node)
 {
     FAT_Driver_Data* data = driver->data;
-    FAT_Inode_Extra* extra = inode->extra;
+    FAT_Node_Extra* extra = node->extra;
 
     bool anyError = false;
     uint32_t status;
@@ -899,17 +901,17 @@ static bool FAT_RemoveInode(Filesystem_Driver* driver, Filesystem_Inode* inode)
 }
 
 
-static uint64_t FAT_GetEntryCount(Filesystem_Driver* driver, Filesystem_Inode* dir)
+static uint64_t FAT_GetEntryCount(Filesystem_Driver* driver, Filesystem_Node* dir)
 {
     FAT_Driver_Data* data = driver->data;
-    FAT_Inode_Extra* extra = dir->extra;
+    FAT_Node_Extra* extra = dir->extra;
 
     uint64_t entryCount = 0;
 
     uint32_t status;
     uint32_t cluster = extra->startCluster;
 
-    if (dir->number == FAT_INODE_NUMBER_ROOT && data->fatVersion != FAT_VERSION_32 && cluster == 0) // FAT12/16 root directory
+        if (dir->number == FAT_NODE_NUMBER_ROOT && data->fatVersion != FAT_VERSION_32 && cluster == 0) // FAT12/16 root directory
     {
         FAT_DirectoryEntry entry;
 
@@ -1107,7 +1109,7 @@ static void FAT_BuildShortName(const uint8_t rawName[11], char out[13])
 }
 
 /* TODO: NOT GOOD */
-static bool FAT_ResolveParentInodeNumber(Filesystem_Driver* driver, uint32_t parentCluster, uint64_t* out)
+static bool FAT_ResolveParentNodeNumber(Filesystem_Driver* driver, uint32_t parentCluster, uint64_t* out)
 {
     FAT_Driver_Data* data = driver->data;
 
@@ -1231,11 +1233,11 @@ static uint8_t FAT_ReadEntry(Filesystem_Driver* driver, Filesystem_File* dir, Fi
 {
     FAT_Driver_Data* data = driver->data;
     FAT_File_Extra* fileExtra = dir->extra;
-    FAT_Inode_Extra* inodeExtra = dir->inode->extra;
+    FAT_Node_Extra* nodeExtra = dir->nodd->extra;
 
-    bool rootDirectory = (dir->inode->number == FAT_INODE_NUMBER_ROOT &&
+    bool rootDirectory = (dir->node->number == FAT_NODE_NUMBER_ROOT &&
                           data->fatVersion != FAT_VERSION_32 &&
-                          inodeExtra->startCluster == 0);
+                          nodeExtra->startCluster == 0);
 
     uint16_t lfnChars[20 * 13];
     uint8_t lfnExpected = 0;
@@ -1366,25 +1368,25 @@ static uint8_t FAT_ReadEntry(Filesystem_Driver* driver, Filesystem_File* dir, Fi
             firstCluster |= (uint32_t)entry.entry.firstClusterHigh << 16;
 
         if (entry.entry.name[0] == '.' && entry.entry.name[1] == ' ')
-            out->inode = dir->inode->number;
+            out->node = dir->inode->number;
         else if (entry.entry.name[0] == '.' && entry.entry.name[1] == '.')
         {
-            uint64_t parentInode;
-            if (!FAT_ResolveParentInodeNumber(driver, firstCluster, &parentInode))
+            uint64_t parentNode;
+            if (!FAT_ResolveParentNodeNumber(driver, firstCluster, &parentNode))
                 return FILESYSTEM_DIR_ERROR;
-            out->inode = parentInode;
+            out->node = parentNode;
         }
         else
-            out->inode = ((uint64_t)entryCluster << 32) | entryIndex;
+            out->node = ((uint64_t)entryCluster << 32) | entryIndex;
 
         return FILESYSTEM_DIR_ENTRY_FOUND;
     }
 }
 
-static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out);
+static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Node* node, Filesystem_File* out);
 static void FAT_CloseFile(struct Filesystem_Driver* driver, Filesystem_File* file);
 
-static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Entry* out)
+static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Entry* out)
 {
     Filesystem_File dirFile;
     if (!FAT_OpenFile(driver, dir, &dirFile))
@@ -1392,7 +1394,7 @@ static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Inod
 
     uint8_t result;
 
-    for (;;)
+    while (1)
     {
         result = FAT_ReadEntry(driver, &dirFile, out);
 
@@ -1409,8 +1411,8 @@ static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Inod
 }
 
 
-static bool FAT_CreateInode(Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
-                            Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out)
+static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, Filesystem_Entry_Type type,
+                            Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Node* out)
 {
     uint32_t utf16Count;
     uint16_t utf16Name[20 * 13];
@@ -1422,12 +1424,12 @@ static bool FAT_CreateInode(Filesystem_Driver* driver, Filesystem_Inode* dir, Fi
 
 }
 
-static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Inode* target)
+static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Node* target)
 {
     // TODO
 }
 
-static uint64_t FAT_Unlink(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name)
+static uint64_t FAT_Unlink(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name)
 {
     // TODO
 }
@@ -1449,17 +1451,17 @@ static bool FAT_Seek(struct Filesystem_Driver* driver, Filesystem_File* file, ui
 }
 
 
-static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out)
+static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Node* node, Filesystem_File* out)
 {
-    FAT_Inode_Extra* inodeExtra = inode->extra;
+    FAT_Node_Extra* nodeExtra = node->extra;
 
     FAT_File_Extra* fileExtra = Memory_KernelAllocate(sizeof(FAT_File_Extra));
     if (!fileExtra)
         return false;
 
-    fileExtra->currentCluster = inodeExtra->startCluster;
+    fileExtra->currentCluster = nodeExtra->startCluster;
 
-    out->inode = inode;
+    out->node = node;
     out->pos = 0;
     out->extra = fileExtra;
 
@@ -1471,7 +1473,7 @@ static void FAT_CloseFile(struct Filesystem_Driver* driver, Filesystem_File* fil
     Memory_KernelFree(file->extra);
 }
 
-static bool FAT_Move(Filesystem_Driver* driver, Filesystem_Inode* srcDir, const char* oldName, Filesystem_Inode* dstDir, const char* newName)
+static bool FAT_Move(Filesystem_Driver* driver, Filesystem_Node* srcDir, const char* oldName, Filesystem_Node* dstDir, const char* newName)
 {
     // TODO
 }
@@ -1786,14 +1788,14 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     driver->getRoot = FAT_GetRoot;
 
-    driver->getInode = FAT_GetInode;
-    driver->removeInode = FAT_RemoveInode;
+    driver->getNode = FAT_GetNode;
+    driver->removeNode = FAT_RemoveNode;
 
     driver->getEntryCount = FAT_GetEntryCount;
     driver->readEntry = FAT_ReadEntry;
     driver->lookupEntry = FAT_LookupEntry;
 
-    driver->createInode = FAT_CreateInode;
+    driver->createNode = FAT_CreateNode;
     driver->link = FAT_Link;
     driver->unlink = FAT_Unlink;
 
