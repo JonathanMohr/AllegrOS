@@ -39,6 +39,7 @@ typedef struct Filesystem_File
     void* extra;
 } Filesystem_File;
 
+#define FILESYSTEM_ENTRY_COUNT_ERROR 0xFFFFFFFFFFFFFFFF
 #define FILESYSTEM_UNLINK_ERROR 0xFFFFFFFFFFFFFFFF
 
 typedef struct Filesystem_Driver

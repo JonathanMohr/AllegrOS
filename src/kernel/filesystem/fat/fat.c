@@ -231,7 +231,7 @@ typedef struct FAT_Driver_Data
     uint8_t* clusterReadBuffer;
     uint8_t* rootDirBuffer;
 
-    uint8_t* clusterBuffer;
+    void* clusterBuffer;
 
     uint32_t freeClusterCount;
     uint32_t nextFreeCluster;
@@ -899,6 +899,135 @@ static bool FAT_RemoveInode(Filesystem_Driver* driver, Filesystem_Inode* inode)
 }
 
 
+static uint64_t FAT_GetEntryCount(Filesystem_Driver* driver, Filesystem_Inode* dir)
+{
+    FAT_Driver_Data* data = driver->data;
+    FAT_Inode_Extra* extra = dir->extra;
+
+    uint64_t entryCount = 0;
+
+    uint32_t status;
+    uint32_t cluster = extra->startCluster;
+
+    if (dir->number == FAT_INODE_NUMBER_ROOT && data->fatVersion != FAT_VERSION_32 && cluster == 0) // FAT12/16 root directory
+    {
+        FAT_DirectoryEntry entry;
+
+        for (uint16_t i = 0; i < data->rootDir.fixed.entryCount; i++)
+        {
+            if (!FAT_ReadRootDirectoryEntries(data, driver->parent, i, 1, &entry))
+                return FILESYSTEM_ENTRY_COUNT_ERROR;
+
+            if (entry.attribute == FAT_ENTRY_LFN_ATTRIBUTE || entry.name[0] == FAT_ENTRY_DELETED || entry.attribute & FAT_ENTRY_VOLUME_LABEL)
+                continue;
+
+            if (entry.name[0] == FAT_ENTRY_FREE)
+                break;
+
+            entryCount++;
+        }
+
+        return entryCount;
+    }
+
+    if (cluster == 0)
+        return 0;
+
+    while ((status = FAT_Cluster(data->fatVersion, cluster)) == FAT_SECTOR_NORMAL)
+    {
+        if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
+            return FILESYSTEM_ENTRY_COUNT_ERROR;
+        cluster = FAT_ReadFAT(data, driver->parent, cluster);
+
+        FAT_DirectoryEntry* entries = data->clusterBuffer;
+
+        bool eod = false;
+        for (uint32_t i = 0; i < data->bytesPerCluster / sizeof(FAT_DirectoryEntry); i++)
+        {
+            FAT_DirectoryEntry* entry = &entries[i];
+
+            if (entry->attribute == FAT_ENTRY_LFN_ATTRIBUTE || entry->name[0] == FAT_ENTRY_DELETED || entry->attribute & FAT_ENTRY_VOLUME_LABEL)
+                continue;
+
+            if (entry->name[0] == FAT_ENTRY_FREE)
+            {
+                status = FAT_SECTOR_EOC;
+                eod = true;
+                break;
+            }
+
+            entryCount++;
+        }
+
+        if (eod) break;
+    }
+
+    if (status != FAT_SECTOR_EOC)
+        return FILESYSTEM_ENTRY_COUNT_ERROR;
+
+    return entryCount;
+}
+
+static bool FAT_ReadEntry(Filesystem_Driver* driver, Filesystem_File* dir, Filesystem_Entry* out)
+{
+
+}
+
+static bool FAT_LookupEntry(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Entry* out)
+{
+    
+}
+
+
+static bool FAT_CreateInode(Filesystem_Driver* driver, Filesystem_Inode* dir, Filesystem_Entry_Type type,
+                            Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Inode* out)
+{
+    
+}
+
+static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name, Filesystem_Inode* target)
+{
+
+}
+
+static uint64_t FAT_Unlink(Filesystem_Driver* driver, Filesystem_Inode* dir, const char* name)
+{
+
+}
+
+
+static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Inode* inode, Filesystem_File* out)
+{
+
+}
+
+static void FAT_CloseFile(struct Filesystem_Driver* driver, Filesystem_File* file)
+{
+
+}
+
+static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, uint8_t* buffer)
+{
+
+}
+
+static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const uint8_t* buffer)
+{
+
+}
+
+static bool FAT_Seek(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t pos)
+{
+
+}
+
+
+static bool FAT_Move(Filesystem_Driver* driver, Filesystem_Inode* srcDir, const char* oldName, Filesystem_Inode* dstDir, const char* newName)
+{
+
+}
+
+
 
 static void FAT_Destroy(Filesystem_Driver* driver)
 {
@@ -1209,6 +1338,22 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     driver->getInode = FAT_GetInode;
     driver->removeInode = FAT_RemoveInode;
+
+    driver->getEntryCount = FAT_GetEntryCount;
+    driver->readEntry = FAT_ReadEntry;
+    driver->lookupEntry = FAT_LookupEntry;
+
+    driver->createInode = FAT_CreateInode;
+    driver->link = FAT_Link;
+    driver->unlink = FAT_Unlink;
+
+    driver->openFile = FAT_OpenFile;
+    driver->closeFile = FAT_CloseFile;
+    driver->read = FAT_Read;
+    driver->write = FAT_Write;
+    driver->seek = FAT_Seek;
+
+    driver->move = FAT_Move;
 
     driver->data = data;
 
