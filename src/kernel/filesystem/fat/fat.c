@@ -878,16 +878,24 @@ static bool FAT_RemoveInode(Filesystem_Driver* driver, Filesystem_Inode* inode)
     FAT_Driver_Data* data = driver->data;
     FAT_Inode_Extra* extra = inode->extra;
 
+    bool anyError = false;
+    uint32_t status;
     uint32_t cluster = extra->startCluster;
 
-    while (FAT_Cluster(data->fatVersion, cluster) == FAT_SECTOR_NORMAL)
+    while ((status = FAT_Cluster(data->fatVersion, cluster)) == FAT_SECTOR_NORMAL)
     {
         uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
-        FAT_WriteFAT(data, driver->parent, cluster, 0);
+        if (!FAT_WriteFAT(data, driver->parent, cluster, 0))
+            anyError = true;
         cluster = next;
     }
 
     Memory_KernelFree(extra);
+
+    if (status != FAT_SECTOR_EOC || anyError)
+        return false;
+
+    return true;
 }
 
 
