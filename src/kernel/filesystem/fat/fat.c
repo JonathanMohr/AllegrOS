@@ -380,29 +380,111 @@ static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_
     {
         const uint64_t firstPart = blockSize - offsetInBlock;
         const uint64_t secondPart = entrySize - firstPart;
-        if (!device->read(device, blockIndex, 1, data->fatSectorBuffer))
+        if (device->read(device, blockIndex, 2, data->fatSectorBuffer) != 2)
             return FAT_SECTOR_ERROR;
         memcpy(buffer.buffer, data->fatSectorBuffer + offsetInBlock, firstPart);
-        if (!device->read(device, blockIndex + 1, 1, data->fatSectorBuffer))
-            return FAT_SECTOR_ERROR;
-        memcpy(buffer.buffer + firstPart, data->fatSectorBuffer, secondPart);
+        memcpy(buffer.buffer + firstPart, data->fatSectorBuffer + blockSize, secondPart);
     }
     else
     {
-        if (!device->read(device, blockIndex, 1, data->fatSectorBuffer))
+        if (device->read(device, blockIndex, 1, data->fatSectorBuffer) != 1)
             return FAT_SECTOR_ERROR;
         memcpy(buffer.buffer, data->fatSectorBuffer + offsetInBlock, entrySize);
     }
 
     uint32_t rawValue;
     if (data->fatVersion == FAT_VERSION_12)
-        rawValue = (cluster & 1) ? (buffer.e16 >> 4) : (buffer.e16 & 0x0FFF);
+        rawValue = (cluster % 2 == 1) ? (buffer.e16 >> 4) : (buffer.e16 & 0x0FFF);
     else if (data->fatVersion == FAT_VERSION_16)
         rawValue = buffer.e16;
     else
         rawValue = buffer.e32;
 
     return rawValue;
+}
+
+static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t cluster, uint32_t value)
+{
+    uint64_t fatIndex;
+    uint8_t entrySize;
+    if (data->fatVersion == FAT_VERSION_12)
+    {
+        fatIndex = cluster * 3 / 2;
+        entrySize = 2;
+    }
+    else if (data->fatVersion == FAT_VERSION_16)
+    {
+        fatIndex = cluster * 2;
+        entrySize = 2;
+    }
+    else
+    {
+        fatIndex = cluster * 4;
+        entrySize = 4;
+    }
+
+    uint64_t fatStartSector = data->fatSector;
+    if (data->activeFat != FAT_ACTIVE_ALL)
+        fatStartSector += (uint64_t)data->fatSize * (uint64_t)data->activeFat;
+
+    const uint64_t blockSize = device->sectorSize;
+    uint64_t fatStartByte = (uint64_t)fatStartSector * data->bytesPerSector;
+    uint64_t absoluteByteOffset = fatStartByte + fatIndex;
+
+    uint64_t blockIndex = absoluteByteOffset / blockSize;
+    uint64_t offsetInBlock = absoluteByteOffset % blockSize;
+
+    union
+    {
+        uint8_t buffer[4];
+        uint16_t e16;
+        uint32_t e32;
+    } buffer;
+
+    if (data->fatVersion == FAT_VERSION_12)
+        buffer.e16 = (cluster % 2 == 1) ? (value << 4) : (value & 0x0FFF);
+    else if (data->fatVersion == FAT_VERSION_16)
+        buffer.e16 = (uint16_t)value;
+    else
+        buffer.e32 = value;
+
+    if ((offsetInBlock + entrySize) > blockSize)
+    {
+        const uint64_t firstPart = blockSize - offsetInBlock;
+        const uint64_t secondPart = entrySize - firstPart;
+        if (device->read(device, blockIndex, 2, data->fatSectorBuffer) != 2)
+            return false;
+        if (data->fatVersion == FAT_VERSION_12)
+        {
+            if (cluster % 2 == 1)
+                buffer.buffer[0] = data->fatSectorBuffer[offsetInBlock] & 0x0F;
+            else
+                buffer.buffer[1] = data->fatSectorBuffer[offsetInBlock + 1] & 0xF0;
+        }
+        memcpy(data->fatSectorBuffer + offsetInBlock, buffer.buffer, firstPart);
+        memcpy(data->fatSectorBuffer + blockSize, buffer.buffer + firstPart, secondPart);
+
+        if (device->write(device, blockIndex, 2, data->fatSectorBuffer) != 2)
+            return false;
+    }
+    else
+    {
+        if (device->read(device, blockIndex, 1, data->fatSectorBuffer) != 1)
+            return false;
+        if (data->fatVersion == FAT_VERSION_12)
+        {
+            if (cluster % 2 == 1)
+                buffer.buffer[0] = data->fatSectorBuffer[offsetInBlock] & 0x0F;
+            else
+                buffer.buffer[1] = data->fatSectorBuffer[offsetInBlock + 1] & 0xF0;
+        }
+        memcpy(data->fatSectorBuffer + offsetInBlock, buffer.buffer, entrySize);
+
+        if (device->write(device, blockIndex, 1, data->fatSectorBuffer) != 1)
+            return false;
+    }
+
+    return true;
 }
 
 
@@ -509,6 +591,8 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     FAT_Driver_Data* data = (FAT_Driver_Data*)Memory_KernelAllocate(sizeof(FAT_Driver_Data));
     if (!data)
         return false;
+
+    if (parent->sectorSize < 3) return false; // TODO: Fix this
 
     if (!FAT_ReadFirstSector(parent, &data->bootsector))
     {
@@ -637,7 +721,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
         return false;
     }
 
-    data->fatSectorBuffer = Memory_KernelAllocate(parent->sectorSize);
+    data->fatSectorBuffer = Memory_KernelAllocate(parent->sectorSize * 2);
     if (!data->fatSectorBuffer)
     {
         if (data->sectorBuffer) Memory_KernelFree(data->sectorBuffer);
