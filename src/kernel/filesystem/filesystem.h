@@ -27,7 +27,7 @@ typedef struct Filesystem_Node
 
 typedef struct Filesystem_Entry
 {
-    char name[512];
+    char name[1024];
     uint64_t node;
 } Filesystem_Entry;
 
@@ -41,6 +41,7 @@ typedef struct Filesystem_File
 
 #define FILESYSTEM_ENTRY_COUNT_ERROR 0xFFFFFFFFFFFFFFFF
 #define FILESYSTEM_UNLINK_ERROR 0xFFFFFFFFFFFFFFFF
+#define FILESYSTEM_MOVE_ERROR 0xFFFFFFFFFFFFFFFF
 
 #define FILESYSTEM_DIR_ENTRY_FOUND 0
 #define FILESYSTEM_DIR_END         1
@@ -77,7 +78,7 @@ typedef struct Filesystem_Driver
     // General
     bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Node* inode, Filesystem_File* out);
     void (*closeFile)(struct Filesystem_Driver* driver, Filesystem_File* file);
-    bool (*move)(struct Filesystem_Driver* driver, Filesystem_Node* srcDir, const char* oldName, Filesystem_Node* dstDir, const char* newName);
+    uint64_t (*move)(struct Filesystem_Driver* driver, Filesystem_Node* srcDir, const char* oldName, Filesystem_Node* dstDir, const char* newName);
 
     void* data;
 
