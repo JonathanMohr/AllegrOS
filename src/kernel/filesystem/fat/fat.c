@@ -1421,7 +1421,25 @@ static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, File
         return false;
     utf16Name[utf16Count++] = 0; // Terminator
 
+    uint8_t charIndex = 0;
+    char firstChars[2] = {'#', '#'};
 
+    while (*name && charIndex < 2)
+    {
+        if (*name >= 'a' && *name <= 'z')
+            firstChars[charIndex++] = *name + ('A' - 'a');
+        else if (*name >= 'A' && *name <= 'Z')
+            firstChars[charIndex++] = *name;
+        else if (*name >= '0' && *name <= '9')
+            firstChars[charIndex++] = *name;
+        else if (*name == '_' || *name == '$' || *name == '\'' || *name == '@' ||
+                 *name == '!' || *name == '(' || *name == ')'  || *name == '{' ||
+                 *name == '}' || *name == '^' || *name == '#'  || *name == '&')
+            firstChars[charIndex++] = *name;
+        else
+            firstChars[charIndex++] = '_';
+        name++;
+    }
 }
 
 static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Node* target)
