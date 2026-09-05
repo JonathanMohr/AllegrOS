@@ -1119,7 +1119,7 @@ static bool FAT_ResolveParentNodeNumber(Filesystem_Driver* driver, uint32_t pare
 
     if (parentIsRoot)
     {
-        *out = FAT_INODE_NUMBER_ROOT;
+        *out = FAT_NODE_NUMBER_ROOT;
         return true;
     }
 
@@ -1233,7 +1233,7 @@ static uint8_t FAT_ReadEntry(Filesystem_Driver* driver, Filesystem_File* dir, Fi
 {
     FAT_Driver_Data* data = driver->data;
     FAT_File_Extra* fileExtra = dir->extra;
-    FAT_Node_Extra* nodeExtra = dir->nodd->extra;
+    FAT_Node_Extra* nodeExtra = dir->node->extra;
 
     bool rootDirectory = (dir->node->number == FAT_NODE_NUMBER_ROOT &&
                           data->fatVersion != FAT_VERSION_32 &&
@@ -1368,7 +1368,7 @@ static uint8_t FAT_ReadEntry(Filesystem_Driver* driver, Filesystem_File* dir, Fi
             firstCluster |= (uint32_t)entry.entry.firstClusterHigh << 16;
 
         if (entry.entry.name[0] == '.' && entry.entry.name[1] == ' ')
-            out->node = dir->inode->number;
+            out->node = dir->node->number;
         else if (entry.entry.name[0] == '.' && entry.entry.name[1] == '.')
         {
             uint64_t parentNode;

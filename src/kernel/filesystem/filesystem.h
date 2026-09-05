@@ -23,7 +23,7 @@ typedef struct Filesystem_Node
 
     Filesystem_Entry_Attribute attributes;
     Filesystem_Entry_Type type;
-} Filesystem_Inode;
+} Filesystem_Node;
 
 typedef struct Filesystem_Entry
 {
@@ -63,7 +63,7 @@ typedef struct Filesystem_Driver
     uint8_t (*readEntry)(struct Filesystem_Driver* driver, Filesystem_File* dir, Filesystem_Entry* out);
     uint8_t (*lookupEntry)(struct Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Entry* out);
 
-    bool (*createInode)(struct Filesystem_Driver* driver, Filesystem_Node* dir, Filesystem_Entry_Type type,
+    bool (*createNode)(struct Filesystem_Driver* driver, Filesystem_Node* dir, Filesystem_Entry_Type type,
                         Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Node* out);
     bool (*link)(struct Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Node* target);
     uint64_t (*unlink)(struct Filesystem_Driver* driver, Filesystem_Node* dir, const char* name);
