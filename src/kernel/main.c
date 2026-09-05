@@ -14,8 +14,6 @@
 
 #include "arch/x86/x86.h"
 
-#include "arch/x86/paging.h"
-
 
 #include "pci/pci.h"
 
@@ -27,6 +25,7 @@
 #include "device/device.h"
 
 #include "filesystem/fat/fat.h"
+#include "filesystem/vfs.h"
 
 
 
