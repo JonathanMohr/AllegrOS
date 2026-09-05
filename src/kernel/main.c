@@ -253,6 +253,38 @@ void CDECL kmain(BootParams* bParams)
         goto end;
     }
 
+    driver->closeFile(driver, &rootFile);
+
+    if (driver->lookupEntry(driver, &rootNode, "test.txt", &entry) != FILESYSTEM_DIR_ENTRY_FOUND)
+    {
+        KernelConsole_PutString(mux_console, "Could not get test.txt entry in root\n");
+        goto end;
+    }
+
+    Filesystem_Node testNode;
+    if (!driver->getNode(driver, entry.node, &testNode))
+    {
+        KernelConsole_PutString(mux_console, "Could not get test.txt node\n");
+        goto end;
+    }
+
+    if (!driver->openFile(driver, &testNode, &rootFile))
+    {
+        KernelConsole_PutString(mux_console, "Could not open test.txt file\n");
+        goto end;
+    }
+    
+    uint64_t read;
+    char buffer[512];
+    while ((read = driver->read(driver, &rootFile, sizeof(buffer), buffer)))
+    {
+        for (uint64_t i = 0; i < read; i++)
+            KernelConsole_PutChar(mux_console, buffer[i]);
+    }
+
+    driver->closeFile(driver, &rootFile);
+
+
 end:
     for(;;);
 }

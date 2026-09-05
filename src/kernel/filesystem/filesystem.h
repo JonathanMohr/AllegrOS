@@ -55,7 +55,7 @@ typedef struct Filesystem_Driver
 
     bool (*getRoot)(struct Filesystem_Driver* driver, Filesystem_Node* out);
 
-    // Inodes
+    // Nodes
     bool (*getNode)(struct Filesystem_Driver* driver, uint64_t number, Filesystem_Node* out);
     bool (*removeNode)(struct Filesystem_Driver* driver, Filesystem_Node* node);
 
@@ -71,12 +71,12 @@ typedef struct Filesystem_Driver
     uint64_t (*unlink)(struct Filesystem_Driver* driver, Filesystem_Node* dir, const char* name);
 
     // Files
-    uint64_t (*read)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, uint8_t* buffer);
-    uint64_t (*write)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const uint8_t* buffer);
+    uint64_t (*read)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, void* buffer);
+    uint64_t (*write)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const void* buffer);
     bool (*seek)(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t pos);
 
     // General
-    bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Node* inode, Filesystem_File* out);
+    bool (*openFile)(struct Filesystem_Driver* driver, Filesystem_Node* node, Filesystem_File* out);
     void (*closeFile)(struct Filesystem_Driver* driver, Filesystem_File* file);
     uint64_t (*move)(struct Filesystem_Driver* driver, Filesystem_Node* srcDir, const char* oldName, Filesystem_Node* dstDir, const char* newName);
 

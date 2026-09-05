@@ -2377,7 +2377,7 @@ static uint64_t FAT_Unlink(Filesystem_Driver* driver, Filesystem_Node* dir, cons
 }
 
 
-static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, uint8_t* buffer)
+static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, void* buffer)
 {
     FAT_Driver_Data* data = driver->data;
     FAT_File_Extra* fileExtra = file->extra;
@@ -2437,7 +2437,7 @@ static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file
     return read;
 }
 
-static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const uint8_t* buffer)
+static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const void* buffer)
 {
     FAT_Driver_Data* data = driver->data;
     FAT_Node_Extra* nodeExtra = file->node->extra;
