@@ -746,6 +746,75 @@ static bool FAT_WriteCluster(FAT_Driver_Data* data, Block_Device* device, uint32
 }
 
 
+
+static bool FAT_FindFreeClusters(FAT_Driver_Data* data, Block_Device* device, uint32_t count, uint32_t* outFirstCluster)
+{
+    if (count == 0)
+        return false;
+
+    const uint32_t maxCluster = data->dataSize / data->sectorsPerCluster + 1;
+
+    uint32_t firstCluster = 0;
+    uint32_t previousCluster = 0;
+    uint32_t found = 0;
+
+    uint32_t cluster = data->nextFreeCluster;
+    uint32_t startCluster = cluster;
+    bool wrapped = false;
+
+    while (found < count)
+    {
+        if (cluster > maxCluster)
+        {
+            if (wrapped)
+                break;
+            cluster = 2;
+            wrapped = true;
+            continue;
+        }
+
+        if (wrapped && cluster == startCluster)
+            break;
+
+        uint32_t entry = FAT_ReadFAT(data, device, cluster);
+        uint32_t status = FAT_Cluster(data->fatVersion, entry);
+
+        if (status == FAT_SECTOR_ERROR)
+            return false;
+
+        if (status == FAT_SECTOR_FREE)
+        {
+            if (found == 0)
+                firstCluster = cluster;
+            else
+            {
+                if (!FAT_WriteFAT(data, device, previousCluster, cluster))
+                    return false;
+            }
+
+            previousCluster = cluster;
+            found++;
+        }
+
+        cluster++;
+    }
+
+    if (found < count)
+        return false;
+
+    if (!FAT_WriteFAT(data, device, previousCluster, 0x0FFFFFFF))
+        return false;
+
+    data->nextFreeCluster = previousCluster + 1;
+    if (data->nextFreeCluster > maxCluster)
+        data->nextFreeCluster = 2;
+
+    *outFirstCluster = firstCluster;
+    return true;
+}
+
+
+
 static bool FAT_GetRoot(Filesystem_Driver* driver, Filesystem_Node* out)
 {
     FAT_Driver_Data* data = driver->data;
@@ -1411,40 +1480,733 @@ static uint8_t FAT_LookupEntry(struct Filesystem_Driver* driver, Filesystem_Node
 }
 
 
-static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, Filesystem_Entry_Type type,
-                            Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Node* out)
+static uint32_t FAT_HashName(const char* name)
 {
-    uint32_t utf16Count;
-    uint16_t utf16Name[20 * 13];
+    uint32_t hash = 2166136261u;
+    while (*name)
+    {
+        hash ^= (uint8_t)*name;
+        hash *= 16777619u;
+        name++;
+    }
+    return hash;
+}
 
-    if (!FAT_UTF8ToUTF16(name, utf16Name, 255, &utf16Count))
-        return false;
-    utf16Name[utf16Count++] = 0; // Terminator
+static void FAT_HashToChars(uint32_t hash, char out[4])
+{
+    static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$%'@~!(){}^#&";
 
+    for (int i = 0; i < 4; i++)
+    {
+        out[i] = alphabet[hash % (sizeof(alphabet) - 1)];
+        hash /= (sizeof(alphabet) - 1);
+    }
+}
+
+static void FAT_GetShortNameCharacters(const char* name, const char* nameEnd, uint8_t outCount, char* out)
+{
     uint8_t charIndex = 0;
-    char firstChars[2] = {'#', '#'};
-
-    while (*name && charIndex < 2)
+    while (*name && charIndex < outCount && (!nameEnd || name < nameEnd))
     {
         if (*name >= 'a' && *name <= 'z')
-            firstChars[charIndex++] = *name + ('A' - 'a');
+            out[charIndex++] = *name + ('A' - 'a');
         else if (*name >= 'A' && *name <= 'Z')
-            firstChars[charIndex++] = *name;
+            out[charIndex++] = *name;
         else if (*name >= '0' && *name <= '9')
-            firstChars[charIndex++] = *name;
-        else if (*name == '_' || *name == '$' || *name == '\'' || *name == '@' ||
-                 *name == '!' || *name == '(' || *name == ')'  || *name == '{' ||
-                 *name == '}' || *name == '^' || *name == '#'  || *name == '&')
-            firstChars[charIndex++] = *name;
-        else
-            firstChars[charIndex++] = '_';
+            out[charIndex++] = *name;
+        else if (*name == '_' || *name == '$' || *name == '%' || *name == '\'' ||
+                 *name == '@' || *name == '~' || *name == '!' || *name == '(' ||
+                 *name == ')'  || *name == '{' || *name == '}' || *name == '^' ||
+                 *name == '#'  || *name == '&')
+            out[charIndex++] = *name;
+        else if (charIndex > 0)
+            out[charIndex++] = '_';
         name++;
     }
 }
 
+static bool FAT_ShortNameExists(Filesystem_Driver* driver, Filesystem_Node* dir, const uint8_t candidate[11], bool* outExists)
+{
+    FAT_Driver_Data* data = driver->data;
+    FAT_Node_Extra* extra = dir->extra;
+
+    bool rootDirectory = (dir->number == FAT_NODE_NUMBER_ROOT &&
+                           data->fatVersion != FAT_VERSION_32 &&
+                           extra->startCluster == 0);
+
+    if (rootDirectory)
+    {
+        for (uint16_t i = 0; i < data->rootDir.fixed.entryCount; i++)
+        {
+            FAT_DirectoryEntry entry;
+            if (!FAT_ReadRootDirectoryEntries(data, driver->parent, i, 1, &entry))
+                return false;
+
+            if (entry.name[0] == FAT_ENTRY_FREE)
+            {
+                *outExists = false;
+                return true;
+            }
+            if (entry.name[0] == FAT_ENTRY_DELETED || entry.attribute == FAT_ENTRY_LFN_ATTRIBUTE)
+                continue;
+
+            if (memcmp(entry.name, candidate, 11) == 0)
+            {
+                *outExists = true;
+                return true;
+            }
+        }
+
+        *outExists = false;
+        return true;
+    }
+
+    uint32_t cluster = extra->startCluster;
+    uint32_t status;
+
+    while ((status = FAT_Cluster(data->fatVersion, cluster)) == FAT_SECTOR_NORMAL)
+    {
+        if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
+            return false;
+
+        uint32_t entriesPerCluster = data->bytesPerCluster / sizeof(FAT_DirectoryEntry);
+        FAT_DirectoryEntry* entries = (FAT_DirectoryEntry*)data->clusterBuffer;
+
+        for (uint32_t i = 0; i < entriesPerCluster; i++)
+        {
+            if (entries[i].name[0] == FAT_ENTRY_FREE)
+            {
+                *outExists = false;
+                return true;
+            }
+            if (entries[i].name[0] == FAT_ENTRY_DELETED || entries[i].attribute == FAT_ENTRY_LFN_ATTRIBUTE)
+                continue;
+
+            if (memcmp(entries[i].name, candidate, 11) == 0)
+            {
+                *outExists = true;
+                return true;
+            }
+        }
+
+        cluster = FAT_ReadFAT(data, driver->parent, cluster);
+    }
+
+    if (status != FAT_SECTOR_EOC)
+        return false;
+
+    *outExists = false;
+    return true;
+}
+
+static void FAT_BuildLFNEntry(const uint16_t* utf16Name, uint32_t totalChars, uint32_t totalSlots, uint32_t slotIndex, uint8_t checksum, FAT_LFNEntry* out)
+{
+    const uint32_t order = totalSlots - slotIndex;
+    const bool isLast = (slotIndex == 0);
+
+    out->order = (uint8_t)(order | (isLast ? 0x40 : 0x00));
+    out->attr = FAT_ENTRY_LFN_ATTRIBUTE;
+    out->reserved1 = 0;
+    out->checksum = checksum;
+    out->reserved2 = 0;
+
+    uint16_t chars[13];
+    const uint32_t base = (order - 1) * 13;
+
+    for (uint32_t i = 0; i < 13; i++)
+    {
+        const uint32_t pos = base + i;
+        chars[i] = (pos < totalChars) ? utf16Name[pos] : 0xFFFF;
+    }
+
+    memcpy(out->name1, chars, 5 * sizeof(uint16_t));
+    memcpy(out->name2, chars + 5, 6 * sizeof(uint16_t));
+    memcpy(out->name3, chars + 11, 2 * sizeof(uint16_t));
+}
+
+static bool FAT_AppendClusters(FAT_Driver_Data* data, Block_Device* device, uint32_t lastCluster, uint32_t count, uint32_t* outFirstNewCluster)
+{
+    uint32_t firstNew;
+    if (!FAT_FindFreeClusters(data, device, count, &firstNew))
+        return false;
+
+    uint32_t cluster = firstNew;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        memset(data->clusterBuffer, 0, data->bytesPerCluster);
+        if (!FAT_WriteCluster(data, device, cluster, data->clusterBuffer))
+            return false;
+
+        if (i + 1 < count)
+            cluster = FAT_ReadFAT(data, device, cluster);
+    }
+
+    if (!FAT_WriteFAT(data, device, lastCluster, firstNew))
+        return false;
+
+    *outFirstNewCluster = firstNew;
+    return true;
+}
+
+static bool FAT_FindFreeEntrySlots(Filesystem_Driver* driver, Filesystem_Node* dir, uint32_t totalEntries,
+                                   uint32_t* outCluster, uint32_t* outIndex,
+                                   uint32_t* outMainCluster, uint32_t* outMainIndex)
+{
+    FAT_Driver_Data* data = driver->data;
+    FAT_Node_Extra* extra = dir->extra;
+
+    bool rootDirectory = (dir->number == FAT_NODE_NUMBER_ROOT &&
+                           data->fatVersion != FAT_VERSION_32 &&
+                           extra->startCluster == 0);
+
+    if (rootDirectory)
+    {
+        uint32_t runStart = 0;
+        uint32_t runLength = 0;
+        bool runStarted = false;
+
+        for (uint16_t i = 0; i < data->rootDir.fixed.entryCount; i++)
+        {
+            FAT_DirectoryEntry entry;
+            if (!FAT_ReadRootDirectoryEntries(data, driver->parent, i, 1, &entry))
+                return false;
+
+            if (entry.name[0] == FAT_ENTRY_FREE)
+            {
+                if (!runStarted)
+                {
+                    runStart = i;
+                    runLength = 0;
+                }
+                uint32_t remaining = (uint32_t)data->rootDir.fixed.entryCount - runStart;
+                if (remaining >= totalEntries)
+                {
+                    *outCluster = 0;
+                    *outIndex = runStart;
+                    *outMainCluster = 0;
+                    *outMainIndex = runStart + totalEntries - 1;
+                    return true;
+                }
+                return false;
+            }
+
+            if (entry.name[0] == FAT_ENTRY_DELETED)
+            {
+                if (!runStarted)
+                {
+                    runStart = i;
+                    runStarted = true;
+                    runLength = 0;
+                }
+                runLength++;
+                if (runLength >= totalEntries)
+                {
+                    *outCluster = 0;
+                    *outIndex = runStart;
+                    *outMainCluster = 0;
+                    *outMainIndex = i;
+                    return true;
+                }
+            }
+            else
+            {
+                runStarted = false;
+                runLength = 0;
+            }
+        }
+
+        return false;
+    }
+
+    const uint32_t entriesPerCluster = data->bytesPerCluster / sizeof(FAT_DirectoryEntry);
+
+    uint32_t runStartCluster = 0;
+    uint32_t runStartIndex = 0;
+    uint32_t runLength = 0;
+    bool runStarted = false;
+
+    uint32_t cluster = extra->startCluster;
+    uint32_t lastCluster = cluster;
+
+    while (1)
+    {
+        uint32_t status = FAT_Cluster(data->fatVersion, cluster);
+        if (status == FAT_SECTOR_ERROR)
+            return false;
+        if (status != FAT_SECTOR_NORMAL)
+            break;
+
+        if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
+            return false;
+
+        FAT_DirectoryEntry* entries = (FAT_DirectoryEntry*)data->clusterBuffer;
+
+        for (uint32_t i = 0; i < entriesPerCluster; i++)
+        {
+            if (entries[i].name[0] == FAT_ENTRY_FREE)
+            {
+                if (!runStarted)
+                {
+                    runStartCluster = cluster;
+                    runStartIndex = i;
+                    runStarted = true;
+                }
+
+                uint32_t offsetToMain = totalEntries - 1;
+                uint32_t remainingInThisCluster = entriesPerCluster - i;
+
+                bool mainFound = (offsetToMain < remainingInThisCluster);
+                uint32_t mainCluster = cluster;
+                uint32_t mainIndex = mainFound ? (i + offsetToMain) : 0;
+
+                uint32_t remainingCapacity = remainingInThisCluster;
+                uint32_t walkCluster = cluster;
+                uint32_t chainLast = cluster;
+
+                while (remainingCapacity < totalEntries)
+                {
+                    uint32_t nextCluster = FAT_ReadFAT(data, driver->parent, walkCluster);
+                    uint32_t walkStatus = FAT_Cluster(data->fatVersion, nextCluster);
+                    if (walkStatus == FAT_SECTOR_ERROR)
+                        return false;
+                    if (walkStatus != FAT_SECTOR_NORMAL)
+                        break;
+
+                    chainLast = nextCluster;
+                    walkCluster = nextCluster;
+
+                    if (!mainFound)
+                    {
+                        uint32_t offsetInThisCluster = offsetToMain - remainingCapacity;
+                        if (offsetInThisCluster < entriesPerCluster)
+                        {
+                            mainCluster = nextCluster;
+                            mainIndex = offsetInThisCluster;
+                            mainFound = true;
+                        }
+                    }
+
+                    remainingCapacity += entriesPerCluster;
+                }
+
+                if (remainingCapacity >= totalEntries)
+                {
+                    *outCluster = runStartCluster;
+                    *outIndex = runStartIndex;
+                    *outMainCluster = mainCluster;
+                    *outMainIndex = mainIndex;
+                    return true;
+                }
+
+                uint32_t additionalNeeded = totalEntries - remainingCapacity;
+                uint32_t additionalClusters = (additionalNeeded + entriesPerCluster - 1) / entriesPerCluster;
+
+                uint32_t newFirst;
+                if (!FAT_AppendClusters(data, driver->parent, chainLast, additionalClusters, &newFirst))
+                    return false;
+
+                if (!mainFound)
+                {
+                    uint32_t offsetInNewChain = offsetToMain - remainingCapacity;
+                    uint32_t newCluster = newFirst;
+                    uint32_t remaining = offsetInNewChain;
+                    while (remaining >= entriesPerCluster)
+                    {
+                        newCluster = FAT_ReadFAT(data, driver->parent, newCluster);
+                        remaining -= entriesPerCluster;
+                    }
+                    mainCluster = newCluster;
+                    mainIndex = remaining;
+                }
+
+                *outCluster = runStartCluster;
+                *outIndex = runStartIndex;
+                *outMainCluster = mainCluster;
+                *outMainIndex = mainIndex;
+                return true;
+            }
+            else if (entries[i].name[0] == FAT_ENTRY_DELETED)
+            {
+                if (!runStarted)
+                {
+                    runStartCluster = cluster;
+                    runStartIndex = i;
+                    runStarted = true;
+                    runLength = 0;
+                }
+                runLength++;
+                if (runLength >= totalEntries)
+                {
+                    *outCluster = runStartCluster;
+                    *outIndex = runStartIndex;
+                    *outMainCluster = cluster;
+                    *outMainIndex = i;
+                    return true;
+                }
+            }
+            else
+            {
+                runStarted = false;
+                runLength = 0;
+            }
+        }
+
+        lastCluster = cluster;
+        cluster = FAT_ReadFAT(data, driver->parent, cluster);
+    }
+
+    uint32_t stillNeeded = totalEntries - runLength;
+    uint32_t additionalClusters = (stillNeeded + entriesPerCluster - 1) / entriesPerCluster;
+
+    uint32_t newFirst;
+    if (!FAT_AppendClusters(data, driver->parent, lastCluster, additionalClusters, &newFirst))
+        return false;
+
+    uint32_t offsetToMain;
+
+    if (!runStarted)
+    {
+        runStartCluster = newFirst;
+        runStartIndex = 0;
+        offsetToMain = totalEntries - 1;
+    }
+    else
+    {
+        offsetToMain = (totalEntries - 1) - runLength;
+    }
+
+    uint32_t mainCluster = newFirst;
+    uint32_t remaining = offsetToMain;
+    while (remaining >= entriesPerCluster)
+    {
+        mainCluster = FAT_ReadFAT(data, driver->parent, mainCluster);
+        remaining -= entriesPerCluster;
+    }
+
+    *outCluster = runStartCluster;
+    *outIndex = runStartIndex;
+    *outMainCluster = mainCluster;
+    *outMainIndex = remaining;
+    return true;
+}
+
+static bool FAT_WriteEntries(Filesystem_Driver* driver, uint32_t entryCluster, uint32_t entryIndex,
+                              const void* entries, uint32_t totalEntries)
+{
+    FAT_Driver_Data* data = driver->data;
+
+    if (entryCluster == 0)
+    {
+        if (entryIndex + totalEntries > data->rootDir.fixed.entryCount)
+            return false;
+
+        return FAT_WriteRootDirectoryEntries(data, driver->parent, (uint16_t)entryIndex, (uint16_t)totalEntries, entries);
+    }
+
+    const uint32_t entriesPerCluster = data->bytesPerCluster / sizeof(FAT_DirectoryEntry);
+    const uint8_t* src = (const uint8_t*)entries;
+
+    uint32_t remaining = totalEntries;
+    uint32_t cluster = entryCluster;
+    uint32_t indexInCluster = entryIndex;
+
+    while (remaining > 0)
+    {
+        uint32_t status = FAT_Cluster(data->fatVersion, cluster);
+        if (status != FAT_SECTOR_NORMAL)
+            return false;
+
+        uint32_t availableInCluster = entriesPerCluster - indexInCluster;
+        uint32_t chunk = (remaining < availableInCluster) ? remaining : availableInCluster;
+
+        if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
+            return false;
+
+        memcpy(data->clusterBuffer + (uint64_t)indexInCluster * sizeof(FAT_DirectoryEntry),
+               src, (uint64_t)chunk * sizeof(FAT_DirectoryEntry));
+
+        if (!FAT_WriteCluster(data, driver->parent, cluster, data->clusterBuffer))
+            return false;
+
+        src += (uint64_t)chunk * sizeof(FAT_DirectoryEntry);
+        remaining -= chunk;
+
+        if (remaining > 0)
+        {
+            uint32_t nextCluster = FAT_ReadFAT(data, driver->parent, cluster);
+            uint32_t nextStatus = FAT_Cluster(data->fatVersion, nextCluster);
+            if (nextStatus != FAT_SECTOR_NORMAL)
+                return false;
+
+            cluster = nextCluster;
+            indexInCluster = 0;
+        }
+    }
+
+    return true;
+}
+
+static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, Filesystem_Entry_Type type,
+                            Filesystem_Entry_Attribute attributes, const char* name, Filesystem_Node* out)
+{
+    FAT_Driver_Data* data = driver->data;
+    FAT_Node_Extra* extra = dir->extra;
+    FAT_Node_Extra* newExtra = out ? Memory_KernelAllocate(sizeof(FAT_Node_Extra)) : NULL;
+    if (out && !newExtra)
+        return false;
+
+    uint32_t utf16Count;
+    uint16_t utf16Name[20 * 13];
+
+    if (!FAT_UTF8ToUTF16(name, utf16Name, 255, &utf16Count))
+    {
+        if (newExtra) Memory_KernelFree(newExtra);
+        return false;
+    }
+    utf16Name[utf16Count++] = 0; // Terminator
+
+    const char* lName = name;
+    const char* lastPoint = NULL;
+    while (*lName)
+    {
+        if (*lName == '.') lastPoint = lName;
+        lName++;
+    }
+
+    uint8_t charIndex = 0;
+    char firstChars[2] = {'#', '#'};
+    char ext[3] = {' ', ' ', ' '};
+
+    FAT_GetShortNameCharacters(name, lastPoint, 2, firstChars);
+    if (lastPoint)
+        FAT_GetShortNameCharacters(lastPoint + 1, NULL, 3, ext);
+
+    char hash[4];
+    uint32_t rawHash = FAT_HashName(name);
+    FAT_HashToChars(rawHash, hash);
+
+    static const char alphabet[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_$%'@~!(){}^#&";
+    static const size_t alphabetSize = sizeof(alphabet) - 1;
+
+    uint32_t counter = 0;
+    char shortName[11] = {
+        firstChars[0], firstChars[1],
+        hash[0], hash[1],
+        hash[2], hash[3],
+        '~', '0',
+        ext[0], ext[1],
+        ext[2]
+    };
+    while (1)
+    {
+        bool exists;
+        if (!FAT_ShortNameExists(driver, dir, (uint8_t*)shortName, &exists))
+        {
+            if (newExtra) Memory_KernelFree(newExtra);
+            return false;
+        }
+
+        if (!exists)
+            break;
+
+        counter++;
+
+        if (counter < alphabetSize)
+        {
+            shortName[7] = alphabet[counter];
+        }
+        else if (counter < alphabetSize * 2)
+        {
+            if (counter == alphabetSize)
+                shortName[7] = '~';
+            shortName[6] = alphabet[counter - alphabetSize];
+        }
+        else if (counter < alphabetSize * 2 + alphabetSize * alphabetSize)
+        {
+            if (counter == alphabetSize * 2)
+            {
+                shortName[1] = hash[0];
+                shortName[2] = hash[1];
+                shortName[3] = hash[2];
+                shortName[4] = hash[3];
+                shortName[5] = '~';
+            }
+            shortName[6] = alphabet[(counter - alphabetSize * 2) / alphabetSize];
+            shortName[7] = alphabet[(counter - alphabetSize * 2) % alphabetSize];
+        }
+        else if (counter < alphabetSize * 2 + alphabetSize * alphabetSize * 2)
+        {
+            if (counter == alphabetSize * 2 + alphabetSize * alphabetSize)
+                shortName[6] = '~';
+            shortName[5] = alphabet[(counter - (alphabetSize * 2 + alphabetSize * alphabetSize)) / alphabetSize];
+            shortName[7] = alphabet[(counter - (alphabetSize * 2 + alphabetSize * alphabetSize)) % alphabetSize];
+        }
+        else if (counter < alphabetSize * 2 + alphabetSize * alphabetSize * 3)
+        {
+            if (counter == alphabetSize * 2 + alphabetSize * alphabetSize * 2)
+                shortName[7] = '~';
+            shortName[5] = alphabet[(counter - (alphabetSize * 2 + alphabetSize * alphabetSize * 2)) / alphabetSize];
+            shortName[6] = alphabet[(counter - (alphabetSize * 2 + alphabetSize * alphabetSize * 2)) % alphabetSize];
+        }
+        else
+        {
+            if (newExtra) Memory_KernelFree(newExtra);
+            return false;
+        }
+    }
+
+    const uint32_t lfnSlotCount = (utf16Count + 13 - 1) / 13;
+    const uint32_t totalEntries = lfnSlotCount + 1;
+    const uint8_t lfnChecksum = FAT_LFNChecksum((uint8_t*)shortName);
+
+    const bool isDir = type == FILESYSTEM_ENTRY_DIRECTORY;
+    uint32_t cluster = 0;
+
+
+    uint32_t entryCluster;
+    uint32_t entryIndex;
+    uint32_t mainEntryCluster;
+    uint32_t mainEntryIndex;
+    if (!FAT_FindFreeEntrySlots(driver, dir, totalEntries, &entryCluster, &entryIndex, &mainEntryCluster, &mainEntryIndex))
+    {
+        if (newExtra) Memory_KernelFree(newExtra);
+        return false;
+    }
+
+
+    if (isDir)
+    {
+        if (!FAT_FindFreeClusters(data, driver->parent, 1, &cluster))
+        {
+            if (newExtra) Memory_KernelFree(newExtra);
+            return false;
+        }
+
+        memset(data->clusterBuffer, 0, data->bytesPerCluster);
+
+        FAT_DirectoryEntry* dot = (FAT_DirectoryEntry*)data->clusterBuffer;
+        FAT_DirectoryEntry* dotdot = dot + 1;
+
+        memset(dot->name, ' ', 11);
+        dot->name[0] = '.';
+        dot->attribute = FAT_ENTRY_DIRECTORY;
+        dot->reserved = 0;
+        dot->creationTimeTenths = 0;
+        dot->creationTime = 0;
+        dot->creationDate = 0;
+        dot->lastAccessDate = 0;
+        dot->lastModificationTime = 0;
+        dot->lastModificationDate = 0;
+        dot->fileSize = 0;
+        dot->firstCluster = (uint16_t)(cluster & 0xFFFF);
+        dot->firstClusterHigh = (data->fatVersion == FAT_VERSION_32) ? (uint16_t)(cluster >> 16) : 0;
+
+        memset(dotdot->name, ' ', 11);
+        dotdot->name[0] = '.';
+        dotdot->name[1] = '.';
+        dotdot->attribute = FAT_ENTRY_DIRECTORY;
+        dotdot->reserved = 0;
+        dotdot->creationTimeTenths = 0;
+        dotdot->creationTime = 0;
+        dotdot->creationDate = 0;
+        dotdot->lastAccessDate = 0;
+        dotdot->lastModificationTime = 0;
+        dotdot->lastModificationDate = 0;
+        dotdot->fileSize = 0;
+
+        uint32_t parentCluster = extra->startCluster;
+        bool parentIsFixedRoot = (data->fatVersion != FAT_VERSION_32 && parentCluster == 0);
+        uint32_t dotdotCluster = parentIsFixedRoot ? 0 : parentCluster;
+
+        dotdot->firstCluster = (uint16_t)(dotdotCluster & 0xFFFF);
+        dotdot->firstClusterHigh = (data->fatVersion == FAT_VERSION_32) ? (uint16_t)(dotdotCluster >> 16) : 0;
+
+        if (!FAT_WriteCluster(data, driver->parent, cluster, data->clusterBuffer))
+        {
+            if (newExtra) Memory_KernelFree(newExtra);
+            return false;
+        }
+    }
+
+
+    union
+    {
+        FAT_DirectoryEntry dirEntry;
+        FAT_LFNEntry lfnEntry;
+    } entries[21];
+
+    for (uint32_t i = 0; i < totalEntries; i++)
+    {
+        if (i < totalEntries - 1)
+        {
+            FAT_BuildLFNEntry(utf16Name, utf16Count, lfnSlotCount, i, lfnChecksum, &entries[i].lfnEntry);
+        }
+        else
+        {
+            FAT_DirectoryEntry* entry = &entries[i].dirEntry;
+
+            memcpy(entry->name, shortName, 8);
+            memcpy(entry->ext, shortName + 8, 3);
+
+            entry->attribute = 0;
+            if (attributes & FILESYSTEM_ATTRIBUTE_READONLY)
+                entry->attribute |= FAT_ENTRY_READ_ONLY;
+            if (attributes & FILESYSTEM_ATTRIBUTE_HIDDEN)
+                entry->attribute |= FAT_ENTRY_HIDDEN;
+            if (attributes & FILESYSTEM_ATTRIBUTE_SYSTEM)
+                entry->attribute |= FAT_ENTRY_SYSTEM;
+
+            if (type == FILESYSTEM_ENTRY_DIRECTORY)
+                entry->attribute |= FAT_ENTRY_DIRECTORY;
+
+            entry->reserved = 0;
+
+            entry->creationTimeTenths = 0;
+            entry->creationTime = 0;
+            entry->creationDate = 0;
+
+            entry->lastAccessDate = 0;
+
+            entry->lastModificationTime = 0;
+            entry->lastModificationDate = 0;
+
+            entry->firstCluster = (uint16_t)(cluster & 0xFFFF);
+            if (data->fatVersion == FAT_VERSION_32)
+                entry->firstClusterHigh = (uint16_t)(cluster >> 16);
+            else
+                entry->firstClusterHigh = 0;
+
+            entry->fileSize = 0;
+        }
+    }
+
+    if (!FAT_WriteEntries(driver, entryCluster, entryIndex, entries, totalEntries))
+    {
+        if (newExtra) Memory_KernelFree(newExtra);
+        return false;
+    }
+
+    
+    if (out)
+    {
+        newExtra->startCluster = cluster;
+
+        out->number = ((uint64_t)mainEntryCluster << 32) | mainEntryIndex;
+        out->size = isDir ? data->bytesPerCluster : 0;
+        out->referenceCount = 1;
+
+        out->extra = newExtra;
+
+        out->attributes = attributes;
+        out->type = type;
+    }
+
+    return true;
+}
+
 static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Node* target)
 {
-    // TODO
+    return false;
 }
 
 static uint64_t FAT_Unlink(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name)
@@ -1750,7 +2512,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     }
 
     data->freeClusterCount = 0; // TODO
-    data->nextFreeCluster = 0; // TODO
+    data->nextFreeCluster = 2; // TODO
 
     data->fatSector = (uint32_t)reservedSectors;
     data->fatSize = fatSize;
