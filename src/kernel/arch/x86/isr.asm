@@ -53,8 +53,6 @@ isr_common:
     pop eax
     mov gs, ax
 
-    ; save eax
-    mov [esp + 28], ebx
     popa
 
     add esp, 8 ; remove error code and interrupt number
