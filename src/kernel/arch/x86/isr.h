@@ -13,7 +13,7 @@ typedef struct Registers {
     uint32_t eip, cs, eflags, esp, ss;
 } __attribute__((packed)) Registers;
 
-typedef void (*ISR_Handler)(Registers* regs);
+typedef void (*ISR_Handler)(const Registers* regs);
 
 void x86_ISR_InitializeGates();
 

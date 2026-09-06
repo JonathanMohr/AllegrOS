@@ -19,7 +19,7 @@ void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler)
     isrHandlers[interrupt] = handler;
 }
 
-void CDECL x86_ISR_Handler(Registers* regs)
+void CDECL x86_ISR_Handler(const Registers* regs)
 {
     if (regs->interrupt > 255)
     {
