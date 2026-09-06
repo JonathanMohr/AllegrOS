@@ -3,6 +3,8 @@
 #include "filesystem.h"
 #include <stdint.h>
 
+#define VFS_TELL_ERROR 0xFFFFFFFFFFFFFFFF
+
 typedef struct VFS_Node
 {
     uint64_t openHandleCount;
@@ -37,7 +39,8 @@ typedef struct VFS_Entry
 typedef struct VFS_File
 {
     Filesystem_File file;
-    Filesystem_Driver* driver;
+    VFS_Entry* entry;
+    VFS_Node* node;
     struct VFS* vfs;
 } VFS_File;
 
@@ -65,7 +68,7 @@ bool VFS_Cache_Insert(VFS_Node_Cache* cache, Filesystem_Driver* driver, uint64_t
 void VFS_Cache_Remove(VFS_Node_Cache* cache, Filesystem_Driver* driver, uint64_t number);
 
 
-typedef struct
+typedef struct VFS
 {
     VFS_Node_Cache nodeCache;
 
@@ -84,14 +87,14 @@ VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path);
 
 VFS_File* VFS_File_Open(VFS* vfs, VFS_Entry* wd, const char* path);
 void VFS_File_Close(VFS_File* file);
-VFS_File* VFS_File_Read(VFS_File* file, uint64_t size, void* buffer);
-VFS_File* VFS_File_Write(VFS_File* file, uint64_t size, const void* buffer);
+uint64_t VFS_File_Read(VFS_File* file, uint64_t size, void* buffer);
+uint64_t VFS_File_Write(VFS_File* file, uint64_t size, const void* buffer);
 bool VFS_File_Seek(VFS_File* file, uint64_t pos);
 uint64_t VFS_File_Tell(VFS_File* file);
 
 VFS_File* VFS_Dir_Open(VFS* vfs, VFS_Entry* wd, const char* path);
 void VFS_Dir_Close(VFS_File* dir);
-bool VFS_Dir_Read(VFS_File* dir, VFS_Entry* out);
+VFS_Entry* VFS_Dir_Read(VFS_File* dir);
 
 bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes);
 /** Will change node in cache, hardlinks and open handles */
