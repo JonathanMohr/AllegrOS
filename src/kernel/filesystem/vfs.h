@@ -3,7 +3,7 @@
 #include "filesystem.h"
 #include <stdint.h>
 
-typedef struct
+typedef struct VFS_Node
 {
     uint64_t openHandleCount;
     uint64_t cacheReferences;
@@ -13,11 +13,24 @@ typedef struct
     Filesystem_Node node;
 } VFS_Node;
 
-typedef struct
+typedef struct VFS_Entry
 {
-    Filesystem_Driver* driver;
+    // if directory
+    uint64_t childCount;
 
     Filesystem_Entry entry;
+    VFS_Node* node;
+    struct VFS_Entry* parent;
+
+    struct VFS_Entry* nextSibling;
+
+    // if directory
+    struct VFS_Entry* firstChild;
+
+    // if mount
+    VFS_Node* rootNode;
+
+    bool mount;
 } VFS_Entry;
 
 
@@ -46,8 +59,13 @@ void VFS_Cache_Remove(VFS_Node_Cache* cache, Filesystem_Driver* driver, uint64_t
 
 typedef struct
 {
-    VFS_Node_Cache* nodeCache;
+    VFS_Node_Cache nodeCache;
+
+    VFS_Entry root;
 } VFS;
+
+bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount);
+void VFS_Destroy(VFS* vfs);
 
 VFS_Node* VFS_GetNode(VFS* vfs, Filesystem_Driver* driver, uint64_t number);
 void VFS_PutNode(VFS* vfs, VFS_Node* node);
