@@ -96,3 +96,30 @@ void VFS_Cache_Remove(VFS_Node_Cache* cache, Filesystem_Driver* driver, uint64_t
         current = &(*current)->next;
     }
 }
+
+bool VFS_Cache_Rekey(VFS_Node_Cache* cache, Filesystem_Driver* oldDriver, uint64_t oldNumber, Filesystem_Driver* newDriver, uint64_t newNumber)
+{
+    uint64_t oldIndex = VFS_Cache_HashNode(oldDriver, oldNumber) % cache->bucketCount;
+
+    VFS_Node_Cache_Entry** current = &cache->buckets[oldIndex];
+    while (*current)
+    {
+        if ((*current)->driver == oldDriver && (*current)->number == oldNumber)
+        {
+            VFS_Node_Cache_Entry* entry = *current;
+            *current = entry->next;
+
+            entry->driver = newDriver;
+            entry->number = newNumber;
+
+            uint64_t newIndex = VFS_Cache_HashNode(newDriver, newNumber) % cache->bucketCount;
+            entry->next = cache->buckets[newIndex];
+            cache->buckets[newIndex] = entry;
+
+            return true;
+        }
+        current = &(*current)->next;
+    }
+
+    return false;
+}

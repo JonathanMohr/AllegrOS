@@ -224,7 +224,22 @@ void CDECL kmain(BootParams* bParams)
         goto end;
     }
 
-    
+    VFS_File* file = VFS_File_Open(&vfs, NULL, "test.txt");
+    if (!file)
+    {
+        KernelConsole_PutString(mux_console, "Could not open file\n");
+        goto end;
+    }
+
+    uint64_t fileRead;
+    char fileBuffer[512];
+    while ((fileRead = VFS_File_Read(file, sizeof(fileBuffer), fileBuffer)))
+    {
+        for (uint64_t i = 0; i < fileRead; i++)
+            KernelConsole_PutChar(mux_console, fileBuffer[i]);
+    }
+
+    VFS_File_Close(file);
 
 end:
     VFS_Destroy(&vfs);

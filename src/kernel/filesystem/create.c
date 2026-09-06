@@ -8,25 +8,15 @@ bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type
     if (!wd)
         wd = &vfs->root;
 
-    const char* pathStart = path;
-    const char* lastDelimiter = NULL;
-    const char* tmpCheck = NULL;
-    while (*path)
-    {
-        if (*path == '/')
-            tmpCheck = path;
-        else
-            lastDelimiter = tmpCheck;
-        path++;
-    }
+    const char* lastDelimiter = VFS_GetLastDelimiter(path);
 
-    const uint64_t parentPathLength = lastDelimiter ? lastDelimiter - pathStart : 0;
+    const uintptr_t parentPathLength = lastDelimiter - path;
     char* parentPath = parentPathLength ? Memory_KernelAllocate(parentPathLength + 1) : NULL;
     if (parentPathLength && !parentPath)
         return false;
     if (parentPathLength)
     {
-        memcpy(parentPath, pathStart, parentPathLength);
+        memcpy(parentPath, path, parentPathLength);
         parentPath[parentPathLength] = '\0';
     }
 
@@ -39,7 +29,7 @@ bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type
             return false;
     }
 
-    const char* name = lastDelimiter ? lastDelimiter + 1 : pathStart;
+    const char* name = VFS_GetName(path, lastDelimiter);
     VFS_Entry* shouldNotExist = VFS_GetEntry(vfs, parentEntry, name);
     if (shouldNotExist)
         return false;

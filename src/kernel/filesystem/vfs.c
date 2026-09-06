@@ -90,6 +90,32 @@ void VFS_PutNode(VFS* vfs, VFS_Node* node)
     }
 }
 
+
+const char* VFS_GetLastDelimiter(const char* path)
+{
+    const char* lastDelimiter = NULL;
+    const char* tmpCheck = NULL;
+    while (*path)
+    {
+        if (*path == '/')
+            tmpCheck = path;
+        else
+            lastDelimiter = tmpCheck;
+        path++;
+    }
+    return lastDelimiter ? lastDelimiter : path;
+}
+
+const char* VFS_GetName(const char* path, const char* lastDelimiter)
+{
+    if (lastDelimiter != path)
+        return lastDelimiter + 1;
+
+    if (*path == '/')
+        return path + 1;
+    return path;
+}
+
 VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path)
 {
     if (path[0] == '/' || !wd)
