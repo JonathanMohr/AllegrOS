@@ -57,6 +57,7 @@ typedef struct Filesystem_Driver
 
     // Nodes
     bool (*getNode)(struct Filesystem_Driver* driver, uint64_t number, Filesystem_Node* out);
+    void (*cleanupNode)(struct Filesystem_Driver* driver, Filesystem_Node* node);
     bool (*removeNode)(struct Filesystem_Driver* driver, Filesystem_Node* node);
 
     // Directories

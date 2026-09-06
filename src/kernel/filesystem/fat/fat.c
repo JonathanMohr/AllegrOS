@@ -944,6 +944,11 @@ static bool FAT_GetNode(Filesystem_Driver* driver, uint64_t number, Filesystem_N
     return true;
 }
 
+static void FAT_CleanupNode(Filesystem_Driver* driver, Filesystem_Node* node)
+{
+    Memory_KernelFree(node->extra);
+}
+
 static bool FAT_RemoveNode(Filesystem_Driver* driver, Filesystem_Node* node)
 {
     FAT_Driver_Data* data = driver->data;
@@ -3172,6 +3177,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     driver->getRoot = FAT_GetRoot;
 
     driver->getNode = FAT_GetNode;
+    driver->cleanupNode = FAT_CleanupNode;
     driver->removeNode = FAT_RemoveNode;
 
     driver->getEntryCount = FAT_GetEntryCount;
