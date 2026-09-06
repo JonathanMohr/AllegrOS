@@ -15,10 +15,11 @@ typedef struct VFS_Node
 
 typedef struct VFS_Entry
 {
+    char name[FILESYSTEM_MAX_NAME + 1];
+
     // if directory
     uint64_t childCount;
-
-    char name[FILESYSTEM_MAX_NAME + 1];
+    
     VFS_Node* node;
     struct VFS_Entry* parent;
 
@@ -74,8 +75,11 @@ typedef struct
 bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount);
 void VFS_Destroy(VFS* vfs);
 
+
 VFS_Node* VFS_GetNode(VFS* vfs, Filesystem_Driver* driver, uint64_t number);
 void VFS_PutNode(VFS* vfs, VFS_Node* node);
+
+VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path);
 
 
 VFS_File* VFS_File_Open(VFS* vfs, VFS_Entry* wd, const char* path);
