@@ -214,76 +214,20 @@ void CDECL kmain(BootParams* bParams)
     if (fsDriverCount == 0)
     {
         KernelConsole_PutString(mux_console, "Could not find a filesystem\n");
-        goto end;
+        goto end_before_vfs;
     }
 
-    Filesystem_Driver* driver = &fsDrivers[0];
-
-    Filesystem_Node rootNode;
-    if (!driver->getRoot(driver, &rootNode))
+    VFS vfs;
+    if (!VFS_Initialize(&vfs, &fsDrivers[0]))
     {
-        KernelConsole_PutString(mux_console, "Could not get root node\n");
+        KernelConsole_PutString(mux_console, "Could not initialize VFS\n");
         goto end;
     }
 
-    uint64_t rootEntryCount = driver->getEntryCount(driver, &rootNode);
-    if (rootEntryCount == FILESYSTEM_ENTRY_COUNT_ERROR)
-    {
-        KernelConsole_PutString(mux_console, "Could not get root entry count\n");
-        goto end;
-    }
-    KernelConsole_PrintFormat(mux_console, "Root entry count: %udq\n", rootEntryCount);
-
-    Filesystem_File rootFile;
-    if (!driver->openFile(driver, &rootNode, &rootFile))
-    {
-        KernelConsole_PutString(mux_console, "Could not open file for root\n");
-        goto end;
-    }
-
-    uint8_t rootStatus;
-    Filesystem_Entry entry;
-    while ((rootStatus = driver->readEntry(driver, &rootFile, &entry)) == FILESYSTEM_DIR_ENTRY_FOUND)
-        KernelConsole_PrintFormat(mux_console, "Root entry: \"%s\" -> %uxq\n", entry.name, entry.node);
-
-    if (rootStatus != FILESYSTEM_DIR_END)
-    {
-        KernelConsole_PutString(mux_console, "Could not read all entries of root\n");
-        goto end;
-    }
-
-    driver->closeFile(driver, &rootFile);
-
-    if (driver->lookupEntry(driver, &rootNode, "test.txt", &entry) != FILESYSTEM_DIR_ENTRY_FOUND)
-    {
-        KernelConsole_PutString(mux_console, "Could not get test.txt entry in root\n");
-        goto end;
-    }
-
-    Filesystem_Node testNode;
-    if (!driver->getNode(driver, entry.node, &testNode))
-    {
-        KernelConsole_PutString(mux_console, "Could not get test.txt node\n");
-        goto end;
-    }
-
-    if (!driver->openFile(driver, &testNode, &rootFile))
-    {
-        KernelConsole_PutString(mux_console, "Could not open test.txt file\n");
-        goto end;
-    }
     
-    uint64_t read;
-    char buffer[512];
-    while ((read = driver->read(driver, &rootFile, sizeof(buffer), buffer)))
-    {
-        for (uint64_t i = 0; i < read; i++)
-            KernelConsole_PutChar(mux_console, buffer[i]);
-    }
-
-    driver->closeFile(driver, &rootFile);
-
 
 end:
+    VFS_Destroy(&vfs);
+end_before_vfs:
     for(;;);
 }
