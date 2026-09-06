@@ -12,7 +12,7 @@
 IRQ_Handler irqHandlers[16] = {0};
 static const PIC_Driver* picDriver = NULL;
 
-void x86_IRQ_Handler(Registers* regs)
+void x86_IRQ_Handler(const Registers* regs)
 {
     uint32_t irq = regs->interrupt - PIC_REMAP_OFFSET;
 
