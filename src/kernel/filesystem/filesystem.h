@@ -3,6 +3,8 @@
 #include "../device/device.h"
 #include <stdint.h>
 
+#define FILESYSTEM_MAX_NAME 1023
+
 typedef uint8_t Filesystem_Entry_Type;
 #define FILESYSTEM_ENTRY_FILE       ((Filesystem_Entry_Type)0)
 #define FILESYSTEM_ENTRY_DIRECTORY  ((Filesystem_Entry_Type)1)
@@ -27,7 +29,7 @@ typedef struct Filesystem_Node
 
 typedef struct Filesystem_Entry
 {
-    char name[1024];
+    char name[FILESYSTEM_MAX_NAME + 1];
     uint64_t node;
 } Filesystem_Entry;
 

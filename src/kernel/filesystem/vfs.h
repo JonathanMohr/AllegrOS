@@ -18,7 +18,7 @@ typedef struct VFS_Entry
     // if directory
     uint64_t childCount;
 
-    Filesystem_Entry entry;
+    char name[FILESYSTEM_MAX_NAME + 1];
     VFS_Node* node;
     struct VFS_Entry* parent;
 
