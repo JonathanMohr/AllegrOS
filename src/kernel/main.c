@@ -46,8 +46,6 @@ void CDECL kmain(BootParams* bParams)
     KernelConsole_ClearScreen(mux_console);
     KernelConsole_PutString(mux_console, "Hello world from kernel!\n");
 
-    __asm__("sti");
-
     uint32_t pciCount;
     PCI_Device* pciDevices = PCI_Scan(&pciCount);
     if (!pciDevices)
