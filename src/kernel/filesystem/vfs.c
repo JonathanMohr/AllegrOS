@@ -107,10 +107,13 @@ VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path)
             nameBuffer[nameOffset++] = *path++;
         if (*path && *path != '/')
             return NULL;
-        if (*path == '/') path++;
+        while (*path == '/')
+            path++;
         nameBuffer[nameOffset] = '\0';
 
         const uint64_t nameLen = nameOffset;
+        if (nameLen == 0)
+            continue;
 
         if (nameLen == 1 && nameBuffer[0] == '.')
             continue;
