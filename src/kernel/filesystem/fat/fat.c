@@ -3170,6 +3170,8 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
     memcpy(data->oemIdentifier, data->bootsector.header.oemIdentifier, sizeof(data->bootsector.header.oemIdentifier));
 
 
+    driver->rootNodeNumber = FAT_NODE_NUMBER_ROOT;
+
     driver->parent = parent;
 
     driver->destroy = FAT_Destroy;

@@ -33,6 +33,13 @@ typedef struct VFS_Entry
     bool mount;
 } VFS_Entry;
 
+typedef struct VFS_File
+{
+    Filesystem_File file;
+    Filesystem_Driver* driver;
+    struct VFS* vfs;
+} VFS_File;
+
 
 typedef struct VFS_Node_Cache_Entry
 {
@@ -69,3 +76,22 @@ void VFS_Destroy(VFS* vfs);
 
 VFS_Node* VFS_GetNode(VFS* vfs, Filesystem_Driver* driver, uint64_t number);
 void VFS_PutNode(VFS* vfs, VFS_Node* node);
+
+
+VFS_File* VFS_File_Open(VFS* vfs, VFS_Entry* wd, const char* path);
+void VFS_File_Close(VFS_File* file);
+VFS_File* VFS_File_Read(VFS_File* file, uint64_t size, void* buffer);
+VFS_File* VFS_File_Write(VFS_File* file, uint64_t size, const void* buffer);
+bool VFS_File_Seek(VFS_File* file, uint64_t pos);
+uint64_t VFS_File_Tell(VFS_File* file);
+
+VFS_File* VFS_Dir_Open(VFS* vfs, VFS_Entry* wd, const char* path);
+void VFS_Dir_Close(VFS_File* dir);
+bool VFS_Dir_Read(VFS_File* dir, VFS_Entry* out);
+
+bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes);
+/** Will change node in cache, hardlinks and open handles */
+bool VFS_Move(VFS* vfs, VFS_Entry* wd, const char* oldPath, const char* newPath);
+
+bool VFS_Link(VFS* vfs, VFS_Entry* wd, const char* path, const char* targetPath);
+bool VFS_Unlink(VFS* vfs, VFS_Entry* wd, const char* path);

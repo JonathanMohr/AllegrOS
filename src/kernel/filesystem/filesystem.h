@@ -49,6 +49,8 @@ typedef struct Filesystem_File
 
 typedef struct Filesystem_Driver
 {
+    uint64_t rootNodeNumber;
+
     Block_Device* parent;
 
     void (*destroy)(struct Filesystem_Driver* driver);

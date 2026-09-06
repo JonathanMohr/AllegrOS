@@ -12,13 +12,14 @@ bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount)
     vfs->nodeCache.bucketCount = bucketCount;
     vfs->nodeCache.entryCount = 0;
 
-    memset(vfs->root.entry.name, 0, sizeof(vfs->root.entry.name));
-    vfs->root.entry.node = 0;
+    // Root directory
+
+    /* entry does not need to be filled */
     vfs->root.node = NULL;
     vfs->root.parent = NULL;
     vfs->root.nextSibling = NULL;
     vfs->root.firstChild = NULL;
-    vfs->root.rootNode = Memory_KernelAllocate(sizeof(VFS_Node));
+    vfs->root.rootNode = VFS_GetNode(vfs, rootMount, rootMount->rootNodeNumber);
     vfs->root.mount = true;
     if (!vfs->root.rootNode)
     {
@@ -26,21 +27,10 @@ bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount)
         return false;
     }
 
-    vfs->root.rootNode->openHandleCount = 0;
-    vfs->root.rootNode->cacheReferences = 1;
-    vfs->root.rootNode->driver = rootMount;
-    if (!rootMount->getRoot(rootMount, &vfs->root.rootNode->node))
-    {
-        Memory_KernelFree(vfs->root.rootNode);
-        Memory_KernelFree(vfs->nodeCache.buckets);
-        return false;
-    }
-
     vfs->root.childCount = rootMount->getEntryCount(rootMount, &vfs->root.rootNode->node);
     if (vfs->root.childCount == FILESYSTEM_ENTRY_COUNT_ERROR)
     {
-        rootMount->cleanupNode(rootMount, &vfs->root.rootNode->node);
-        Memory_KernelFree(vfs->root.rootNode);
+        VFS_PutNode(vfs, vfs->root.rootNode);
         Memory_KernelFree(vfs->nodeCache.buckets);
         return false;
     }
@@ -51,7 +41,8 @@ bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount)
 void VFS_Destroy(VFS* vfs)
 {
     // TODO: Clear every node
-    
+
+    // TODO: basically umount root and destroy driver
 }
 
 
