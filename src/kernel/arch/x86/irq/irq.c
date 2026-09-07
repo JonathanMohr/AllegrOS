@@ -26,13 +26,18 @@ void x86_IRQ_Handler(const Registers* regs)
     if (irqHandlers[irq] != NULL)
     {
         // handle IRQ
-        irqHandlers[irq](regs);
+        if (irqHandlers[irq](regs))
+            picDriver->SendEndOfInterrupt(irq);
     }
     else
     {
         PanicMessage("[KERNEL] Unhandled IRQ %udd\n", irq);
+        picDriver->SendEndOfInterrupt(irq);
     }
+}
 
+void x86_IRQ_Send_EOI(uint8_t irq)
+{
     picDriver->SendEndOfInterrupt(irq);
 }
 
@@ -64,7 +69,7 @@ void x86_IRQ_Initialize()
         x86_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, x86_IRQ_Handler);
 }
 
-bool x86_IRQ_RegisterHandler(uint8_t irq, ISR_Handler handler)
+bool x86_IRQ_RegisterHandler(uint8_t irq, IRQ_Handler handler)
 {
     if (irq > 15)
     {
@@ -79,7 +84,7 @@ bool x86_IRQ_RegisterHandler(uint8_t irq, ISR_Handler handler)
     return true;
 }
 
-bool x86_PIT_Timer_Initialize(uint32_t frequency, ISR_Handler handler)
+bool x86_PIT_Timer_Initialize(uint32_t frequency, IRQ_Handler handler)
 {
     uint32_t divisor = 1193182 / frequency;
 

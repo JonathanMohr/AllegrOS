@@ -28,8 +28,12 @@
 
 #include "filesystem/fat/fat.h"
 #include "filesystem/vfs.h"
+#include "scheduler/scheduler.h"
 
-void Timer_Handler(const Registers* regs);
+#include "lock.h"
+
+bool Timer_Handler(const Registers* regs);
+static void Spawn(void* arg);
 
 BootParams bootParams;
 
@@ -51,6 +55,7 @@ void CDECL kmain(BootParams* bParams)
     bootParams = *bParams;
 
     x86_Initialize();
+    x86_PIT_Timer_Initialize(250, Timer_Handler);
 
     if (!Memory_Initialize(&bootParams.Memory))
     {
@@ -248,7 +253,12 @@ void CDECL kmain(BootParams* bParams)
 
     VFS_File_Close(file);
 
-    x86_PIT_Timer_Initialize(250, Timer_Handler);
+    if (!Scheduler_AddTask(Spawn, NULL))
+    {
+        KernelConsole_PutString(mux_console, "Could not add initial kernel task\n");
+        goto end_before_vfs;
+    }
+    __asm__ volatile("sti");
 
 end:
     //VFS_Destroy(&vfs);
@@ -256,7 +266,67 @@ end_before_vfs:
     for(;;);
 }
 
-void Timer_Handler(const Registers* regs)
+bool Timer_Handler(const Registers* regs)
 {
-    KernelConsole_PutChar(mux_console, '.');
+    x86_IRQ_Send_EOI(0);
+    Scheduler_Schedule();
+
+    return false;
+}
+
+static void Greet(void* arg);
+
+static void Spawn(void* arg)
+{
+    Kernel_Lock();
+    KernelConsole_PutString(mux_console, "Spawning Task 1...\n");
+    Kernel_Unlock();
+
+    if (!Scheduler_AddTask(Greet, "Hello!"))
+    {
+        Kernel_Lock();
+        KernelConsole_PutString(mux_console, "Could not spawn Greet task 1\n");
+        Kernel_Unlock();
+        goto end;
+    }
+
+    Kernel_Lock();
+    KernelConsole_PutString(mux_console, "Spawning Task 2...\n");
+    Kernel_Unlock();
+
+    if (!Scheduler_AddTask(Greet, "Greetings!"))
+    {
+        Kernel_Lock();
+        KernelConsole_PutString(mux_console, "Could not spawn Greet task 2\n");
+        Kernel_Unlock();
+        goto end;
+    }
+
+    Kernel_Lock();
+    KernelConsole_PutString(mux_console, "Spawning Task 3...\n");
+    Kernel_Unlock();
+
+    if (!Scheduler_AddTask(Greet, "Good morning!"))
+    {
+        Kernel_Lock();
+        KernelConsole_PutString(mux_console, "Could not spawn Greet task 3\n");
+        Kernel_Unlock();
+        goto end;
+    }
+
+end:
+    for(;;);
+}
+
+static void Greet(void* arg)
+{
+    const char* str = arg;
+    while (1)
+    {
+        Kernel_Lock();
+        KernelConsole_PutString(mux_console, str);
+        KernelConsole_PutChar(mux_console, '\n');
+        Kernel_Unlock();
+    }
+    for(;;);
 }

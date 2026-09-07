@@ -28,3 +28,12 @@ x86_GDT_Load:
     mov ss, ax
 
     ret
+
+;
+; void CDECL x86_TSS_Load(uint16_t selector);
+;
+global x86_TSS_Load
+x86_TSS_Load:
+    mov eax, [esp + 4]
+    ltr ax
+    ret
