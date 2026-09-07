@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #include <minmax.h>
+#include "arch/x86/irq/irq.h"
+#include "arch/x86/isr.h"
 #include "filesystem/filesystem.h"
 #include "panic/panic.h"
 
@@ -27,11 +29,26 @@
 #include "filesystem/fat/fat.h"
 #include "filesystem/vfs.h"
 
+void Timer_Handler(const Registers* regs);
 
+BootParams bootParams;
+
+KernelConsole* mux_console;
+
+uint32_t pciCount = 0;
+PCI_Device* pciDevices;
+
+uint64_t blockDeviceCount = 0;
+Block_Device blockDevices[64]; /* 16 physical, 48 logical */
+
+uint64_t fsDriverCount = 0;
+Filesystem_Driver fsDrivers[8];
+
+VFS vfs;
 
 void CDECL kmain(BootParams* bParams)
 {
-    BootParams bootParams = *bParams;
+    bootParams = *bParams;
 
     x86_Initialize();
 
@@ -41,13 +58,12 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
-    KernelConsole* mux_console = KernelConsole_GetOutput();
+    mux_console = KernelConsole_GetOutput();
 
     KernelConsole_ClearScreen(mux_console);
     KernelConsole_PutString(mux_console, "Hello world from kernel!\n");
 
-    uint32_t pciCount;
-    PCI_Device* pciDevices = PCI_Scan(&pciCount);
+    pciDevices = PCI_Scan(&pciCount);
     if (!pciDevices)
     {
         PanicMessage("[KERNEL] Could not scan PCI-Devices\n");
@@ -70,9 +86,6 @@ void CDECL kmain(BootParams* bParams)
         KernelConsole_PrintFormat(mux_console, "  Slot: %uxbh\n", device->slot);
         KernelConsole_PrintFormat(mux_console, "  Func: %uxbh\n", device->func);
     }
-
-    uint64_t blockDeviceCount = 0;
-    Block_Device blockDevices[64]; /* 16 physical, 48 logical */
 
     for (uint32_t i = 0; i < pciCount; i++)
     {
@@ -103,7 +116,7 @@ void CDECL kmain(BootParams* bParams)
         }
     }
 
-    Memory_KernelFree(pciDevices);
+    // Memory_KernelFree(pciDevices);
 
     const uint32_t physicalBlockDeviceCount = blockDeviceCount;
     for (uint32_t i = 0; i < physicalBlockDeviceCount; i++)
@@ -183,9 +196,6 @@ void CDECL kmain(BootParams* bParams)
         KernelConsole_PrintFormat(mux_console, "  Block-Count: %uxqh\n", device->sectorCount);
     }
 
-    uint64_t fsDriverCount = 0;
-    Filesystem_Driver fsDrivers[8];
-
     for (uint32_t i = 0; i < blockDeviceCount; i++)
     {
         Block_Device* device = &blockDevices[i];
@@ -215,7 +225,6 @@ void CDECL kmain(BootParams* bParams)
         goto end_before_vfs;
     }
 
-    VFS vfs;
     if (!VFS_Initialize(&vfs, &fsDrivers[0]))
     {
         KernelConsole_PutString(mux_console, "Could not initialize VFS\n");
@@ -239,8 +248,15 @@ void CDECL kmain(BootParams* bParams)
 
     VFS_File_Close(file);
 
+    x86_PIT_Timer_Initialize(2, Timer_Handler);
+
 end:
-    VFS_Destroy(&vfs);
+    //VFS_Destroy(&vfs);
 end_before_vfs:
     for(;;);
+}
+
+void Timer_Handler(const Registers* regs)
+{
+    KernelConsole_PutChar(mux_console, '.');
 }

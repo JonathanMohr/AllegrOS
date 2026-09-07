@@ -6,32 +6,15 @@ extern x86_ISR_Handler
 
 global isr_common
 isr_common:
-    mov eax, [esp + 12]
-    and eax, 3
+    push dword [esp + 12] ; marker
+
+    and [esp], 3
     jnz .privilege_ok
 
-    lea eax, [esp + 20]
-    xor ebx, ebx
-    mov bx, ss
-
     sub esp, 8
-
-    mov ecx, [esp + 8 + 0]
-    mov [esp + 0], ecx        ; interrupt
-    mov ecx, [esp + 8 + 4]
-    mov [esp + 4], ecx        ; error
-    mov ecx, [esp + 8 + 8]
-    mov [esp + 8], ecx        ; eip
-    mov ecx, [esp + 8 + 12]
-    mov [esp + 12], ecx       ; cs
-    mov ecx, [esp + 8 + 16]
-    mov [esp + 16], ecx       ; eflags
-
-    mov [esp + 20], eax
-    mov [esp + 24], ebx
+    mov dword [esp], 0xFFFFFFFF
 
 .privilege_ok:
-
     pusha   ; pushes edi, esi, ebp, esp, ebx, edx, ecx, eax
 
     ; push gs
@@ -61,6 +44,19 @@ isr_common:
     mov fs, ax
     mov gs, ax
 
+    mov eax, [esp + 48]
+    cmp eax, 0xFFFFFFFF
+    jne .skip_fill
+
+    lea eax, [esp + 80]
+    mov [esp + 56], eax
+
+    xor ebx, ebx
+    mov bx, ss
+    mov [esp + 52], ebx
+
+.skip_fill:
+
     push esp ; pass pointer to stack to C
     call x86_ISR_Handler
     add esp, 4
@@ -80,7 +76,14 @@ isr_common:
 
     popa
 
-    add esp, 8 ; remove error code and interrupt number
+    cmp dword [esp], 0xFFFFFFFF
+    jne .privilege_was_changed
+
+    add esp, 8 ; remove 8 byte buffer (actually marker and 4 bytes of buffer)
+
+.privilege_was_changed:
+    add esp, 12 ; remove marker (or remaining 4 bytes of buffer when privilege was not changed), error code and interrupt number
+
     iret       ; pop cs, eip, eflags, ss, esp
 
 ; void x86_ContextSwitch(const Registers* regs);

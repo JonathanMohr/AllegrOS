@@ -8,6 +8,8 @@ typedef struct Registers {
 
     uint32_t edi, esi, ebp, useless_esp, ebx, edx, ecx, eax;
 
+    uint32_t marker;
+    
     uint32_t interrupt, error;
 
     uint32_t eip, cs, eflags, esp, ss;

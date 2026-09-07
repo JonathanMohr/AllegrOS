@@ -5,7 +5,7 @@
 
 #include "../../panic/panic.h"
 
-ISR_Handler isrHandlers[256] = {0};
+static volatile ISR_Handler isrHandlers[256] = {0};
 
 void x86_ISR_Initialize()
 {
@@ -19,25 +19,44 @@ void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler)
     isrHandlers[interrupt] = handler;
 }
 
-void CDECL x86_ISR_Handler(const Registers* regs)
+void CDECL x86_ISR_Handler(const Registers* r)
 {
-    if (regs->interrupt > 255)
+    Registers regs = *r;
+    if (regs.marker == 0xFFFFFFFF)
     {
-        PanicMessage("[KERNEL] Invalid interrupt 0x%uxd\n", regs->interrupt);
+        const uint32_t eflags = regs.ss;
+        const uint32_t cs = regs.esp;
+        const uint32_t eip = regs.eflags;
+        const uint32_t error = regs.cs;
+        const uint32_t interrupt = regs.eip;
+        const uint32_t esp = regs.error;
+        const uint32_t ss = regs.interrupt;
+        regs.ss = ss;
+        regs.esp = esp;
+        regs.eflags = eflags;
+        regs.cs = cs;
+        regs.eip = eip;
+        regs.error = error;
+        regs.interrupt = interrupt;
+    }
+
+    if (regs.interrupt > 255)
+    {
+        PanicMessage("[KERNEL] Invalid interrupt 0x%uxd\n", regs.interrupt);
         Panic();
     }
 
-    if (isrHandlers[regs->interrupt] != NULL)
-        isrHandlers[regs->interrupt](regs);
+    if (isrHandlers[regs.interrupt] != NULL)
+        isrHandlers[regs.interrupt](&regs);
 
-    else if (regs->interrupt >= 32)
+    else if (regs.interrupt >= 32)
     {
-        PanicMessage("[KERNEL] Unhandled interrupt 0x%uxd\n", regs->interrupt);
+        PanicMessage("[KERNEL] Unhandled interrupt 0x%uxd\n", regs.interrupt);
     }
 
     else
     {
-        PanicMessage("[KERNEL] Unhandled exception 0x%uxd\n", regs->interrupt);
+        PanicMessage("[KERNEL] Unhandled exception 0x%uxd\n", regs.interrupt);
         Panic();
     }
 }

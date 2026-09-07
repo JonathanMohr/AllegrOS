@@ -2,6 +2,7 @@
 #include "pic.h"
 
 #include "i8259.h"
+#include "../x86.h"
 
 #include "../../../panic/panic.h"
 
@@ -9,12 +10,12 @@
 
 #define PIC_REMAP_OFFSET 0x20
 
-IRQ_Handler irqHandlers[16] = {0};
+static IRQ_Handler irqHandlers[16] = {0};
 static const PIC_Driver* picDriver = NULL;
 
 void x86_IRQ_Handler(const Registers* regs)
 {
-    uint32_t irq = regs->interrupt - PIC_REMAP_OFFSET;
+    const uint32_t irq = regs->interrupt - PIC_REMAP_OFFSET;
 
     if (irq > 15)
     {
@@ -61,19 +62,33 @@ void x86_IRQ_Initialize()
     // register ISR handlers for each of the 16 irq lines
     for (uint8_t i = 0; i < 16; i++)
         x86_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, x86_IRQ_Handler);
-
-    // picDriver->Unmask(0);
-    // picDriver->Unmask(1);
 }
 
-void x86_IRQ_RegisterHandler(uint8_t irq, ISR_Handler handler)
+bool x86_IRQ_RegisterHandler(uint8_t irq, ISR_Handler handler)
 {
     if (irq > 15)
     {
-        PanicMessage("[KERNEL] IRQ too high to register handler\n");
-        Panic();
+        // PanicMessage("[KERNEL] IRQ too high to register handler\n");
+        // Panic();
+        return false;
     }
 
     irqHandlers[irq] = handler;
     picDriver->Unmask(irq);
+
+    return true;
+}
+
+bool x86_PIT_Timer_Initialize(uint32_t frequency, ISR_Handler handler)
+{
+    uint32_t divisor = 1193182 / frequency;
+
+    x86_outb(0x43, 0x36);
+    x86_outb(0x40, (uint8_t)(divisor & 0xFF));
+    x86_outb(0x40, (uint8_t)((divisor >> 8) & 0xFF));
+
+    if (!x86_IRQ_RegisterHandler(0, handler))
+        return false;
+
+    return true;
 }

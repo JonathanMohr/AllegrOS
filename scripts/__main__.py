@@ -2,8 +2,6 @@ from scripts.defs import OS, ARCH
 import scripts.build as build
 import scripts.logger as cLogger
 
-import rich
-
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 import sys
@@ -59,6 +57,8 @@ def run_qemu(image: Path, hostOS: OS, debugMode: False):
         raise RuntimeError(f"Running QEMU with {image} failed: {e}")
 
 def printHelp():
+    import rich
+    
     rich.print(
         "[bold bright_blue]usage:[/bold bright_blue] "
         f"[bold bright_magenta]python{sys.version_info.major}.{sys.version_info.minor}[/bold bright_magenta] "
