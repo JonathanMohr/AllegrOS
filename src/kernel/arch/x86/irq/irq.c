@@ -83,6 +83,11 @@ bool x86_PIT_Timer_Initialize(uint32_t frequency, ISR_Handler handler)
 {
     uint32_t divisor = 1193182 / frequency;
 
+    if (divisor > 0xFFFF)
+        return false;
+    if (divisor == 0)
+        return false;
+
     x86_outb(0x43, 0x36);
     x86_outb(0x40, (uint8_t)(divisor & 0xFF));
     x86_outb(0x40, (uint8_t)((divisor >> 8) & 0xFF));

@@ -21,5 +21,3 @@ void x86_ISR_InitializeGates();
 
 void x86_ISR_Initialize();
 void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler);
-
-void x86_ContextSwitch(const Registers* regs);

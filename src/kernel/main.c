@@ -248,7 +248,7 @@ void CDECL kmain(BootParams* bParams)
 
     VFS_File_Close(file);
 
-    x86_PIT_Timer_Initialize(2, Timer_Handler);
+    x86_PIT_Timer_Initialize(250, Timer_Handler);
 
 end:
     //VFS_Destroy(&vfs);
