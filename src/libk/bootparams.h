@@ -26,6 +26,7 @@ typedef struct MemoryInfo {
     uint32_t RegionCount;
     MemoryRegion Regions[MAX_REGIONS];
     void* physPageArray;
+    void* startOfFree;
 } MemoryInfo;
 
 typedef struct BootParams {

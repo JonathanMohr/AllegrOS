@@ -1,6 +1,10 @@
 #pragma once
 
 #include "result.h"
-#include <stdint.h>
+#include "arch.h"
 
-extern Memory_Layout MemoryLayout;
+#define MemoryLayout memoryLayout
+extern Memory_Layout memoryLayout;
+
+Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags);
+Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr);

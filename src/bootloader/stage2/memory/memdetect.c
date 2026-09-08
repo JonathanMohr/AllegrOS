@@ -144,5 +144,7 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
     memoryAddresses.pageInfoAddress = pageInfo_address;
     memoryAddresses.pageInfoSize = pageInfo_size;
 
+    memoryAddresses.startOfFree = max(kernel_address + kernel_size, max(page_tables + kernel_pageTableSize, pageInfo_address + pageInfo_size));
+
     return memoryAddresses;
 }
