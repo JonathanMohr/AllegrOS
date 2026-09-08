@@ -124,7 +124,7 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
     (void)Memory_Physical_PutPage(addressSpace);
 }
 
-static uphysptr_t currentAddressSpace = 0;
+static uphysptr_t currentAddressSpace = 0; // TODO
 
 Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags)
 {
