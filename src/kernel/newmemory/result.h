@@ -1,0 +1,9 @@
+#pragma once
+
+typedef unsigned int Memory_Result;
+#define MEMORY_SUCCESS 0
+#define MEMORY_ERROR_INTERNAL 1
+#define MEMORY_ERROR_OUT_OF_MEMORY 2
+#define MEMORY_ERROR_OUT_OF_BOUNDS 3
+#define MEMORY_ERROR_REFERENCE_LIMIT 4
+#define MEMORY_ERROR_NOT_REFERENCED 5

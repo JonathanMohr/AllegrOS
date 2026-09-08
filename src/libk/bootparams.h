@@ -12,6 +12,7 @@
 
 #define MEMORY_TYPE_RELUCTANT           6
 #define MEMORY_TYPE_HARDWARE            7
+#define MEMORY_TYPE_KERNEL_PAGEINFO     8
 #define MEMORY_TYPE_KERNEL_PAGETABLE    9
 #define MEMORY_TYPE_KERNEL              10
 
@@ -24,6 +25,7 @@ typedef struct MemoryRegion {
 typedef struct MemoryInfo {
     uint32_t RegionCount;
     MemoryRegion Regions[MAX_REGIONS];
+    void* physPageArray;
 } MemoryInfo;
 
 typedef struct BootParams {

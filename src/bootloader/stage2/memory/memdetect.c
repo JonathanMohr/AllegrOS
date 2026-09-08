@@ -20,17 +20,29 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
         }
     }
 
+    uint64_t highestAddress = 0;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint64_t end = blocks[i].Base + blocks[i].Length;
+        if (end > highestAddress)
+            highestAddress = end;
+    }
+
     uint32_t regionCount = 0;
     uint64_t lastEnd = 0;
 
     uint32_t kernel_size = (ksize + 0xFFF) & ~0xFFF;
 
-    uint32_t kernel_pageTableCount = (kernel_size + 0x3FFFFF) / 0x400000;
+    uint64_t totalPageCount = (highestAddress + 0xFFF) / 0x1000;
+    uint64_t pageInfo_size = (totalPageCount * sizeof(uint32_t) + 0xFFF) & ~0xFFF;
+
+    uint32_t kernel_pageTableCount = (kernel_size + pageInfo_size + 0x3FFFFF) / 0x400000;
     uint32_t kernel_pageTableSize = kernel_pageTableCount * 0x1000;
 
     uint8_t* page_directory = NULL;
     uint8_t* page_tables = NULL;
     uint8_t* kernel_address = NULL;
+    uint8_t* pageInfo_address = NULL;
 
     for (uint32_t i = 0; i < count; i++)
     {
@@ -93,6 +105,22 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
             length -= kernel_pageTableSize;
         }
 
+        // Page Info
+        if (!pageInfo_address && length >= pageInfo_size && type == MEMORY_TYPE_USABLE)
+        {
+            memoryInfo->Regions[regionCount].Begin = base;
+            memoryInfo->Regions[regionCount].Length = pageInfo_size;
+            memoryInfo->Regions[regionCount].Type = MEMORY_TYPE_KERNEL_PAGEINFO;
+            memoryInfo->Regions[regionCount].ACPI = 0;
+            regionCount++;
+
+            pageInfo_address = (uint8_t*)(uintptr_t)base;
+
+            base += pageInfo_size;
+            if (length == pageInfo_size) continue;
+            length -= pageInfo_size;
+        }
+
         memoryInfo->Regions[regionCount].Begin = base;
         memoryInfo->Regions[regionCount].Length = length;
         memoryInfo->Regions[regionCount].Type = type;
@@ -112,6 +140,9 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
 
     memoryAddresses.pageTableCount = kernel_pageTableCount;
     memoryAddresses.pageTableAddress = page_tables;
+
+    memoryAddresses.pageInfoAddress = pageInfo_address;
+    memoryAddresses.pageInfoSize = pageInfo_size;
 
     return memoryAddresses;
 }
