@@ -94,6 +94,8 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
 
             for (uintptr_t bitmapPage = firstBitmapPage; bitmapPage <= lastBitmapPage; bitmapPage++)
             {
+                // TODO: Maybe reserve previous if fail
+                
                 const uintptr_t bitmapAddress = (uintptr_t)bitmap + bitmapPage * memoryLayout.pageSize;
 
                 uphysptr_t physicalPage;
