@@ -16,7 +16,7 @@ bool Memory_Initialize(MemoryInfo* memoryInfo)
     if (!Memory_PhysicalAllocator_Initialize(memoryInfo, pageSize))
         return false;
 
-    uintptr_t freeStart = (uintptr_t)&__end;
+    uintptr_t freeStart = (uintptr_t)&__end + 0x10000000;
     uintptr_t freeEnd = 0xFFC00000;
 
     if (!Memory_VirtualAllocator_Initialize(&kernelSpaceAllocator, pageSize, freeStart, freeEnd))
