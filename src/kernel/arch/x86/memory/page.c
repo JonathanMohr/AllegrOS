@@ -147,6 +147,8 @@ Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphys
 
     if ((dirEntry & PAGEF_PRESENT) == 0)
     {
+        // TODO: Kernel Sync
+
         Memory_Result result;
 
         uphysptr_t newTablePhysical;
@@ -233,6 +235,8 @@ Memory_Result Arch_UnmapPage(uphysptr_t addressSpace, uintptr_t virtualAddr)
 
     if (tableEmpty)
     {
+        // TODO: Kernel Sync
+        
         uint32_t* pageDirectoryForClear = current ? (uint32_t*)0xFFFFF000 : (uint32_t*)Arch_TemporaryMap(addressSpace);
         pageDirectoryForClear[dirIndex] = 0;
         if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectoryForClear);
