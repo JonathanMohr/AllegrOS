@@ -1,9 +1,11 @@
 #pragma once
 
 #include "physical.h"
+#include "kernel.h"
 #include "result.h"
 
 #include <bootparams.h>
+#include <stdbool.h>
 
 typedef struct AddressSpace AddressSpace;
 
@@ -25,6 +27,12 @@ Memory_Result Memory_AddressSpace_Link(AddressSpace* addressSpace, uintptr_t vir
 Memory_Result Memory_AddressSpace_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress);
 Memory_Result Memory_AddressSpace_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
 
+Memory_Result Memory_Kernel_Link(uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags, bool ownPhysical);
+Memory_Result Memory_Kernel_Unlink(uintptr_t virtualAddress);
+Memory_Result Memory_Kernel_Translate(uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
+
+#define Memory_Kernel_AllocateVirtual(pageCount, out) Memory_KernelVirtual_AllocatePages(pageCount, out)
+#define Memory_Kernel_FreeVirtual(address, pageCount) Memory_KernelVirtual_FreePages(address, pageCount)
 
 #define Memory_GetPhysicalPage(out) Memory_Physical_NewPage(out)
 #define Memory_PutPhysicalPage(page) Memory_Physical_PutPage(page)

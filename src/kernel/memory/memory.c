@@ -23,6 +23,7 @@ static AddressSpace* headAddressSpace = NULL;
 
 Memory_Layout memoryLayout;
 static uphysptr_t initialAddressSpace;
+static uintptr_t kernelStart;
 
 
 Memory_Result Memory_Initialize(MemoryInfo* memoryInfo)
@@ -38,6 +39,7 @@ Memory_Result Memory_Initialize(MemoryInfo* memoryInfo)
         return result;
 
     initialAddressSpace = memoryInfo->initialAddressSpace;
+    kernelStart = (uintptr_t)memoryInfo->startOfFree;
 
     return MEMORY_SUCCESS;
 }
@@ -89,8 +91,10 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
 
 Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out)
 {
+    if (virtualAddr < kernelStart)
+        return MEMORY_ERROR_DOMAIN;
+    
     const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
-
     return Arch_TranslatePage(current, virtualAddr, out);
 }
 
@@ -208,4 +212,61 @@ Memory_Result Memory_AddressSpace_Unlink(AddressSpace* addressSpace, uintptr_t v
 Memory_Result Memory_AddressSpace_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress)
 {
     return Arch_TranslatePage(addressSpace->addressSpace, virtualAddress, outPhysicalAddress);
+}
+
+Memory_Result Memory_Kernel_Link(uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags, bool ownPhysical)
+{
+    if (virtualAddress < kernelStart || virtualAddress >= memoryLayout.kernelSpaceEnd)
+        return MEMORY_ERROR_DOMAIN;
+
+    if (virtualAddress % memoryLayout.pageSize != 0 || physicalAddress % memoryLayout.pageSize != 0)
+        return MEMORY_ERROR_NOT_ALIGNED;
+
+    Memory_Result result;
+
+    if (!ownPhysical)
+    {
+        result = Memory_Physical_GetPage(physicalAddress);
+        if (result != MEMORY_SUCCESS)
+            return result;
+    }
+
+    if ((result = Memory_MapPageKernel(virtualAddress, physicalAddress, flags)) != MEMORY_SUCCESS)
+    {
+        if (!ownPhysical)
+        {
+            if (Memory_Physical_PutPage(physicalAddress) != MEMORY_SUCCESS)
+                PanicMessageInfo("Memory_Kernel_Link", "Memory_Physical_PutPage(%q) failed\n", physicalAddress);
+        }
+        return result;
+    }
+
+    return MEMORY_SUCCESS;
+}
+
+Memory_Result Memory_Kernel_Unlink(uintptr_t virtualAddress)
+{
+    if (virtualAddress < memoryLayout.userSpaceStart || virtualAddress >= memoryLayout.userSpaceEnd)
+        return MEMORY_ERROR_DOMAIN;
+
+    if (virtualAddress % memoryLayout.pageSize != 0)
+        return MEMORY_ERROR_NOT_ALIGNED;
+
+    Memory_Result result;
+    uphysptr_t physicalAddress;
+    if ((result = Memory_TranslateKernel(virtualAddress, &physicalAddress)) != MEMORY_SUCCESS)
+        return result;
+
+    if ((result = Memory_UnmapPageKernel(virtualAddress)) != MEMORY_SUCCESS)
+        return result;
+
+    if ((result = Memory_Physical_PutPage(physicalAddress)) != MEMORY_SUCCESS)
+        PanicMessageInfo("Memory_Kernel_Unlink", "Memory_Physical_PutPage(%q) failed\n", physicalAddress);
+
+    return MEMORY_SUCCESS;
+}
+
+Memory_Result Memory_Kernel_Translate(uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress)
+{
+    return Memory_TranslateKernel(virtualAddress, outPhysicalAddress);
 }
