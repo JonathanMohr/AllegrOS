@@ -55,33 +55,55 @@ Memory_Result Memory_Physical_Initialize(MemoryInfo* memoryInfo)
     uint64_t totalPages = 0;
     uphysptr_t highestAddress = 0;
 
-    // TODO: set references for not usable pages to REFERENCES_NOT_COUNTED
-
     for (uint32_t i = 0; i < memoryInfo->RegionCount; i++)
     {
         MemoryRegion* region = &memoryInfo->Regions[i];
+
+        const uphysptr_t start = ((region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t alignedEnd = ((region->Begin + region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t end = ((region->Begin + region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+
+        if (end > 0 && end - 1 > highestAddress)
+            highestAddress = end - 1;
+
         if (region->Type != MEMORY_TYPE_USABLE)
             continue;
 
-        uphysptr_t start = ((region->Begin + MemoryLayout.pageSize - 1) / MemoryLayout.pageSize) * MemoryLayout.pageSize;
-        uphysptr_t end = ((region->Begin + region->Length) / MemoryLayout.pageSize) * MemoryLayout.pageSize;
-
-        for (uphysptr_t addr = start; addr < end; addr += MemoryLayout.pageSize)
+        for (uphysptr_t addr = start; addr < alignedEnd; addr += memoryLayout.pageSize)
         {
             FreePage(addr);
             totalPages++;
         }
-
-        if (end > highestAddress)
-            highestAddress = end;
     }
 
     if (!totalPages)
         return MEMORY_ERROR_OUT_OF_MEMORY;
 
-    pageCount = (highestAddress + MemoryLayout.pageSize - 1) / MemoryLayout.pageSize;
+    pageCount = (highestAddress + memoryLayout.pageSize - 1) / memoryLayout.pageSize;
     pageReferences = memoryInfo->physPageArray;
     memset(pageReferences, 0, pageCount * sizeof(uint32_t));
+
+    for (uint32_t i = 0; i < memoryInfo->RegionCount; i++)
+    {
+        MemoryRegion* region = &memoryInfo->Regions[i];
+
+        const uphysptr_t alignedStart = (region->Begin / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t start = ((region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t alignedEnd = ((region->Begin + region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t end = ((region->Begin + region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+
+        if (region->Type == MEMORY_TYPE_USABLE)
+        {
+            if (alignedStart < start)
+                pageReferences[alignedStart / memoryLayout.pageSize] = REFERENCES_NOT_COUNTED;
+            if (alignedEnd < end)
+                pageReferences[alignedEnd / memoryLayout.pageSize] = REFERENCES_NOT_COUNTED;
+            continue;
+        }
+
+        for (uphysptr_t addr = alignedStart; addr < end; addr += memoryLayout.pageSize)
+            pageReferences[addr / memoryLayout.pageSize] = REFERENCES_NOT_COUNTED;
+    }
 
     return MEMORY_SUCCESS;
 }
@@ -112,6 +134,9 @@ Memory_Result Memory_Physical_GetPage(uphysptr_t page)
     if (!GetPageReferences(page, &references))
         return MEMORY_ERROR_OUT_OF_BOUNDS;
 
+    if (*references == REFERENCES_NOT_COUNTED)
+        return MEMORY_SUCCESS;
+
     if (*references >= MAX_REFERENCES)
         return MEMORY_ERROR_REFERENCE_LIMIT;
 
@@ -125,6 +150,9 @@ Memory_Result Memory_Physical_PutPage(uphysptr_t page)
     uint32_t* references;
     if (!GetPageReferences(page, &references))
         return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+    if (*references == REFERENCES_NOT_COUNTED)
+        return MEMORY_SUCCESS;
 
     if (*references == 0)
         return MEMORY_ERROR_NOT_REFERENCED;
