@@ -179,6 +179,14 @@ Memory_Result Memory_AddressSpace_Put(AddressSpace* addressSpace)
     return MEMORY_SUCCESS;
 }
 
+void Memory_AddressSpace_Use(AddressSpace* addressSpace)
+{
+    if (addressSpace == MEMORY_KERNEL)
+        return;
+
+    Arch_SwitchAddressSpace(addressSpace->addressSpace);
+}
+
 
 static inline Memory_Result link(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags, bool takePhysical)
 {

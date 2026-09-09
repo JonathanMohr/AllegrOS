@@ -24,6 +24,7 @@ Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out);
 Memory_Result Memory_AddressSpace_Create(AddressSpace** outAddressSpace);
 Memory_Result Memory_AddressSpace_Get(AddressSpace* addressSpace);
 Memory_Result Memory_AddressSpace_Put(AddressSpace* addressSpace);
+void Memory_AddressSpace_Use(AddressSpace* addressSpace);
 
 Memory_Result Memory_LinkNew(AddressSpace* addressSpace, uintptr_t virtualAddress, Memory_Flags flags, uintptr_t pageCount);
 Memory_Result Memory_Link(AddressSpace* addressSpace, uintptr_t virtualAddress, AddressSpace* sourceAddressSpace, uintptr_t sourceVirtualAddress, Memory_Flags flags, uintptr_t pageCount);
