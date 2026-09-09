@@ -31,5 +31,7 @@ Memory_Result Memory_AddressSpace_Translate(AddressSpace* addressSpace, uintptr_
 
 
 void* Memory_KernelAllocate(uintptr_t size);
+void* Memory_KernelZallocate(uintptr_t size);
 void* Memory_KernelReallocate(void* ptr, uintptr_t newSize);
+void* Memory_KernelRezallocate(void* ptr, uintptr_t newSize);
 void Memory_KernelFree(void* ptr);
