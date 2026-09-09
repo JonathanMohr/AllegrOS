@@ -21,7 +21,9 @@
 #define PAGEF_GLOBAL         0x100
 
 
-void Arch_Memory_Initialize(Memory_Layout* layout)
+static uphysptr_t currentAddressSpace;
+
+void Arch_Memory_Initialize(Memory_Layout* layout, MemoryInfo* memoryInfo)
 {
     layout->kernelSpaceEnd = 0xFFC00000;
     layout->kernelSpaceStart = 0xC0000000;
@@ -30,6 +32,8 @@ void Arch_Memory_Initialize(Memory_Layout* layout)
     layout->userSpaceEnd = 0xC0000000;
 
     layout->pageSize = PAGE_SIZE;
+
+    currentAddressSpace = memoryInfo->initialAddressSpace;
 }
 
 
@@ -125,11 +129,9 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
         PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", addressSpace);
 }
 
-static uphysptr_t currentAddressSpace = 0; // TODO
-
 Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags)
 {
-    uint32_t pflags = 0;
+    uint32_t pflags = PAGEF_PRESENT;
     if (flags & MEMORY_WRITABLE)
         pflags |= PAGEF_WRITABLE;
     if (flags & MEMORY_USER)

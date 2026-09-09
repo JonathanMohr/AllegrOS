@@ -30,7 +30,7 @@ Memory_Result Memory_Initialize(MemoryInfo* memoryInfo)
 {
     Memory_Result result;
 
-    Arch_Memory_Initialize(&memoryLayout);
+    Arch_Memory_Initialize(&memoryLayout, memoryInfo);
 
     if ((result = Memory_Physical_Initialize(memoryInfo)) != MEMORY_SUCCESS)
         return result;

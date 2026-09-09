@@ -2,8 +2,9 @@
 
 #include "result.h"
 #include <stdint.h>
+#include <bootparams.h>
 
-void Arch_Memory_Initialize(Memory_Layout* layout);
+void Arch_Memory_Initialize(Memory_Layout* layout, MemoryInfo* memoryInfo);
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress);
 void Arch_TemporaryUnmap(uintptr_t virtualMapAddress);
