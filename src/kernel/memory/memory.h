@@ -6,11 +6,14 @@
 
 #include <bootparams.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct AddressSpace AddressSpace;
 
 #define MemoryLayout memoryLayout
 extern Memory_Layout memoryLayout;
+
+#define MEMORY_KERNEL NULL
 
 Memory_Result Memory_Initialize(MemoryInfo* memoryInfo);
 
@@ -23,13 +26,11 @@ Memory_Result Memory_AddressSpace_Create(AddressSpace** outAddressSpace);
 Memory_Result Memory_AddressSpace_Get(AddressSpace* addressSpace);
 Memory_Result Memory_AddressSpace_Put(AddressSpace* addressSpace);
 
-Memory_Result Memory_AddressSpace_Link(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags);
-Memory_Result Memory_AddressSpace_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress);
-Memory_Result Memory_AddressSpace_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
-
-Memory_Result Memory_Kernel_Link(uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags, bool ownPhysical);
-Memory_Result Memory_Kernel_Unlink(uintptr_t virtualAddress);
-Memory_Result Memory_Kernel_Translate(uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
+Memory_Result Memory_LinkNew(AddressSpace* addressSpace, uintptr_t virtualAddress, Memory_Flags flags, uintptr_t pageCount);
+Memory_Result Memory_Link(AddressSpace* addressSpace, uintptr_t virtualAddress, AddressSpace* sourceAddressSpace, uintptr_t sourceVirtualAddress, Memory_Flags flags, uintptr_t pageCount);
+Memory_Result Memory_LinkRaw(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags);
+Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount);
+Memory_Result Memory_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
 
 #define Memory_Kernel_AllocateVirtual(pageCount, out) Memory_KernelVirtual_AllocatePages(pageCount, out)
 #define Memory_Kernel_FreeVirtual(address, pageCount) Memory_KernelVirtual_FreePages(address, pageCount)

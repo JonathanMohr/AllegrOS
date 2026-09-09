@@ -128,34 +128,10 @@ static void* large_alloc(uintptr_t size, int zero)
     if (result != MEMORY_SUCCESS)
         return NULL;
 
-    uintptr_t linked = 0;
-    for (uintptr_t i = 0; i < pages; i++)
+    result = Memory_LinkNew(MEMORY_KERNEL, base, MEMORY_WRITABLE, pages);
+
+    if (result != MEMORY_SUCCESS)
     {
-        const uintptr_t virtualAddr = base + i * memoryLayout.pageSize;
-
-        uphysptr_t phys;
-        if ((result = Memory_GetPhysicalPage(&phys)) != MEMORY_SUCCESS)
-            break;
-
-        if ((result = Memory_Kernel_Link(virtualAddr, phys, MEMORY_WRITABLE, true)) != MEMORY_SUCCESS)
-        {
-            if (Memory_PutPhysicalPage(phys) != MEMORY_SUCCESS)
-                PanicMessageInfo("large_alloc", "Memory_PutPhysicalPage(%q) failed\n", phys);
-            break;
-        }
-
-        linked++;
-    }
-
-    if (linked != pages)
-    {
-        for (uintptr_t i = 0; i < linked; i++)
-        {
-            const uintptr_t virtualAddr = base + i * memoryLayout.pageSize;
-            if (Memory_Kernel_Unlink(virtualAddr) != MEMORY_SUCCESS)
-                PanicMessageInfo("large_alloc", "Memory_Kernel_Unlink(%p) failed\n", virtualAddr);
-        }
-
         if (Memory_Kernel_FreeVirtual(base, pages) != MEMORY_SUCCESS)
             PanicMessageInfo("large_alloc", "Memory_Kernel_FreeVirtual(%p, 0x%p) failed\n", base, pages);
 
@@ -165,13 +141,15 @@ static void* large_alloc(uintptr_t size, int zero)
     struct LargeEntry* entry = slab_alloc(sizeof(struct LargeEntry), 0);
     if (!entry)
     {
-        if (Memory_Kernel_Unlink(base) != MEMORY_SUCCESS)
+        if (Memory_Unlink(MEMORY_KERNEL, base, pages) != MEMORY_SUCCESS)
         {
-            PanicMessageInfo("large_alloc", "Memory_Kernel_Unlink(%p) failed\n", base);
+            PanicMessageInfo("large_alloc", "Memory_Unlink(%p, %p, 0x%p) failed\n", MEMORY_KERNEL, base, pages);
             return NULL;
         }
+
         if (Memory_Kernel_FreeVirtual(base, pages) != MEMORY_SUCCESS)
             PanicMessageInfo("large_alloc", "Memory_Kernel_FreeVirtual(%p, 0x%p) failed\n", base, pages);
+
         return NULL;
     }
 
@@ -200,41 +178,15 @@ static bool large_free(void* ptr)
             else
                 large_head = current->next;
 
-            bool allUnlinked = true;
-            uintptr_t successfulPages = 0;
-
-            for (uintptr_t i = 0; i < current->pages; i++)
+            if (Memory_Unlink(MEMORY_KERNEL, current->base, current->pages) != MEMORY_SUCCESS)
             {
-                const uintptr_t virtualAddr = current->base + i * memoryLayout.pageSize;
-
-                if (Memory_Kernel_Unlink(virtualAddr) != MEMORY_SUCCESS)
-                {
-                    PanicMessageInfo("large_free", "Memory_Kernel_Unlink(%p) failed\n", virtualAddr);
-                    allUnlinked = false;
-                    continue;
-                }
-
-                if (allUnlinked)
-                {
-                    successfulPages++;
-                }
-                else
-                {
-                    if (Memory_Kernel_FreeVirtual(virtualAddr, 1) != MEMORY_SUCCESS)
-                        PanicMessageInfo("large_free", "Memory_Kernel_FreeVirtual(%p, 1) failed\n", virtualAddr);
-                }
+                PanicMessageInfo("large_free", "Memory_Unlink(%p, %p, 0x%p) failed\n", MEMORY_KERNEL, current->base, current->pages);
+                slab_free(current);
+                return true;
             }
 
-            if (allUnlinked)
-            {
-                if (Memory_Kernel_FreeVirtual(current->base, current->pages) != MEMORY_SUCCESS)
-                    PanicMessageInfo("large_free", "Memory_Kernel_FreeVirtual(%p, 0x%p) failed\n", current->base, current->pages);
-            }
-            else if (successfulPages > 0)
-            {
-                if (Memory_Kernel_FreeVirtual(current->base, successfulPages) != MEMORY_SUCCESS)
-                    PanicMessageInfo("large_free", "Memory_Kernel_FreeVirtual(%p, 0x%p) failed\n", current->base, successfulPages);
-            }
+            if (Memory_Kernel_FreeVirtual( current->base, current->pages) != MEMORY_SUCCESS)
+                PanicMessageInfo( "large_free", "Memory_Kernel_FreeVirtual(%p, 0x%p) failed\n", current->base, current->pages);
 
             slab_free(current);
 
@@ -297,19 +249,9 @@ static void* slab_alloc(uintptr_t size, bool zero)
         if (Memory_KernelVirtual_AllocatePages(1, &virtualAddr) != MEMORY_SUCCESS)
             return NULL;
 
-        uphysptr_t physicalAddr;
-        if (Memory_GetPhysicalPage(&physicalAddr) != MEMORY_SUCCESS)
-        {
-            if (Memory_Kernel_FreeVirtual(virtualAddr, 1) != MEMORY_SUCCESS)
-                PanicMessageInfo("slab_alloc", "Memory_Kernel_FreeVirtual(%p, 1) failed\n", virtualAddr);
-            return NULL;
-        }
-
-        Memory_Result result = Memory_Kernel_Link(virtualAddr, physicalAddr, MEMORY_WRITABLE, true);
+        Memory_Result result = Memory_LinkNew(MEMORY_KERNEL, virtualAddr, MEMORY_WRITABLE, 1);
         if (result != MEMORY_SUCCESS)
         {
-            if (Memory_PutPhysicalPage(physicalAddr) != MEMORY_SUCCESS)
-                PanicMessageInfo("slab_alloc", "Memory_PutPhysicalPage(%q) failed\n", physicalAddr);
             if (Memory_Kernel_FreeVirtual(virtualAddr, 1) != MEMORY_SUCCESS)
                 PanicMessageInfo("slab_alloc", "Memory_Kernel_FreeVirtual(%p, 1) failed\n", virtualAddr);
             return NULL;
@@ -378,13 +320,13 @@ static bool slab_free(void* ptr)
                     else
                         cls->slabHead = next;
 
-                    if (Memory_Kernel_Unlink(slabPage) == MEMORY_SUCCESS)
+                    if (Memory_Unlink(MEMORY_KERNEL, slabPage, 1) == MEMORY_SUCCESS)
                     {
                         if (Memory_Kernel_FreeVirtual(slabPage, 1) != MEMORY_SUCCESS)
                             PanicMessageInfo("slab_free", "Memory_Kernel_FreeVirtual(%p, 1) failed\n", slabPage);
                     }
                     else
-                        PanicMessageInfo("slab_free", "Memory_Kernel_Unlink(%p) failed\n", slabPage);
+                        PanicMessageInfo("slab_free", "Memory_Unlink(%p, %p, 1) failed\n", MEMORY_KERNEL, slabPage);
                 }
 
                 return true;
