@@ -13,8 +13,6 @@ typedef struct {
 
     uint8_t* pageInfoAddress;
     uint64_t pageInfoSize;
-
-    uint8_t* startOfFree;
 } MemoryAddresses;
 
 MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t ksize);
