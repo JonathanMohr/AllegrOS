@@ -7,7 +7,7 @@
 
 typedef void (*Scheduler_Spawn_Function)(void* arg);
 
-typedef enum { TASK_READY, TASK_ZOMBIE } TaskState;
+typedef enum { TASK_READY, TASK_IDLE, TASK_ZOMBIE } TaskState;
 
 typedef struct Scheduler_Task
 {
@@ -21,8 +21,8 @@ typedef struct Scheduler_Task
     struct Scheduler_Task* next;
 } Scheduler_Task;
 
+TaskState* Scheduler_Initialize(void);
+
 void Scheduler_Schedule(void);
 void Scheduler_Exit(void);
 bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, AddressSpace* addressSpace);
-
-Scheduler_Task* Scheduler_Next(void);

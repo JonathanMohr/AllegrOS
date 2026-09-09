@@ -15,6 +15,93 @@ static Scheduler_Task* pendingFree = NULL;
 static Scheduler_Task* head = NULL;
 static Scheduler_Task* currentTask = NULL;
 
+extern uintptr_t stack_top;
+
+TaskState* Scheduler_Initialize(void)
+{
+    Kernel_Lock();
+    Scheduler_Task* newTask = Memory_KernelAllocate(sizeof(Scheduler_Task));
+    if (!newTask)
+        return NULL;
+    Kernel_Unlock();
+
+    newTask->state = TASK_IDLE;
+
+    newTask->kernelStackTop = stack_top;
+    newTask->savedStack = 0;
+
+    newTask->addressSpace = MEMORY_KERNEL;
+
+    newTask->next = NULL;
+    head = newTask;
+    currentTask = head;
+
+    return &newTask->state;
+}
+
+
+static Scheduler_Task* Scheduler_Next(void)
+{
+    if (!currentTask)
+        return head;
+
+    if (currentTask->state == TASK_ZOMBIE)
+        pendingFree = currentTask;
+
+    Scheduler_Task* idleFallback = (currentTask->state == TASK_IDLE) ? currentTask : NULL;
+
+    Scheduler_Task* prevInList = currentTask;
+    Scheduler_Task* candidate = currentTask->next;
+    if (!candidate)
+        candidate = head;
+
+    while (candidate->state != TASK_READY)
+    {
+        Scheduler_Task* afterCandidate = candidate->next;
+        if (!afterCandidate)
+            afterCandidate = head;
+
+        switch (candidate->state)
+        {
+            case TASK_ZOMBIE:
+                if (candidate == currentTask)
+                {
+                    if (idleFallback)
+                        return idleFallback;
+                    PanicMessage("[KERNEL] No live task left to schedule\n");
+                    Panic();
+                }
+
+                if (candidate == head)
+                    head = (afterCandidate == candidate) ? NULL : afterCandidate;
+
+                prevInList->next = (afterCandidate == candidate) ? NULL : afterCandidate;
+
+                Memory_KernelFree((void*)(candidate->kernelStackTop - KERNEL_STACK_SIZE));
+                Memory_KernelFree(candidate);
+
+                break;
+
+            case TASK_IDLE:
+                idleFallback = candidate;
+                prevInList = candidate;
+
+                if (candidate == currentTask)
+                    return idleFallback;
+
+                break;
+
+            default:
+                break;
+        }
+
+        candidate = afterCandidate;
+    }
+
+    return candidate;
+}
+
+
 void Scheduler_Schedule(void)
 {
     __asm__ volatile ("cli"); // TODO: Actual spin lock
@@ -89,48 +176,4 @@ bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, Addres
     __asm__ volatile ("sti"); // TODO: Actual spin lock
 
     return true;
-}
-
-
-Scheduler_Task* Scheduler_Next(void)
-{
-    if (!currentTask)
-        return head;
-
-    if (currentTask->state == TASK_ZOMBIE)
-        pendingFree = currentTask;
-
-    Scheduler_Task* prevInList = currentTask;
-    Scheduler_Task* candidate = currentTask->next;
-    if (!candidate)
-        candidate = head;
-
-    while (candidate->state == TASK_ZOMBIE)
-    {
-        Scheduler_Task* afterCandidate = candidate->next;
-        if (!afterCandidate)
-            afterCandidate = head;
-
-        if (candidate == currentTask)
-        {
-            PanicMessage("[KERNEL] No live task left to schedule\n");
-            Panic();
-        }
-
-        if (candidate == head)
-            head = (afterCandidate == candidate) ? NULL : afterCandidate;
-
-        if (prevInList != candidate)
-            prevInList->next = (afterCandidate == candidate) ? NULL : afterCandidate;
-
-        if (candidate != currentTask)
-        {
-            Memory_KernelFree((void*)(candidate->kernelStackTop - KERNEL_STACK_SIZE));
-            Memory_KernelFree(candidate);
-        }
-
-        candidate = afterCandidate;
-    }
-
-    return candidate;
 }

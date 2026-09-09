@@ -1,6 +1,7 @@
 [bits 32]
 
 extern kmain
+extern Arch_Idle
 
 section .text
     global kentry
@@ -13,10 +14,11 @@ kentry:
     push eax
     call kmain
 
-    cli
-    hlt
+    jmp Arch_Idle
 
 section .bss
+global stack_top
+
 stack_bottom:
-    resb 1024 * 1024 ; 1 MB
+    resb 1024 * 16 ; 16 KiB
 stack_top:

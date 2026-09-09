@@ -63,6 +63,16 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
+    TaskState* taskState = Scheduler_Initialize();
+    if (!taskState)
+    {
+        PanicMessage("[KERNEL] Could not initialize scheduler\n");
+        Panic();
+    }
+
+    __asm__ volatile("sti");
+
+    Kernel_Lock();
     mux_console = KernelConsole_GetOutput();
 
     KernelConsole_ClearScreen(mux_console);
@@ -236,34 +246,19 @@ void CDECL kmain(BootParams* bParams)
         goto end;
     }
 
-    VFS_File* file = VFS_File_Open(&vfs, NULL, "test.txt");
-    if (!file)
-    {
-        KernelConsole_PutString(mux_console, "Could not open file\n");
-        goto end;
-    }
-
-    uint64_t fileRead;
-    char fileBuffer[512];
-    while ((fileRead = VFS_File_Read(file, sizeof(fileBuffer), fileBuffer)))
-    {
-        for (uint64_t i = 0; i < fileRead; i++)
-            KernelConsole_PutChar(mux_console, fileBuffer[i]);
-    }
-
-    VFS_File_Close(file);
+    Kernel_Unlock();
 
     if (!Scheduler_AddTask(Spawn, NULL, MEMORY_KERNEL))
     {
         KernelConsole_PutString(mux_console, "Could not add initial kernel task\n");
         goto end_before_vfs;
     }
-    __asm__ volatile("sti");
 
 end:
     //VFS_Destroy(&vfs);
 end_before_vfs:
-    for(;;);
+    *taskState = TASK_IDLE;
+    return;
 }
 
 bool Timer_Handler(const Registers* regs)
@@ -294,7 +289,7 @@ static void Spawn(void* arg)
     KernelConsole_PutString(mux_console, "Spawning Task 2...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Greetings!", MEMORY_KERNEL))
+    if (!Scheduler_AddTask(Greet, "Good morning!", MEMORY_KERNEL))
     {
         Kernel_Lock();
         KernelConsole_PutString(mux_console, "Could not spawn Greet task 2\n");
@@ -306,7 +301,7 @@ static void Spawn(void* arg)
     KernelConsole_PutString(mux_console, "Spawning Task 3...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Good morning!", MEMORY_KERNEL))
+    if (!Scheduler_AddTask(Greet, "Greetings!", MEMORY_KERNEL))
     {
         Kernel_Lock();
         KernelConsole_PutString(mux_console, "Could not spawn Greet task 3\n");
@@ -315,7 +310,7 @@ static void Spawn(void* arg)
     }
 
 end:
-    for(;;);
+    Scheduler_Exit();
 }
 
 static void Greet(void* arg)
