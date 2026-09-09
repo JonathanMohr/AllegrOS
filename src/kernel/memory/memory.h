@@ -1,6 +1,5 @@
 #pragma once
 
-#include "physical.h"
 #include "kernel.h"
 #include "result.h"
 
@@ -34,9 +33,6 @@ Memory_Result Memory_Translate(AddressSpace* addressSpace, uintptr_t virtualAddr
 
 #define Memory_Kernel_AllocateVirtual(pageCount, out) Memory_KernelVirtual_AllocatePages(pageCount, out)
 #define Memory_Kernel_FreeVirtual(address, pageCount) Memory_KernelVirtual_FreePages(address, pageCount)
-
-#define Memory_GetPhysicalPage(out) Memory_Physical_NewPage(out)
-#define Memory_PutPhysicalPage(page) Memory_Physical_PutPage(page)
 
 
 void* Memory_KernelAllocate(uintptr_t size);
