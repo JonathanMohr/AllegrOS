@@ -67,6 +67,8 @@ msg_stage2_too_big db "Stage 2 is too big (__end is above 4194304 bytes)", ENDL,
 
 section .bss
 
+global page_directory
+
 align 4096
 page_directory resd 1024
 

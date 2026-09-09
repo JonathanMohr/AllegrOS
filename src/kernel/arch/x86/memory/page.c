@@ -1,6 +1,6 @@
-#include "../../../newmemory/arch.h"
+#include "../../../memory/arch.h"
 #include "../../../panic/panic.h"
-#include "../../../newmemory/physical.h"
+#include "../../../memory/physical.h"
 
 #include "paging.h"
 #include <memory.h>
@@ -21,7 +21,7 @@
 #define PAGEF_GLOBAL         0x100
 
 
-void Arch_Initialize(Memory_Layout* layout)
+void Arch_Memory_Initialize(Memory_Layout* layout)
 {
     layout->kernelSpaceEnd = 0xFFC00000;
     layout->kernelSpaceStart = 0xC0000000;

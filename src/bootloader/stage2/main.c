@@ -11,6 +11,8 @@
 #include "elf/elf.h"
 #include "kernel.h"
 
+extern uint32_t* page_directory;
+
 BootParams bootParams;
 
 void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820MemoryBlock* memoryBlocks, uint32_t memoryBlock_count)
@@ -98,6 +100,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
 
     bootParams.Memory.physPageArray = (void*)((uintptr_t)(0xc0000000 + ((kernelInfo.size + 0xFFF) & ~0xFFF)));
     bootParams.Memory.startOfFree = addresses.startOfFree;
+    bootParams.Memory.initialAddressSpace = (uphysptr_t)page_directory;
 
     uint8_t* kernelEntry = ELF_Load(&partition, "/sys/kernel.elf");
 

@@ -3,7 +3,7 @@
 #include "result.h"
 #include <stdint.h>
 
-void Arch_Initialize(Memory_Layout* layout);
+void Arch_Memory_Initialize(Memory_Layout* layout);
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress);
 void Arch_TemporaryUnmap(uintptr_t virtualMapAddress);

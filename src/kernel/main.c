@@ -57,7 +57,7 @@ void CDECL kmain(BootParams* bParams)
     x86_Initialize();
     x86_PIT_Timer_Initialize(250, Timer_Handler);
 
-    if (!Memory_Initialize(&bootParams.Memory))
+    if (Memory_Initialize(&bootParams.Memory) != MEMORY_SUCCESS)
     {
         PanicMessage("[KERNEL] Could not initialize memory\n");
         Panic();
