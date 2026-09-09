@@ -311,3 +311,38 @@ Memory_Result Memory_KernelVirtual_FreePages(uintptr_t address, uintptr_t pageCo
 
     return MEMORY_SUCCESS;
 }
+
+Memory_Result Memory_KernelVirtual_IsAllocated(uintptr_t address, bool* out)
+{
+    if (address % memoryLayout.pageSize != 0)
+        return MEMORY_ERROR_NOT_ALIGNED;
+
+    if (address < firstPageStart)
+        return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+    const uintptr_t page = (address - firstPageStart) / memoryLayout.pageSize;
+
+    if (page >= usablePageCount)
+        return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+    const uintptr_t bitmapPage = page / (memoryLayout.pageSize * 8);
+    const uintptr_t bitIndex = page % (memoryLayout.pageSize * 8);
+
+    const uintptr_t bitmapAddress = (uintptr_t)bitmap + bitmapPage * memoryLayout.pageSize;
+
+    uphysptr_t tmp;
+    Memory_Result translateResult = Memory_TranslateKernel(bitmapAddress, &tmp);
+
+    if (translateResult == MEMORY_ERROR_NOT_MAPPED)
+    {
+        *out = false;
+        return MEMORY_SUCCESS;
+    }
+    else if (translateResult != MEMORY_SUCCESS)
+        return translateResult;
+
+    const uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + bitIndex / 8];
+    *out = (*entry & (1 << (bitIndex % 8))) != 0;
+
+    return MEMORY_SUCCESS;
+}
