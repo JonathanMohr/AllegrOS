@@ -35,6 +35,8 @@ void Scheduler_Schedule(void)
     currentTask = next;
     x86_GDT_ChangeStack((void*)next->kernelStackTop);
 
+    Memory_AddressSpace_Use(next->addressSpace);
+
     if (!prev)
         Task_JumpTo(next->savedStack);
     else
@@ -49,7 +51,7 @@ void Scheduler_Exit(void)
     Scheduler_Schedule();
 }
 
-bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg)
+bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, AddressSpace* addressSpace)
 {
     Kernel_Lock();
     Scheduler_Task* newTask = Memory_KernelAllocate(sizeof(Scheduler_Task));
@@ -68,6 +70,8 @@ bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg)
 
     newTask->kernelStackTop = (uintptr_t)newStack + KERNEL_STACK_SIZE;
     newTask->savedStack = Task_Create(newTask->kernelStackTop, spawnFunction, arg);
+
+    newTask->addressSpace = addressSpace;
 
     __asm__ volatile ("cli"); // TODO: Actual spin lock
 

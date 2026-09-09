@@ -253,7 +253,7 @@ void CDECL kmain(BootParams* bParams)
 
     VFS_File_Close(file);
 
-    if (!Scheduler_AddTask(Spawn, NULL))
+    if (!Scheduler_AddTask(Spawn, NULL, MEMORY_KERNEL))
     {
         KernelConsole_PutString(mux_console, "Could not add initial kernel task\n");
         goto end_before_vfs;
@@ -282,7 +282,7 @@ static void Spawn(void* arg)
     KernelConsole_PutString(mux_console, "Spawning Task 1...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Hello!"))
+    if (!Scheduler_AddTask(Greet, "Hello!", MEMORY_KERNEL))
     {
         Kernel_Lock();
         KernelConsole_PutString(mux_console, "Could not spawn Greet task 1\n");
@@ -294,7 +294,7 @@ static void Spawn(void* arg)
     KernelConsole_PutString(mux_console, "Spawning Task 2...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Greetings!"))
+    if (!Scheduler_AddTask(Greet, "Greetings!", MEMORY_KERNEL))
     {
         Kernel_Lock();
         KernelConsole_PutString(mux_console, "Could not spawn Greet task 2\n");
@@ -306,7 +306,7 @@ static void Spawn(void* arg)
     KernelConsole_PutString(mux_console, "Spawning Task 3...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Good morning!"))
+    if (!Scheduler_AddTask(Greet, "Good morning!", MEMORY_KERNEL))
     {
         Kernel_Lock();
         KernelConsole_PutString(mux_console, "Could not spawn Greet task 3\n");
