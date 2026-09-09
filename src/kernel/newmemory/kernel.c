@@ -1,9 +1,12 @@
 #include "kernel.h"
 #include "memory.h"
 #include "physical.h"
+#include "../panic/panic.h"
+#include "result.h"
 
 #include <memory.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 uint8_t* bitmap = NULL;
 uintptr_t bitmapPageCount = 0;
@@ -27,6 +30,17 @@ Memory_Result Memory_KernelVirtual_Initialize(MemoryInfo* memoryInfo)
     usablePageCount = pages - bitmapPages;
 
     return MEMORY_SUCCESS;
+}
+
+static bool IsBitmapPageEmpty(uintptr_t bitmapPage)
+{
+    const uint8_t* page = (uint8_t*)bitmapPage;
+    for (uintptr_t i = 0; i < memoryLayout.pageSize; i++)
+    {
+        if (page[i])
+            return false;
+    }
+    return true;
 }
 
 Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* out)
@@ -105,12 +119,73 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                 {
                     result = Memory_Physical_NewPage(&physicalPage);
                     if (result != MEMORY_SUCCESS)
+                    {
+                        for (uintptr_t bp = firstBitmapPage; bp < bitmapPage; bp++)
+                        {
+                            const uintptr_t address = (uintptr_t)bitmap + bp * memoryLayout.pageSize;
+                            if (IsBitmapPageEmpty(address))
+                            {
+                                uphysptr_t phys;
+                                if (Memory_TranslateKernel(address, &phys) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_TranslateKernel failed on %p\n", address);
+                                    continue;
+                                }
+
+                                if (Memory_UnmapPageKernel(address) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_UnmapPageKernel failed on %p\n", address);
+                                    continue;
+                                }
+                                
+                                if (Memory_Physical_PutPage(phys) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_PutPage failed on %q\n", phys);
+                                    continue;
+                                }
+                            }
+                        }
                         return result;
+                    }
 
                     result = Memory_MapPageKernel(bitmapAddress, physicalPage, MEMORY_WRITABLE);
                     if (result != MEMORY_SUCCESS)
                     {
-                        Memory_Physical_PutPage(physicalPage);
+                        if (Memory_Physical_PutPage(physicalPage) != MEMORY_SUCCESS)
+                        {
+                            PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_PutPage failed on %q\n", physicalPage);
+                        }
+                        for (uintptr_t bp = firstBitmapPage; bp < bitmapPage; bp++)
+                        {
+                            const uintptr_t address = (uintptr_t)bitmap + bp * memoryLayout.pageSize;
+                            if (IsBitmapPageEmpty(address))
+                            {
+                                uphysptr_t phys;
+                                if (Memory_TranslateKernel(address, &phys) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_TranslateKernel failed on %p\n", address);
+                                    continue;
+                                }
+
+                                if (Memory_UnmapPageKernel(address) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_UnmapPageKernel failed on %p\n", address);
+                                    continue;
+                                }
+                                
+                                if (Memory_Physical_PutPage(phys) != MEMORY_SUCCESS)
+                                {
+                                    // Should not fail
+                                    PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_PutPage failed on %q\n", phys);
+                                    continue;
+                                }
+                            }
+                        }
                         return result;
                     }
 
@@ -134,7 +209,106 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
     return MEMORY_ERROR_OUT_OF_MEMORY;
 }
 
-Memory_Result Memory_KernelVirtual_FreePage(uintptr_t page, uintptr_t pageCount)
+Memory_Result Memory_KernelVirtual_FreePages(uintptr_t address, uintptr_t pageCount)
 {
-    // TODO
+    if (address % memoryLayout.pageSize != 0)
+        return MEMORY_ERROR_NOT_ALIGNED;
+
+    if (pageCount == 0)
+        return MEMORY_ERROR_NOT_ENOUGH_PAGES;
+
+    if (address < firstPageStart)
+        return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+    const uintptr_t startPage = (address - firstPageStart) / memoryLayout.pageSize;
+    const uintptr_t endPage = startPage + pageCount;
+
+    if (pageCount > usablePageCount - startPage)
+        return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+    const uintptr_t firstBitmapPage = startPage / (memoryLayout.pageSize * 8);
+    const uintptr_t lastBitmapPage = (endPage - 1) / (memoryLayout.pageSize * 8);
+    const uintptr_t startIndex = startPage % (memoryLayout.pageSize * 8);
+
+    bool endedInBitmapPage = false;
+    uintptr_t tmpStartIndex = startIndex;
+    for (uintptr_t bitmapPage = firstBitmapPage; bitmapPage <= lastBitmapPage; bitmapPage++)
+    {
+        const uintptr_t bitmapPageStartIndex = bitmapPage * memoryLayout.pageSize * 8;
+
+        const uintptr_t bitmapAddress = (uintptr_t)bitmap + bitmapPage * memoryLayout.pageSize;
+        uphysptr_t tmp;
+        Memory_Result translateResult = Memory_TranslateKernel(bitmapAddress, &tmp);
+        if (translateResult != MEMORY_SUCCESS)
+            return translateResult;
+
+        for (uintptr_t i = tmpStartIndex; i < memoryLayout.pageSize * 8; i++)
+        {
+            const uintptr_t index = bitmapPageStartIndex + i;
+            if (index >= endPage)
+            {
+                endedInBitmapPage = true;
+                break;
+            }
+
+            uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + i / 8];
+            const uint8_t bit = 1 << (i % 8);
+            if ((*entry & bit) == 0)
+                return MEMORY_ERROR_NOT_MAPPED;
+        }
+        tmpStartIndex = 0;
+    }
+
+    const bool oneFullPage = firstBitmapPage == lastBitmapPage && startIndex == 0 && !endedInBitmapPage;
+    const bool firstPageIsFull = oneFullPage || (firstBitmapPage != lastBitmapPage && startIndex == 0);
+    const bool lastPageIsFull = oneFullPage || (firstBitmapPage != lastBitmapPage && !endedInBitmapPage);
+
+    tmpStartIndex = startIndex;
+    for (uintptr_t bitmapPage = firstBitmapPage; bitmapPage <= lastBitmapPage; bitmapPage++)
+    {
+        const uintptr_t bitmapAddress = (uintptr_t)bitmap + bitmapPage * memoryLayout.pageSize;
+        const uintptr_t bitmapPageStartIndex = bitmapPage * memoryLayout.pageSize * 8;
+
+        for (uintptr_t i = tmpStartIndex; i < memoryLayout.pageSize * 8; i++)
+        {
+            const uintptr_t index = bitmapPageStartIndex + i;
+            if (index >= endPage)
+                break;
+
+            uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + i / 8];
+            const uint8_t bit = 1 << (i % 8);
+            *entry &= ~bit;
+        }
+        tmpStartIndex = 0;
+
+        if ((bitmapPage > firstBitmapPage && bitmapPage < lastBitmapPage) ||
+            (firstPageIsFull && bitmapPage == firstBitmapPage) ||
+            (lastPageIsFull && bitmapPage == lastBitmapPage) ||
+            IsBitmapPageEmpty(bitmapAddress))
+        {
+            uphysptr_t physAddress;
+            if (Memory_TranslateKernel(bitmapAddress, &physAddress) != MEMORY_SUCCESS)
+            {
+                // Should not fail
+                PanicMessageInfo("Memory_KernelVirtual_FreePages", "Memory_TranslateKernel failed on %p\n", bitmapAddress);
+                continue;
+            }
+
+            if (Memory_UnmapPageKernel(bitmapAddress) != MEMORY_SUCCESS)
+            {
+                // Should not fail
+                PanicMessageInfo("Memory_KernelVirtual_FreePages", "Memory_UnmapPageKernel failed on %p\n", bitmapAddress);
+                continue;
+            }
+                                
+            if (Memory_Physical_PutPage(physAddress) != MEMORY_SUCCESS)
+            {
+                // Should not fail
+                PanicMessageInfo("Memory_KernelVirtual_FreePages", "Memory_PutPage failed on %q\n", physAddress);
+                continue;
+            }
+        }
+    }
+
+    return MEMORY_SUCCESS;
 }

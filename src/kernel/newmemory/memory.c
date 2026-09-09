@@ -9,3 +9,8 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
 {
     // TODO
 }
+
+Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out)
+{
+    // TODO
+}

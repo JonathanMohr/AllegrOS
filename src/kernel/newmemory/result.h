@@ -13,6 +13,7 @@ typedef uint8_t Memory_Result;
 #define MEMORY_ERROR_ALREADY_MAPPED 7
 #define MEMORY_ERROR_PAGE_SIZE_TOO_SMALL 8
 #define MEMORY_ERROR_NOT_ENOUGH_PAGES 9
+#define MEMORY_ERROR_NOT_ALIGNED 10
 
 typedef uint8_t Memory_Flags;
 #define MEMORY_WRITABLE 0x1

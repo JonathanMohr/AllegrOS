@@ -115,7 +115,11 @@ void KernelConsole_PrintFormatV(KernelConsole* kconsole, const char* fmt, va_lis
                     }
 
                     case 'p': case 'P':
-                        PrintUnsigned(kconsole, (uintptr_t)va_arg(args, void*), 16);
+                        PrintUnsigned(kconsole, (uintptr_t)va_arg(args, uintptr_t), 16);
+                        break;
+
+                    case 'q': case 'Q':
+                        PrintUnsigned(kconsole, (uphysptr_t)va_arg(args, uphysptr_t), 16);
                         break;
 
                     case 'c': case 'C':
