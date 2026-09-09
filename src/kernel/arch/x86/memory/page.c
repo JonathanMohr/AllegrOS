@@ -63,12 +63,10 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
     allocated = 0;
 }
 
-static void MirrorKernel(uint32_t* pageDirectory)
+static void MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
 {
-    uint32_t* currentPageDirectory = (uint32_t*)0xFFFFF000;
-
     for (uint16_t i = 768; i < 1023; i++)
-        pageDirectory[i] = currentPageDirectory[i];
+        pageDirectory[i] = newPageDirectory[i];
 }
 
 Memory_Result Arch_CreateAddressSpace(uphysptr_t* out)
@@ -83,7 +81,7 @@ Memory_Result Arch_CreateAddressSpace(uphysptr_t* out)
 
     memset(tmp, 0, PAGE_SIZE);
 
-    MirrorKernel(tmp);
+    MirrorKernel(tmp, (uint32_t*)0xFFFFF000);
 
     tmp[PAGE_DIRECTORY_INDEX] = pageDirectory | PAGEF_PRESENT | PAGEF_WRITABLE;
 
@@ -282,6 +280,43 @@ Memory_Result Arch_TranslatePage(uphysptr_t addressSpace, uintptr_t virtualAddr,
 
     return MEMORY_SUCCESS;
 }
+
+
+Memory_Result Arch_SyncKernel(uphysptr_t addressSpace, uphysptr_t newAddressSpace)
+{
+    const bool addressSpaceCurrent = addressSpace == currentAddressSpace;
+    const bool newAddressSpaceCurrent = newAddressSpace == currentAddressSpace;
+
+    if (addressSpaceCurrent)
+    {
+        uint32_t* newPageDirectory = (uint32_t*)Arch_TemporaryMap(newAddressSpace);
+        MirrorKernel((uint32_t*)0xFFFFF000, newPageDirectory);
+        Arch_TemporaryUnmap((uintptr_t)newPageDirectory);
+
+        x86_reload_cr3();
+    }
+    else if (newAddressSpaceCurrent)
+    {
+        uint32_t* currentPageDirectory = (uint32_t*)Arch_TemporaryMap(addressSpace);
+        MirrorKernel(currentPageDirectory, (uint32_t*)0xFFFFF000);
+        Arch_TemporaryUnmap((uintptr_t)currentPageDirectory);
+    }
+    else
+    {
+        uint32_t kernelEntries[1023 - 768];
+
+        uint32_t* newPageDirectory = (uint32_t*)Arch_TemporaryMap(newAddressSpace);
+        memcpy(kernelEntries, &newPageDirectory[768], sizeof(kernelEntries));
+        Arch_TemporaryUnmap((uintptr_t)newPageDirectory);
+
+        uint32_t* currentPageDirectory = (uint32_t*)Arch_TemporaryMap(addressSpace);
+        memcpy(&currentPageDirectory[768], kernelEntries, sizeof(kernelEntries));
+        Arch_TemporaryUnmap((uintptr_t)currentPageDirectory);
+    }
+
+    return MEMORY_SUCCESS;
+}
+
 
 void Arch_SwitchAddressSpace(uphysptr_t addressSpace)
 {
