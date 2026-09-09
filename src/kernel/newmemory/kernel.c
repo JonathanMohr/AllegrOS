@@ -122,6 +122,7 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                     {
                         for (uintptr_t bp = firstBitmapPage; bp < bitmapPage; bp++)
                         {
+                            // TODO: Optimize like in free
                             const uintptr_t address = (uintptr_t)bitmap + bp * memoryLayout.pageSize;
                             if (IsBitmapPageEmpty(address))
                             {
@@ -223,7 +224,7 @@ Memory_Result Memory_KernelVirtual_FreePages(uintptr_t address, uintptr_t pageCo
     const uintptr_t startPage = (address - firstPageStart) / memoryLayout.pageSize;
     const uintptr_t endPage = startPage + pageCount;
 
-    if (pageCount > usablePageCount - startPage)
+    if (startPage >= usablePageCount || pageCount > usablePageCount - startPage)
         return MEMORY_ERROR_OUT_OF_BOUNDS;
 
     const uintptr_t firstBitmapPage = startPage / (memoryLayout.pageSize * 8);
