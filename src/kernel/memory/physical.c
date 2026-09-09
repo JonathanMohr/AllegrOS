@@ -15,7 +15,8 @@ static uphysptr_t freeListHead = 0;
 static uint32_t* pageReferences = NULL;
 static uint64_t pageCount = 0;
 
-#define MAX_REFERENCES 0xFFFFFFFF
+#define REFERENCES_NOT_COUNTED 0xFFFFFFFF
+#define MAX_REFERENCES 0xFFFFFFFE
 
 static void FreePage(uphysptr_t physicalAddress)
 {
@@ -53,6 +54,8 @@ Memory_Result Memory_Physical_Initialize(MemoryInfo* memoryInfo)
 {
     uint64_t totalPages = 0;
     uphysptr_t highestAddress = 0;
+
+    // TODO: set references for not usable pages to REFERENCES_NOT_COUNTED
 
     for (uint32_t i = 0; i < memoryInfo->RegionCount; i++)
     {
