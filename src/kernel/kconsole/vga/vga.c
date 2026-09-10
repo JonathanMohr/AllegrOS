@@ -9,7 +9,7 @@
 #define SCREEN_HEIGHT 25
 const uint8_t DEFAULT_COLOR = 0x7;
 
-uint16_t* VGA_Buffer = (uint16_t*)0xB8000;
+uint16_t* VGA_Buffer = (uint16_t*)0xB8000; // TODO: Map
 uint8_t VGA_screenX = 0;
 uint8_t VGA_screenY = 0;
 
