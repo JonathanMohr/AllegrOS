@@ -1,6 +1,6 @@
-from scripts.defs import OS, ARCH
-import scripts.build as build
-import scripts.logger as cLogger
+from build.defs import OS
+import build.build as build
+import build.logger as cLogger
 
 from pathlib import Path
 from logging.handlers import RotatingFileHandler

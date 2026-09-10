@@ -1,6 +1,6 @@
-from scripts.defs import OS, ARCH
-import scripts.cache as cache
-import scripts.compile_commands as compile_commands
+from build.defs import OS, ARCH
+import build.cache as cache
+import build.compile_commands as compile_commands
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,8 +8,8 @@ import subprocess
 import shutil
 import logging
 
-from scripts.toolchain.toolchain import Toolchain, Require_Tool, BuildContext, BuildMode, Architecture, Baseline, OPTIMIZATION
-from scripts.toolchain.get import Get_Toolchain
+from build.toolchain.toolchain import Toolchain, Require_Tool, BuildContext, BuildMode, Architecture, Baseline, OPTIMIZATION
+from build.toolchain.get import Get_Toolchain
 
 def Build_Sources_To_Objects(logger: logging.Logger, toolchain: Toolchain, mode: BuildMode, src_dir: Path, build_dir: Path, doCompileCommands: bool) -> list[Path]:
     patterns = ["*.c", "*.cpp", "*.asm"]
@@ -144,7 +144,7 @@ def build(logger: logging.Logger, debug: bool) -> BuildResult | None:
 
     fs_root = project_root / "fs_root"
     src_dir = project_root / "src"
-    build_root_dir = project_root / "build"
+    build_root_dir = project_root / ".build"
 
     if debug:
         mode_path = "debug"

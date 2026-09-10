@@ -5,8 +5,8 @@ from pathlib import Path
 import logging
 import shutil
 
-from scripts.cache import BuildCache
-from scripts.compile_commands import CompileCommands
+from build.cache import BuildCache
+from build.compile_commands import CompileCommands
 
 class Baseline(Enum):
     i386 = 1

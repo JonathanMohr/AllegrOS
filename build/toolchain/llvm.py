@@ -1,6 +1,6 @@
-from scripts.toolchain.toolchain import Toolchain, Require_Tool, BuildMode, BuildContext, Architecture, Baseline, OPTIMIZATION
-from scripts.cache import hash_files
-from scripts.compile_commands import Language
+from build.toolchain.toolchain import Toolchain, Require_Tool, BuildMode, BuildContext, Architecture, Baseline, OPTIMIZATION
+from build.cache import hash_files
+from build.compile_commands import Language
 
 from pathlib import Path
 import subprocess

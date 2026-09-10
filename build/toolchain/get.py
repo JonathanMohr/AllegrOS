@@ -1,6 +1,6 @@
-from scripts.toolchain.toolchain import BuildContext, Toolchain
-import scripts.toolchain.nasm as nasm
-import scripts.toolchain.llvm as llvm
+from build.toolchain.toolchain import BuildContext, Toolchain
+import build.toolchain.nasm as nasm
+import build.toolchain.llvm as llvm
 
 def Get_Toolchain(context: BuildContext) -> Toolchain:
     toolchain = Toolchain(
