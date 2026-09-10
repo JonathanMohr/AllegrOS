@@ -57,28 +57,26 @@ def run_qemu(image: Path, hostOS: OS, debugMode: False):
         raise RuntimeError(f"Running QEMU with {image} failed: {e}")
 
 def printHelp():
-    import rich
-    
-    rich.print(
-        "[bold bright_blue]usage:[/bold bright_blue] "
-        f"[bold bright_magenta]python{sys.version_info.major}.{sys.version_info.minor}[/bold bright_magenta] "
-        "[[bright_green]-h[/bright_green]] "
-        "[[bright_green]-d[/bright_green]] "
-        "([bright_cyan]commands[/bright_cyan])"
+    print(
+        "usage: "
+        f"python{sys.version_info.major}.{sys.version_info.minor} "
+        "-h "
+        "-d "
+        "(commands)"
     )
 
-    rich.print()
+    print()
 
-    rich.print("[bold bright_blue]commands:[/bold bright_blue]")
-    rich.print("  [bold bright_green]run[/bold bright_green]               Run the OS using QEMU")
-    rich.print("  [bold bright_green]debug[/bold bright_green]             Run the OS using QEMU with debug mode")
-    rich.print("  [bold bright_green]debugger[/bold bright_green]          Run the debugger")
+    print("commands:")
+    print("  run               Run the OS using QEMU")
+    print("  debug             Run the OS using QEMU with debug mode")
+    print("  debugger          Run the debugger")
 
-    rich.print()
+    print()
 
-    rich.print("[bold bright_blue]options:[/bold bright_blue]")
-    rich.print("  [bold bright_green]-h[/bold bright_green], [bold bright_cyan]--help[/bold bright_cyan]        Show this help message and exit")
-    rich.print("  [bold bright_green]-d[/bold bright_green], [bold bright_cyan]--debug[/bold bright_cyan]       Enable debug build")
+    print("options:")
+    print("  -h, --help        Show this help message and exit")
+    print("  -d, --debug       Enable debug build")
 
 def main() -> bool:
     hostOS: OS
@@ -119,7 +117,8 @@ def main() -> bool:
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-    logger.debug(f"========== NEW RUN {time.strftime("%Y-%m-%d %H:%M:%S")} ==========")
+    current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+    logger.debug(f"========== NEW RUN {current_time} ==========")
 
 
     debug: bool = False
