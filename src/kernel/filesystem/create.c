@@ -10,7 +10,7 @@ bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type
 
     const char* lastDelimiter = VFS_GetLastDelimiter(path);
 
-    const uintptr_t parentPathLength = lastDelimiter - path;
+    const uintptr_t parentPathLength = (uintptr_t)lastDelimiter - (uintptr_t)path;
     char* parentPath = parentPathLength ? Memory_KernelAllocate(parentPathLength + 1) : NULL;
     if (parentPathLength && !parentPath)
         return false;

@@ -17,7 +17,7 @@ typedef struct Registers {
 
 typedef void (*ISR_Handler)(const Registers* regs);
 
-void x86_ISR_InitializeGates();
+void x86_ISR_InitializeGates(void);
 
-void x86_ISR_Initialize();
+void x86_ISR_Initialize(void);
 void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler);

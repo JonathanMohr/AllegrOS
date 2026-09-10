@@ -23,8 +23,8 @@ uint64_t __udivdi3(uint64_t a, uint64_t b)
 int64_t __divdi3(int64_t a, int64_t b)
 {
     int sign = (a < 0) ^ (b < 0);
-    uint64_t ua = a < 0 ? -a : a;
-    uint64_t ub = b < 0 ? -b : b;
+    uint64_t ua = (a < 0) ? -(uint64_t)a : (uint64_t)a;
+    uint64_t ub = (b < 0) ? -(uint64_t)b : (uint64_t)b;
 
     uint64_t res = __udivdi3(ua, ub);
     return sign ? -(int64_t)res : (int64_t)res;
@@ -49,8 +49,8 @@ uint64_t __umoddi3(uint64_t a, uint64_t b)
 int64_t __moddi3(int64_t a, int64_t b)
 {
     int sign = (a < 0) ^ (b < 0);
-    uint64_t ua = a < 0 ? -a : a;
-    uint64_t ub = b < 0 ? -b : b;
+    uint64_t ua = (a < 0) ? -(uint64_t)a : (uint64_t)a;
+    uint64_t ub = (b < 0) ? -(uint64_t)b : (uint64_t)b;
 
     uint64_t res = __umoddi3(ua, ub);
     return sign ? -(int64_t)res : (int64_t)res;

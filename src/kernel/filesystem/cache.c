@@ -25,7 +25,7 @@ VFS_Node* VFS_Cache_Lookup(VFS_Node_Cache* cache, Filesystem_Driver* driver, uin
     return NULL;
 }
 
-static bool VFS_Cache_Resize(VFS_Node_Cache* cache, uint64_t newBucketCount)
+static bool VFS_Cache_Resize(VFS_Node_Cache* cache, uintptr_t newBucketCount)
 {
     VFS_Node_Cache_Entry** newBuckets = Memory_KernelAllocate(newBucketCount * sizeof(VFS_Node_Cache_Entry*));
     if (!newBuckets)

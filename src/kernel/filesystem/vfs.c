@@ -40,6 +40,7 @@ bool VFS_Initialize(VFS* vfs, Filesystem_Driver* rootMount)
 
 void VFS_Destroy(VFS* vfs)
 {
+    (void)vfs;
     // TODO: Clear every node
 
     // TODO: basically umount root and destroy driver
@@ -124,7 +125,7 @@ VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path)
     while (*path == '/')
         path++;
 
-    uint64_t nameOffset;
+    size_t nameOffset;
     char nameBuffer[FILESYSTEM_MAX_NAME + 1];
     while (*path)
     {
@@ -137,7 +138,7 @@ VFS_Entry* VFS_GetEntry(VFS* vfs, VFS_Entry* wd, const char* path)
             path++;
         nameBuffer[nameOffset] = '\0';
 
-        const uint64_t nameLen = nameOffset;
+        const size_t nameLen = nameOffset;
         if (nameLen == 0)
             continue;
 

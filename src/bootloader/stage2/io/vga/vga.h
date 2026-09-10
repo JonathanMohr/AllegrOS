@@ -10,5 +10,5 @@ uint8_t VGA_RawGetColor(uint8_t x, uint8_t y);
 void VGA_SetCursor(uint8_t x, uint8_t y);
 void VGA_Scrollback(uint8_t lines);
 
-void VGA_ClearScreen();
+void VGA_ClearScreen(void);
 void VGA_PutChar(char c);

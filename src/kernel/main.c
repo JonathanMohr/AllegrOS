@@ -42,7 +42,7 @@ KernelConsole* mux_console;
 uint32_t pciCount = 0;
 PCI_Device* pciDevices;
 
-uint64_t blockDeviceCount = 0;
+uint32_t blockDeviceCount = 0;
 Block_Device blockDevices[64]; /* 16 physical, 48 logical */
 
 uint64_t fsDriverCount = 0;
@@ -109,12 +109,12 @@ void CDECL kmain(BootParams* bParams)
         const bool isATA = ATA_CheckPCIDevice(device);
         if (isATA)
         {
-            for (uint8_t i = 0; i < 4; i++)
+            for (uint8_t j = 0; j < 4; j++)
             {
                 if (blockDeviceCount < 16)
                 {
-                    const bool primary = i & 1;
-                    const bool slave = i & 2;
+                    const bool primary = j & 1;
+                    const bool slave = j & 2;
 
                     const int ata_result = ATA_GetDiskFromPCIDevice(device, &blockDevices[blockDeviceCount], primary, slave);
                     if (ata_result == ATA_SUCCESS)
@@ -176,8 +176,8 @@ void CDECL kmain(BootParams* bParams)
                             n /= 10;
                         } while (n && dIdx < 20);
 
-                        for (size_t i = 0; i < dIdx; i++)
-                            nameBuffer[nameLen + 1 + i] = digits[dIdx - 1 - i];
+                        for (size_t k = 0; k < dIdx; k++)
+                            nameBuffer[nameLen + 1 + k] = digits[dIdx - 1 - k];
 
                         if (Device_PartitionTable_CreateBlockDevice(device, &blockDevices[blockDeviceCount], nameBuffer, start, count))
                         {
@@ -263,6 +263,8 @@ end_before_vfs:
 
 bool Timer_Handler(const Registers* regs)
 {
+    (void)regs;
+
     x86_IRQ_Send_EOI(0);
     Scheduler_Schedule();
 
@@ -273,6 +275,8 @@ static void Greet(void* arg);
 
 static void Spawn(void* arg)
 {
+    (void)arg;
+
     Kernel_Lock();
     KernelConsole_PutString(mux_console, "Spawning Task 1...\n");
     Kernel_Unlock();
@@ -323,5 +327,4 @@ static void Greet(void* arg)
         KernelConsole_PutChar(mux_console, '\n');
         Kernel_Unlock();
     }
-    for(;;);
 }

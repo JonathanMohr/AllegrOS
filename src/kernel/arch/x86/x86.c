@@ -5,7 +5,7 @@
 #include "isr.h"
 #include "irq/irq.h"
 
-void x86_Initialize()
+void x86_Initialize(void)
 {
     x86_GDT_Initialize();
     x86_IDT_Initialize();

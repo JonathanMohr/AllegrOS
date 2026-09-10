@@ -7,7 +7,7 @@
 
 static volatile ISR_Handler isrHandlers[256] = {0};
 
-void x86_ISR_Initialize()
+void x86_ISR_Initialize(void)
 {
     x86_ISR_InitializeGates();
     for (uint16_t i = 0; i < 256; i++)

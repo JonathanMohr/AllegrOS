@@ -6,12 +6,12 @@
 KernelConsole vgaConsole = { .clear=VGA_ClearScreen, .putChar=VGA_PutChar };
 KernelConsole debugConsole = { .clear=Debug_ClearScreen, .putChar=Debug_PutChar };
 
-KernelConsole* KernelConsole_GetVGA()
+KernelConsole* KernelConsole_GetVGA(void)
 {
     return &vgaConsole;
 }
 
-KernelConsole* KernelConsole_GetDebug()
+KernelConsole* KernelConsole_GetDebug(void)
 {
     return &debugConsole;
 }
@@ -53,7 +53,7 @@ static KernelConsoleMux koutputConsole = {
     .console.context = &koutputConsole
 };
 
-KernelConsole* KernelConsole_GetOutput()
+KernelConsole* KernelConsole_GetOutput(void)
 {
     return &koutputConsole.console;
 }

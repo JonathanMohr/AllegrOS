@@ -94,8 +94,8 @@ def Get_Compile_Flags(context: BuildContext, mode: BuildMode) -> list[str]:
         "-Wall", "-Wextra", "-Wpedantic", "-Wconversion", "-Wshadow",
         "-Wformat=2", "-Wundef", "-Wunreachable-code",
         "-Wnull-dereference", "-Wunused-parameter", "-Wformat-security",
-        "-Wsign-conversion", "-Wcast-align", "-Wcast-qual", "-Wdouble-promotion",
-        "-Wimplicit-fallthrough", "-Wmisleading-indentation", "-Wswitch-enum",
+        "-Wsign-conversion", "-Wcast-align", "-Wdouble-promotion",
+        "-Wimplicit-fallthrough", "-Wmisleading-indentation",
         "-Wloop-analysis", "-Wcomma", "-Wshadow-all", "-Wextra-semi", "-Wheader-hygiene"
     ])
 

@@ -37,6 +37,9 @@ ELFLoadInfo ELF_GetSize(Partition* partition, const char* path)
     uint32_t programHeaderTableEntrySize = headerBuffer.ProgramHeaderTableEntrySize;
     uint32_t programHeaderTableEntryCount = headerBuffer.ProgramHeaderTableEntryCount;
 
+    (void)programHeaderSize;
+    (void)programHeaderTableEntrySize; // TODO
+
     uint32_t remaining = programHeaderOffset - sizeof(ELFHeader);
     uint8_t buffer[512];
     while (remaining)
@@ -184,6 +187,8 @@ uint8_t* ELF_Load(Partition* partition, const char* path)
     uint32_t programHeaderSize = headerBuffer.ProgramHeaderTableEntrySize * headerBuffer.ProgramHeaderTableEntryCount;
     uint32_t programHeaderTableEntrySize = headerBuffer.ProgramHeaderTableEntrySize;
     uint32_t programHeaderTableEntryCount = headerBuffer.ProgramHeaderTableEntryCount;
+
+    (void)programHeaderSize;
 
     uint64_t currentOffset = programHeaderOffset;
     for (uint32_t i = 0; i < programHeaderTableEntryCount; i++)

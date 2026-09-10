@@ -6,7 +6,7 @@
 #include "debug/debug.h"
 #include "vga/vga.h"
 
-void IO_Init()
+void IO_Init(void)
 {
     VGA_ClearScreen();
 }
@@ -43,7 +43,7 @@ void CDECL IO_PutStringCritical(const char* str)
 
 const char g_HexChars[] = "0123456789abcdef";
 
-void IO_PrintFormat_Unsigned(stream_t s, uint64_t number, int radix)
+void IO_PrintFormat_Unsigned(stream_t s, uint64_t number, unsigned int radix)
 {
     char buffer[65];
     int pos = 0;
@@ -61,14 +61,14 @@ void IO_PrintFormat_Unsigned(stream_t s, uint64_t number, int radix)
         IO_PutChar(s, buffer[pos]);
 }
 
-void IO_PrintFormat_Signed(stream_t s, int64_t number, int radix)
+void IO_PrintFormat_Signed(stream_t s, int64_t number, unsigned int radix)
 {
     if (number < 0)
     {
         IO_PutChar(s, '-');
-        IO_PrintFormat_Unsigned(s, -number, radix);
+        IO_PrintFormat_Unsigned(s, -(uint64_t)number, radix);
     }
-    else IO_PrintFormat_Unsigned(s, number, radix);
+    else IO_PrintFormat_Unsigned(s, (uint64_t)number, radix);
 }
 
 void IO_PrintFormat(stream_t s, const char* fmt, ...)
@@ -97,7 +97,7 @@ void IO_PrintFormat(stream_t s, const char* fmt, ...)
                         if(!*fmt) break;
                         char size = *fmt;
 
-                        int radix;
+                        unsigned int radix;
 
                         switch (base)
                         {
@@ -152,7 +152,7 @@ void IO_PrintFormat(stream_t s, const char* fmt, ...)
                         if(!*fmt) break;
                         char size = *fmt;
 
-                        int radix;
+                        unsigned int radix;
 
                         switch (base)
                         {

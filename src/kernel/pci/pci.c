@@ -24,18 +24,18 @@ PCI_Device* PCI_Scan(uint32_t* outCount)
     {
         for (uint8_t slot = 0; slot < 32; slot++)
         {
-            const uint16_t vendorIdF0 = PCI_ConfigRead(bus, slot, 0, 0x00) & 0xFFFF;
+            const uint16_t vendorIdF0 = PCI_ConfigRead((uint8_t)bus, slot, 0, 0x00) & 0xFFFF;
             if (vendorIdF0 == 0xFFFF)
                 continue;
             else
                 count++;
 
-            const uint8_t headerType = (PCI_ConfigRead(bus, slot, 0, 0x0C) >> 16) & 0xFF;
+            const uint8_t headerType = (PCI_ConfigRead((uint8_t)bus, slot, 0, 0x0C) >> 16) & 0xFF;
             const uint8_t maxFunc = (headerType & 0x80) ? 8 : 1;
 
             for (uint8_t func = 1; func < maxFunc; func++)
             {
-                const uint16_t vendorId = PCI_ConfigRead(bus, slot, func, 0x00) & 0xFFFF;
+                const uint16_t vendorId = PCI_ConfigRead((uint8_t)bus, slot, func, 0x00) & 0xFFFF;
                 if (vendorId != 0xFFFF) count++;
             }
         }
@@ -59,10 +59,10 @@ PCI_Device* PCI_Scan(uint32_t* outCount)
     {
         for (uint8_t slot = 0; slot < 32; slot++)
         {
-            const uint16_t idRegF0 = PCI_ConfigRead(bus, slot, 0, 0x00) & 0xFFFF;
+            const uint16_t idRegF0 = PCI_ConfigRead((uint8_t)bus, slot, 0, 0x00) & 0xFFFF;
             if ((idRegF0 & 0xFFFF) == 0xFFFF) continue;
 
-            const uint8_t headerType = (PCI_ConfigRead(bus, slot, 0, 0x0C) >> 16) & 0xFF;
+            const uint8_t headerType = (PCI_ConfigRead((uint8_t)bus, slot, 0, 0x0C) >> 16) & 0xFF;
             const uint8_t maxFunc = (headerType & 0x80) ? 8 : 1;
 
             for (uint8_t func = 0; func < maxFunc; func++)
@@ -81,25 +81,25 @@ PCI_Device* PCI_Scan(uint32_t* outCount)
                     devices = newDevices;
                 }
 
-                const uint32_t idReg = (func == 0) ? idRegF0 : PCI_ConfigRead(bus, slot, func, 0x00);
+                const uint32_t idReg = (func == 0) ? idRegF0 : PCI_ConfigRead((uint8_t)bus, slot, func, 0x00);
                 const uint16_t vendorId = idReg & 0xFFFF;
                 if (vendorId == 0xFFFF) continue;
 
                 PCI_Device* dev = &devices[index];
                 
-                dev->bus = bus;
+                dev->bus = (uint8_t)bus;
                 dev->slot = slot;
                 dev->func = func;
                 dev->vendorID = vendorId;
                 dev->deviceID = (idReg >> 16) & 0xFFFF;
 
-                const uint32_t classReg = PCI_ConfigRead(bus, slot, func, 0x08);
+                const uint32_t classReg = PCI_ConfigRead((uint8_t)bus, slot, func, 0x08);
                 dev->classCode = (classReg >> 24) & 0xFF;
                 dev->subclass = (classReg >> 16) & 0xFF;
                 dev->progIf = (classReg >> 8) & 0xFF;
 
                 for (uint8_t i = 0; i < 6; i++)
-                    dev->bar[i] = PCI_ConfigRead(bus, slot, func, 0x10 + i * 4);
+                    dev->bar[i] = PCI_ConfigRead((uint8_t)bus, slot, func, 0x10 + i * 4);
 
                 index++;
             }

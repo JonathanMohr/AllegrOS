@@ -26,7 +26,7 @@ def Build_Sources_To_Objects(logger: logging.Logger, toolchain: Toolchain, mode:
             elif file.suffix == ".cpp":
                 object = toolchain.Compile_CPP_Source(mode, file, file.relative_to(src_dir), build_dir, doCompileCommands)
             elif file.suffix == ".asm":
-                object = toolchain.Compile_Assembly_Source(mode, file, file.relative_to(src_dir), build_dir, doCompileCommands)
+                object = toolchain.Compile_Assembly_Source(mode, file, file.relative_to(src_dir), build_dir, False) # TODO
             else:
                 logger.warning(f"Invalid source extension of file {file}")
                 continue

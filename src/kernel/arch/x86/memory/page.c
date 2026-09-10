@@ -55,7 +55,7 @@ uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress)
     uint32_t* recursiveTable = (uint32_t*)(0xFFC00000 + dirIndex * 0x1000);
 
     allocated = 1;
-    recursiveTable[tableIndex] = (physicalMapAddress & ~0xFFF) | PAGEF_PRESENT | PAGEF_WRITABLE;
+    recursiveTable[tableIndex] = (physicalMapAddress & ~0xFFFu) | PAGEF_PRESENT | PAGEF_WRITABLE;
     x86_invlpg(scratchVirtualAddr);
 
     return scratchVirtualAddr;
@@ -105,7 +105,7 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
         if ((pageDirectory[i] & PAGEF_PRESENT) == 0)
             continue;
 
-        const uphysptr_t pageTablePhysical = pageDirectory[i] & ~0xFFF;
+        const uphysptr_t pageTablePhysical = pageDirectory[i] & ~0xFFFu;
 
         uint32_t* pageTable = (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
         for (uint16_t j = 0; j < 1024; j++)
@@ -113,7 +113,7 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
             if ((pageTable[j] & PAGEF_PRESENT) == 0)
                 continue;
 
-            const uphysptr_t dataPagePhysical = pageTable[j] & ~0xFFF;
+            const uphysptr_t dataPagePhysical = pageTable[j] & ~0xFFFu;
             if (Memory_Physical_PutPage(dataPagePhysical) != MEMORY_SUCCESS)
                 PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", dataPagePhysical);
         }
@@ -175,7 +175,7 @@ Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphys
             x86_reload_cr3();
     }
 
-    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFF;
+    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
 
     uint32_t* pageTable = current ? (uint32_t*)(0xFFC00000 + dirIndex * 0x1000) : (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
     if (pageTable[tableIndex] & PAGEF_PRESENT)
@@ -184,7 +184,7 @@ Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphys
         return MEMORY_ERROR_ALREADY_MAPPED;
     }
 
-    pageTable[tableIndex] = (physicalAddr & ~0xFFF) | pflags;
+    pageTable[tableIndex] = (physicalAddr & ~0xFFFu) | pflags;
 
     if (!current) Arch_TemporaryUnmap((uintptr_t)pageTable);
 
@@ -208,7 +208,7 @@ Memory_Result Arch_UnmapPage(uphysptr_t addressSpace, uintptr_t virtualAddr)
     if ((dirEntry & PAGEF_PRESENT) == 0)
         return MEMORY_ERROR_NOT_MAPPED;
 
-    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFF;
+    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
 
     uint32_t* pageTable = current ? (uint32_t*)(0xFFC00000 + dirIndex * 0x1000) : (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
     if ((pageTable[tableIndex] & PAGEF_PRESENT) == 0)
@@ -267,7 +267,7 @@ Memory_Result Arch_TranslatePage(uphysptr_t addressSpace, uintptr_t virtualAddr,
     if ((dirEntry & PAGEF_PRESENT) == 0)
         return MEMORY_ERROR_NOT_MAPPED;
 
-    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFF;
+    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
 
     uint32_t* pageTable = current ? (uint32_t*)(0xFFC00000 + dirIndex * 0x1000) : (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
     const uint32_t tableEntry = pageTable[tableIndex];
@@ -276,7 +276,7 @@ Memory_Result Arch_TranslatePage(uphysptr_t addressSpace, uintptr_t virtualAddr,
     if ((tableEntry & PAGEF_PRESENT) == 0)
         return MEMORY_ERROR_NOT_MAPPED;
 
-    uphysptr_t pagePhysical = tableEntry & ~0xFFF;
+    uphysptr_t pagePhysical = tableEntry & ~0xFFFu;
 
     *outPhysicalAddr = pagePhysical + offset;
 

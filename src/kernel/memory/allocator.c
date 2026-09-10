@@ -34,7 +34,7 @@ static SlabClass slabClasses[] = {
     { 16, 0, 0, 0 }, { 32, 0, 0, 0 }, { 64, 0, 0, 0 }, { 128, 0, 0, 0 },
     { 256, 0, 0, 0 }, { 512, 0, 0, 0 }, { 1024, 0, 0, 0 }
 };
-#define SLAB_CLASS_COUNT (sizeof(slabClasses) / sizeof(slabClasses[0]))
+#define SLAB_CLASS_COUNT ((int)(sizeof(slabClasses) / sizeof(slabClasses[0])))
 
 typedef struct
 {
@@ -221,6 +221,10 @@ static bool large_find(void* ptr, uintptr_t* oldSize, large_data* data)
 
 static void* large_realloc(void* ptr, uintptr_t size, bool zero, large_data* data)
 {
+    (void)ptr;
+    (void)size;
+    (void)zero;
+    (void)data;
     // TODO: Add later
     return NULL;
 }

@@ -19,7 +19,7 @@ void VGA_RawPutCharacter(uint8_t c, uint8_t x, uint8_t y)
 void VGA_RawPutColor(uint8_t color, uint8_t x, uint8_t y)
 {
     vga_buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] =
-        (color << 8) | (vga_buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] & 0x00FF);
+        (uint16_t)(color << 8) | (vga_buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] & 0x00FF);
 }
 
 uint8_t VGA_RawGetCharacter(uint8_t x, uint8_t y)
@@ -68,7 +68,7 @@ void VGA_Scrollback(uint8_t lines)
 }
 
 
-void VGA_ClearScreen()
+void VGA_ClearScreen(void)
 {
     for (uint8_t y = 0; y < SCREEN_HEIGHT; y++)
     {

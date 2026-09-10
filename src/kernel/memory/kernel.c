@@ -69,7 +69,7 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                     break;
 
                 uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + i / 8];
-                const uint8_t bit = 1 << (i % 8);
+                const uint8_t bit = (uint8_t)(1 << (i % 8));
                 if ((*entry & bit) == 0)
                 {
                     if (currentRun == 0)
@@ -106,9 +106,9 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
             const uintptr_t firstBitmapPage = runStart / (memoryLayout.pageSize * 8);
             const uintptr_t lastBitmapPage = (endBit - 1) / (memoryLayout.pageSize * 8);
 
-            for (uintptr_t bitmapPage = firstBitmapPage; bitmapPage <= lastBitmapPage; bitmapPage++)
+            for (uintptr_t curBitmapPage = firstBitmapPage; curBitmapPage <= lastBitmapPage; curBitmapPage++)
             {
-                const uintptr_t bitmapAddress = (uintptr_t)bitmap + bitmapPage * memoryLayout.pageSize;
+                const uintptr_t bitmapAddress = (uintptr_t)bitmap + curBitmapPage * memoryLayout.pageSize;
 
                 uphysptr_t physicalPage;
                 Memory_Result result = Memory_TranslateKernel(bitmapAddress, &physicalPage);
@@ -118,7 +118,7 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                     result = Memory_Physical_NewPage(&physicalPage);
                     if (result != MEMORY_SUCCESS)
                     {
-                        for (uintptr_t bp = firstBitmapPage; bp < bitmapPage; bp++)
+                        for (uintptr_t bp = firstBitmapPage; bp < curBitmapPage; bp++)
                         {
                             // TODO: Optimize like in free
                             const uintptr_t address = (uintptr_t)bitmap + bp * memoryLayout.pageSize;
@@ -157,7 +157,7 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                         {
                             PanicMessageInfo("Memory_KernelVirtual_AllocatePages", "Memory_PutPage failed on %q\n", physicalPage);
                         }
-                        for (uintptr_t bp = firstBitmapPage; bp < bitmapPage; bp++)
+                        for (uintptr_t bp = firstBitmapPage; bp < curBitmapPage; bp++)
                         {
                             const uintptr_t address = (uintptr_t)bitmap + bp * memoryLayout.pageSize;
                             if (IsBitmapPageEmpty(address))
@@ -251,7 +251,7 @@ Memory_Result Memory_KernelVirtual_FreePages(uintptr_t address, uintptr_t pageCo
             }
 
             uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + i / 8];
-            const uint8_t bit = 1 << (i % 8);
+            const uint8_t bit = (uint8_t)(1 << (i % 8));
             if ((*entry & bit) == 0)
                 return MEMORY_ERROR_NOT_MAPPED;
         }
@@ -275,7 +275,7 @@ Memory_Result Memory_KernelVirtual_FreePages(uintptr_t address, uintptr_t pageCo
                 break;
 
             uint8_t* entry = &bitmap[bitmapPage * memoryLayout.pageSize + i / 8];
-            const uint8_t bit = 1 << (i % 8);
+            const uint8_t bit = (uint8_t)(1 << (i % 8));
             *entry &= ~bit;
         }
         tmpStartIndex = 0;

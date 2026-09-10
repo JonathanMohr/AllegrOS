@@ -57,7 +57,8 @@ Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAdd
     while (currentAS)
     {
         if (currentAS->addressSpace == current) continue;
-        Memory_Result result = Arch_SyncKernel(currentAS->addressSpace, current);
+        Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
+        (void)r;
 
         // TODO: Check
 
@@ -79,7 +80,8 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
     while (currentAS)
     {
         if (currentAS->addressSpace == current) continue;
-        Memory_Result result = Arch_SyncKernel(currentAS->addressSpace, current);
+        Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
+        (void)r;
 
         // TODO: Check
 

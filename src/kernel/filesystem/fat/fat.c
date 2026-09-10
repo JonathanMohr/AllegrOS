@@ -352,7 +352,7 @@ static inline uint32_t FAT_Cluster(FAT_Version version, uint32_t cluster)
 
 static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t cluster)
 {
-    uint64_t fatIndex;
+    uintptr_t fatIndex;
     uint8_t entrySize;
     if (data->fatVersion == FAT_VERSION_12)
     {
@@ -370,16 +370,16 @@ static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_
         entrySize = 4;
     }
 
-    uint64_t fatStartSector = data->fatSector;
+    uintptr_t fatStartSector = data->fatSector;
     if (data->activeFat != FAT_ACTIVE_ALL)
-        fatStartSector += (uint64_t)data->fatSize * (uint64_t)data->activeFat;
+        fatStartSector += (uintptr_t)data->fatSize * (uintptr_t)data->activeFat;
 
-    const uint64_t blockSize = device->sectorSize;
-    uint64_t fatStartByte = (uint64_t)fatStartSector * data->bytesPerSector;
-    uint64_t absoluteByteOffset = fatStartByte + fatIndex;
+    const uintptr_t blockSize = device->sectorSize;
+    uintptr_t fatStartByte = (uintptr_t)fatStartSector * data->bytesPerSector;
+    uintptr_t absoluteByteOffset = fatStartByte + fatIndex;
 
-    uint64_t blockIndex = absoluteByteOffset / blockSize;
-    uint64_t offsetInBlock = absoluteByteOffset % blockSize;
+    uintptr_t blockIndex = absoluteByteOffset / blockSize;
+    uintptr_t offsetInBlock = absoluteByteOffset % blockSize;
 
     union
     {
@@ -390,8 +390,8 @@ static uint32_t FAT_ReadFAT(FAT_Driver_Data* data, Block_Device* device, uint32_
 
     if ((offsetInBlock + entrySize) > blockSize)
     {
-        const uint64_t firstPart = blockSize - offsetInBlock;
-        const uint64_t secondPart = entrySize - firstPart;
+        const uintptr_t firstPart = blockSize - offsetInBlock;
+        const uintptr_t secondPart = entrySize - firstPart;
         if (device->read(device, blockIndex, 2, data->fatSectorBuffer) != 2)
             return FAT_SECTOR_ERROR;
         memcpy(buffer.buffer, data->fatSectorBuffer + offsetInBlock, firstPart);
@@ -419,7 +419,7 @@ static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t c
 {
     // TODO: Active FAT
     
-    uint64_t fatIndex;
+    uintptr_t fatIndex;
     uint8_t entrySize;
     if (data->fatVersion == FAT_VERSION_12)
     {
@@ -437,16 +437,16 @@ static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t c
         entrySize = 4;
     }
 
-    uint64_t fatStartSector = data->fatSector;
+    uintptr_t fatStartSector = data->fatSector;
     if (data->activeFat != FAT_ACTIVE_ALL)
-        fatStartSector += (uint64_t)data->fatSize * (uint64_t)data->activeFat;
+        fatStartSector += (uintptr_t)data->fatSize * (uintptr_t)data->activeFat;
 
-    const uint64_t blockSize = device->sectorSize;
-    uint64_t fatStartByte = (uint64_t)fatStartSector * data->bytesPerSector;
-    uint64_t absoluteByteOffset = fatStartByte + fatIndex;
+    const uintptr_t blockSize = device->sectorSize;
+    uintptr_t fatStartByte = (uintptr_t)fatStartSector * data->bytesPerSector;
+    uintptr_t absoluteByteOffset = fatStartByte + fatIndex;
 
-    uint64_t blockIndex = absoluteByteOffset / blockSize;
-    uint64_t offsetInBlock = absoluteByteOffset % blockSize;
+    uintptr_t blockIndex = absoluteByteOffset / blockSize;
+    uintptr_t offsetInBlock = absoluteByteOffset % blockSize;
 
     union
     {
@@ -456,7 +456,7 @@ static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t c
     } buffer;
 
     if (data->fatVersion == FAT_VERSION_12)
-        buffer.e16 = (cluster % 2 == 1) ? (value << 4) : (value & 0x0FFF);
+        buffer.e16 = (cluster % 2 == 1) ? (uint16_t)(value << 4) : (value & 0x0FFF);
     else if (data->fatVersion == FAT_VERSION_16)
         buffer.e16 = (uint16_t)value;
     else
@@ -464,8 +464,8 @@ static bool FAT_WriteFAT(FAT_Driver_Data* data, Block_Device* device, uint32_t c
 
     if ((offsetInBlock + entrySize) > blockSize)
     {
-        const uint64_t firstPart = blockSize - offsetInBlock;
-        const uint64_t secondPart = entrySize - firstPart;
+        const uintptr_t firstPart = blockSize - offsetInBlock;
+        const uintptr_t secondPart = entrySize - firstPart;
         if (device->read(device, blockIndex, 2, data->fatSectorBuffer) != 2)
             return false;
         if (data->fatVersion == FAT_VERSION_12)
@@ -510,23 +510,23 @@ static bool FAT_ReadRootDirectoryEntries(FAT_Driver_Data* data, Block_Device* de
     if ((uint32_t)index + (uint32_t)count > data->rootDir.fixed.entryCount)
         return false;
 
-    const uint64_t blockSize = device->sectorSize;
-    const uint64_t rootDirStartByte = (uint64_t)data->rootDir.fixed.sector * data->bytesPerSector;
-    const uint64_t byteOffset = rootDirStartByte + (uint64_t)index * sizeof(FAT_DirectoryEntry);
-    const uint64_t size = (uint64_t)count * sizeof(FAT_DirectoryEntry);
+    const uintptr_t blockSize = device->sectorSize;
+    const uintptr_t rootDirStartByte = (uintptr_t)data->rootDir.fixed.sector * data->bytesPerSector;
+    const uintptr_t byteOffset = rootDirStartByte + (uintptr_t)index * sizeof(FAT_DirectoryEntry);
+    const uintptr_t size = (uintptr_t)count * sizeof(FAT_DirectoryEntry);
 
-    const uint64_t startBlock = byteOffset / blockSize;
-    const uint64_t offsetInStartBlock = byteOffset % blockSize;
+    const uintptr_t startBlock = byteOffset / blockSize;
+    const uintptr_t offsetInStartBlock = byteOffset % blockSize;
 
     if (offsetInStartBlock == 0 && size % blockSize == 0)
     {
-        const uint64_t blockCount = size / blockSize;
+        const uintptr_t blockCount = size / blockSize;
         return device->read(device, startBlock, blockCount, out) == blockCount;
     }
 
-    uint64_t remaining = size;
-    uint64_t currentBlock = startBlock;
-    uint64_t offsetInBlock = offsetInStartBlock;
+    uintptr_t remaining = size;
+    uintptr_t currentBlock = startBlock;
+    uintptr_t offsetInBlock = offsetInStartBlock;
     uint8_t* dst = (uint8_t*)out;
 
     while (remaining > 0)
@@ -534,7 +534,7 @@ static bool FAT_ReadRootDirectoryEntries(FAT_Driver_Data* data, Block_Device* de
         if (device->read(device, currentBlock, 1, data->rootDirBuffer) != 1)
             return false;
 
-        uint64_t chunk = blockSize - offsetInBlock;
+        uintptr_t chunk = blockSize - offsetInBlock;
         if (chunk > remaining)
             chunk = remaining;
 
@@ -557,28 +557,28 @@ static bool FAT_WriteRootDirectoryEntries(FAT_Driver_Data* data, Block_Device* d
     if ((uint32_t)index + (uint32_t)count > data->rootDir.fixed.entryCount)
         return false;
 
-    const uint64_t blockSize = device->sectorSize;
-    const uint64_t rootDirStartByte = (uint64_t)data->rootDir.fixed.sector * data->bytesPerSector;
-    const uint64_t byteOffset = rootDirStartByte + (uint64_t)index * sizeof(FAT_DirectoryEntry);
-    const uint64_t size = (uint64_t)count * sizeof(FAT_DirectoryEntry);
+    const uintptr_t blockSize = device->sectorSize;
+    const uintptr_t rootDirStartByte = (uintptr_t)data->rootDir.fixed.sector * data->bytesPerSector;
+    const uintptr_t byteOffset = rootDirStartByte + (uintptr_t)index * sizeof(FAT_DirectoryEntry);
+    const uintptr_t size = (uintptr_t)count * sizeof(FAT_DirectoryEntry);
 
-    const uint64_t startBlock = byteOffset / blockSize;
-    const uint64_t offsetInStartBlock = byteOffset % blockSize;
+    const uintptr_t startBlock = byteOffset / blockSize;
+    const uintptr_t offsetInStartBlock = byteOffset % blockSize;
 
     if (offsetInStartBlock == 0 && size % blockSize == 0)
     {
-        const uint64_t blockCount = size / blockSize;
+        const uintptr_t blockCount = size / blockSize;
         return device->write(device, startBlock, blockCount, in) == blockCount;
     }
 
-    uint64_t remaining = size;
-    uint64_t currentBlock = startBlock;
-    uint64_t offsetInBlock = offsetInStartBlock;
+    uintptr_t remaining = size;
+    uintptr_t currentBlock = startBlock;
+    uintptr_t offsetInBlock = offsetInStartBlock;
     const uint8_t* src = (const uint8_t*)in;
 
     while (remaining > 0)
     {
-        uint64_t chunk = blockSize - offsetInBlock;
+        uintptr_t chunk = blockSize - offsetInBlock;
         if (chunk > remaining)
             chunk = remaining;
 
@@ -891,7 +891,7 @@ static bool FAT_GetNode(Filesystem_Driver* driver, uint64_t number, Filesystem_N
         if (offsetInCluster + sizeof(FAT_DirectoryEntry) > data->bytesPerCluster)
             return false;
 
-        memcpy(&entry, data->clusterBuffer + offsetInCluster, sizeof(FAT_DirectoryEntry));
+        memcpy(&entry, (uint8_t*)data->clusterBuffer + offsetInCluster, sizeof(FAT_DirectoryEntry));
     }
 
     FAT_Node_Extra* extra = Memory_KernelAllocate(sizeof(FAT_Node_Extra));
@@ -946,6 +946,7 @@ static bool FAT_GetNode(Filesystem_Driver* driver, uint64_t number, Filesystem_N
 
 static void FAT_CleanupNode(Filesystem_Driver* driver, Filesystem_Node* node)
 {
+    (void)driver; // TODO
     Memory_KernelFree(node->extra);
 }
 
@@ -1927,8 +1928,8 @@ static bool FAT_WriteEntries(Filesystem_Driver* driver, uint32_t entryCluster, u
         if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
             return false;
 
-        memcpy(data->clusterBuffer + (uint64_t)indexInCluster * sizeof(FAT_DirectoryEntry),
-               src, (uint64_t)chunk * sizeof(FAT_DirectoryEntry));
+        memcpy((uint8_t*)data->clusterBuffer + (uint64_t)indexInCluster * sizeof(FAT_DirectoryEntry),
+               src, chunk * sizeof(FAT_DirectoryEntry));
 
         if (!FAT_WriteCluster(data, driver->parent, cluster, data->clusterBuffer))
             return false;
@@ -2050,7 +2051,6 @@ static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, File
         lName++;
     }
 
-    uint8_t charIndex = 0;
     char firstChars[2] = {'#', '#'};
     char ext[3] = {' ', ' ', ' '};
 
@@ -2219,6 +2219,10 @@ static bool FAT_CreateNode(Filesystem_Driver* driver, Filesystem_Node* dir, File
 
 static bool FAT_Link(Filesystem_Driver* driver, Filesystem_Node* dir, const char* name, Filesystem_Node* target)
 {
+    (void)driver;
+    (void)dir;
+    (void)name;
+    (void)target;
     return false;
 }
 
@@ -2412,7 +2416,7 @@ static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file
         if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
             break;
 
-        memcpy(buffer + read, data->clusterBuffer + offsetInCluster, chunk);
+        memcpy((uint8_t*)buffer + read, (uint8_t*)data->clusterBuffer + offsetInCluster, chunk);
 
         read += chunk;
         file->pos += chunk;
@@ -2458,8 +2462,6 @@ static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* fil
 
         if (status != FAT_SECTOR_NORMAL)
         {
-            uint32_t lastCluster = fileExtra->currentCluster;
-
             uint32_t walk = nodeExtra->startCluster;
             uint32_t walkStatus = FAT_Cluster(data->fatVersion, walk);
             if (walkStatus != FAT_SECTOR_NORMAL)
@@ -2495,7 +2497,7 @@ static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* fil
         if (!FAT_ReadCluster(data, driver->parent, cluster, data->clusterBuffer))
             break;
 
-        memcpy(data->clusterBuffer + offsetInCluster, buffer + written, chunk);
+        memcpy((uint8_t*)data->clusterBuffer + offsetInCluster, (uint8_t*)buffer + written, chunk);
 
         if (!FAT_WriteCluster(data, driver->parent, cluster, data->clusterBuffer))
             break;
@@ -2594,6 +2596,8 @@ static bool FAT_Seek(struct Filesystem_Driver* driver, Filesystem_File* file, ui
 
 static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Node* node, Filesystem_File* out)
 {
+    (void)driver;
+
     FAT_Node_Extra* nodeExtra = node->extra;
 
     FAT_File_Extra* fileExtra = Memory_KernelAllocate(sizeof(FAT_File_Extra));
@@ -2611,6 +2615,7 @@ static bool FAT_OpenFile(Filesystem_Driver* driver, Filesystem_Node* node, Files
 
 static void FAT_CloseFile(struct Filesystem_Driver* driver, Filesystem_File* file)
 {
+    (void)driver;
     Memory_KernelFree(file->extra);
 }
 
@@ -2639,8 +2644,6 @@ static uint64_t FAT_Move(Filesystem_Driver* driver, Filesystem_Node* srcDir, con
 
     bool found = false;
     FAT_DirectoryEntry mainEntry;
-    uint32_t srcMainCluster = 0;
-    uint32_t srcMainIndex = 0;
     uint32_t srcStartCluster = 0;
     uint32_t srcStartIndex = 0;
     uint32_t srcTotalCount = 0;
@@ -2762,8 +2765,6 @@ static uint64_t FAT_Move(Filesystem_Driver* driver, Filesystem_Node* srcDir, con
         {
             found = true;
             mainEntry = entry;
-            srcMainCluster = entryCluster;
-            srcMainIndex = entryIndex;
 
             if (useLfn)
             {
@@ -2901,8 +2902,6 @@ bool FAT_CheckDevice(Block_Device* device)
     const uint16_t sectorsPerCluster = bootsector.header.sectorsPerCluster;
     const uint16_t reservedSectors = bootsector.header.reservedSectors;
 
-    const uint16_t rootDirEntryCount = bootsector.header.rootDirEntryCount;
-
     const uint16_t fatCount = bootsector.header.fatCount;
     const uint32_t fatSize = bootsector.header.fatSize ? bootsector.header.fatSize :bootsector.header.ebpb.fat32.fatSize32;
     const uint32_t totalSectors = bootsector.header.totalSectors ? bootsector.header.totalSectors : bootsector.header.largeTotalSectors;
@@ -2952,7 +2951,7 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     const uint16_t rootDirEntryCount = data->bootsector.header.rootDirEntryCount;
 
-    const uint16_t fatCount = data->bootsector.header.fatCount;
+    const uint8_t fatCount = data->bootsector.header.fatCount;
     const uint32_t fatSize = data->bootsector.header.fatSize ? data->bootsector.header.fatSize : data->bootsector.header.ebpb.fat32.fatSize32;
     const uint32_t totalSectors = data->bootsector.header.totalSectors ? data->bootsector.header.totalSectors : data->bootsector.header.largeTotalSectors;
 
@@ -3046,36 +3045,36 @@ bool FAT_GetDriver(Block_Device* parent, Filesystem_Driver* driver)
 
     data->fatVersion = version;
 
-    const uint64_t blockSize = parent->sectorSize;
-    if ((uint64_t)bytesPerSector % blockSize == 0)
+    const uintptr_t blockSize = parent->sectorSize;
+    if ((uintptr_t)bytesPerSector % blockSize == 0)
     {
         data->clusterReadBuffer = NULL;
         data->clusterBuffering = FAT_CLUSTER_BUFFERING_OPTIMAL_SMALL;
     }
-    else if (blockSize % (uint64_t)bytesPerSector == 0 &&
-             (uint64_t)dataStartSector % (blockSize / (uint64_t)bytesPerSector) == 0 &&
-             (uint64_t)sectorsPerCluster % (blockSize / (uint64_t)bytesPerSector) == 0)
+    else if (blockSize % (uintptr_t)bytesPerSector == 0 &&
+             (uintptr_t)dataStartSector % (blockSize / (uintptr_t)bytesPerSector) == 0 &&
+             (uintptr_t)sectorsPerCluster % (blockSize / (uintptr_t)bytesPerSector) == 0)
     {
         data->clusterReadBuffer = NULL;
         data->clusterBuffering = FAT_CLUSTER_BUFFERING_OPTIMAL_BIG;
     }
-    else if (blockSize % (uint64_t)bytesPerSector == 0)
+    else if (blockSize % (uintptr_t)bytesPerSector == 0)
     {
-        const uint64_t maxOffset = blockSize - (uint64_t)bytesPerSector;
-        const uint64_t bufferBlocks = ((uint64_t)bytesPerCluster + maxOffset + blockSize - 1) / blockSize;
+        const uintptr_t maxOffset = blockSize - (uintptr_t)bytesPerSector;
+        const uintptr_t bufferBlocks = ((uintptr_t)bytesPerCluster + maxOffset + blockSize - 1) / blockSize;
         data->clusterReadBuffer = Memory_KernelAllocate(bufferBlocks * blockSize);
         data->clusterBuffering = FAT_CLUSTER_BUFFERING_GOOD_ENOUGH;
     }
     else if (parent->sectorSize < bytesPerSector)
     {
-        const uint64_t bufferBlocks = (uint64_t)((uint64_t)bytesPerCluster + blockSize - 1) / blockSize + 1;
-        data->clusterReadBuffer = Memory_KernelAllocate((uint64_t)bufferBlocks * blockSize);
+        const uintptr_t bufferBlocks = (uintptr_t)((uintptr_t)bytesPerCluster + blockSize - 1) / blockSize + 1;
+        data->clusterReadBuffer = Memory_KernelAllocate((uintptr_t)bufferBlocks * blockSize);
         data->clusterBuffering = FAT_CLUSTER_BUFFERING_BAD_SMALL;
     }
     else
     {
-        const uint64_t bufferBlocks = (uint64_t)((uint64_t)bytesPerCluster + blockSize - 1) / blockSize + 1;
-        data->clusterReadBuffer = Memory_KernelAllocate((uint64_t)bufferBlocks * blockSize);
+        const uintptr_t bufferBlocks = (uintptr_t)((uintptr_t)bytesPerCluster + blockSize - 1) / blockSize + 1;
+        data->clusterReadBuffer = Memory_KernelAllocate((uintptr_t)bufferBlocks * blockSize);
         data->clusterBuffering = FAT_CLUSTER_BUFFERING_BAD_BIG;
     }
 

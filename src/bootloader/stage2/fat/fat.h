@@ -78,7 +78,7 @@ typedef struct
     union {
         FAT_ExtendedBootRecord EBR1216;
         FAT32_ExtendedBootRecord EBR32;
-    };
+    } ebr;
 
     // ... we don't care about code ...
 

@@ -5,7 +5,7 @@
 #include <minmax.h>
 #include "../x86/x86.h"
 
-MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint32_t ksize)
+MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* blocks, uint32_t count, uint64_t ksize)
 {
     for (uint32_t i = 0; i < count - 1; i++)
     {
@@ -31,13 +31,13 @@ MemoryAddresses Memory_Detect(MemoryInfo* memoryInfo, x86_E820MemoryBlock* block
     uint32_t regionCount = 0;
     uint64_t lastEnd = 0;
 
-    uint32_t kernel_size = (ksize + 0xFFF) & ~0xFFF;
+    uint64_t kernel_size = (ksize + 0xFFF) & ~0xFFFu;
 
     uint64_t totalPageCount = (highestAddress + 0xFFF) / 0x1000;
-    uint64_t pageInfo_size = (totalPageCount * sizeof(uint32_t) + 0xFFF) & ~0xFFF;
+    uint64_t pageInfo_size = (totalPageCount * sizeof(uint32_t) + 0xFFF) & ~0xFFFu;
 
-    uint32_t kernel_pageTableCount = (kernel_size + pageInfo_size + 0x3FFFFF) / 0x400000;
-    uint32_t kernel_pageTableSize = kernel_pageTableCount * 0x1000;
+    uint64_t kernel_pageTableCount = (kernel_size + pageInfo_size + 0x3FFFFF) / 0x400000;
+    uint64_t kernel_pageTableSize = kernel_pageTableCount * 0x1000;
 
     uint8_t* page_directory = NULL;
     uint8_t* page_tables = NULL;

@@ -13,7 +13,7 @@ struct FreePage
 static uphysptr_t freeListHead = 0;
 
 static uint32_t* pageReferences = NULL;
-static uint64_t pageCount = 0;
+static uphysptr_t pageCount = 0;
 
 #define REFERENCES_NOT_COUNTED 0xFFFFFFFF
 #define MAX_REFERENCES 0xFFFFFFFE
@@ -52,6 +52,8 @@ static bool GetPageReferences(uphysptr_t physicalAddress, uint32_t** out)
 
 Memory_Result Memory_Physical_Initialize(MemoryInfo* memoryInfo)
 {
+    // TODO: Check that Begin + Length fit into uphysptr_t
+
     uint64_t totalPages = 0;
     uphysptr_t highestAddress = 0;
 
@@ -59,9 +61,9 @@ Memory_Result Memory_Physical_Initialize(MemoryInfo* memoryInfo)
     {
         MemoryRegion* region = &memoryInfo->Regions[i];
 
-        const uphysptr_t start = ((region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
-        const uphysptr_t alignedEnd = ((region->Begin + region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
-        const uphysptr_t end = ((region->Begin + region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t start = (((uphysptr_t)region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t alignedEnd = (((uphysptr_t)region->Begin + (uphysptr_t)region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t end = (((uphysptr_t)region->Begin + (uphysptr_t)region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
 
         if (end > 0 && end - 1 > highestAddress)
             highestAddress = end - 1;
@@ -87,10 +89,10 @@ Memory_Result Memory_Physical_Initialize(MemoryInfo* memoryInfo)
     {
         MemoryRegion* region = &memoryInfo->Regions[i];
 
-        const uphysptr_t alignedStart = (region->Begin / memoryLayout.pageSize) * memoryLayout.pageSize;
-        const uphysptr_t start = ((region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
-        const uphysptr_t alignedEnd = ((region->Begin + region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
-        const uphysptr_t end = ((region->Begin + region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t alignedStart = ((uphysptr_t)region->Begin / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t start = (((uphysptr_t)region->Begin + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t alignedEnd = (((uphysptr_t)region->Begin + (uphysptr_t)region->Length) / memoryLayout.pageSize) * memoryLayout.pageSize;
+        const uphysptr_t end = (((uphysptr_t)region->Begin + (uphysptr_t)region->Length + memoryLayout.pageSize - 1) / memoryLayout.pageSize) * memoryLayout.pageSize;
 
         if (region->Type == MEMORY_TYPE_USABLE)
         {

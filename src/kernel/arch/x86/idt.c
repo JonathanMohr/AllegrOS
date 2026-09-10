@@ -7,7 +7,7 @@ IDTDescriptor idtDescriptor = {
     .ptr = (uint32_t)&idt
 };
 
-void x86_IDT_Initialize()
+void x86_IDT_Initialize(void)
 {
     x86_IDT_Load(&idtDescriptor);
 }

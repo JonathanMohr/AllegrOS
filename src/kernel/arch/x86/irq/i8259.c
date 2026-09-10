@@ -24,7 +24,6 @@
 #define PIC_CMD_READ_ISR         0x0B
 
 static uint16_t picMask = 0xFFFF;
-static bool autoEoi = false;
 
 void x86_i8259_SetMask(uint16_t newMask)
 {
@@ -35,19 +34,19 @@ void x86_i8259_SetMask(uint16_t newMask)
     x86_iowait();
 }
 
-uint16_t x86_i8259_GetMask()
+uint16_t x86_i8259_GetMask(void)
 {
-    return ((uint16_t)x86_inb(PIC1_DATA_PORT)) | ((uint16_t)(x86_inb(PIC2_DATA_PORT)) << 8);
+    return ((uint16_t)x86_inb(PIC1_DATA_PORT)) | (uint16_t)((uint16_t)(x86_inb(PIC2_DATA_PORT)) << 8);
 }
 
 
-void x86_i8259_Disable()
+void x86_i8259_Disable(void)
 {
     x86_i8259_SetMask(0xFFFF);
 }
 
 // TODO: Not very useful
-bool x86_i8259_Probe()
+bool x86_i8259_Probe(void)
 {
     x86_i8259_Disable();
     x86_i8259_SetMask(0x1337);
@@ -100,7 +99,7 @@ void x86_i8259_SendEndOfInterrupt(uint8_t irq)
 
 void x86_i8259_Mask(uint8_t irq)
 {
-    x86_i8259_SetMask(picMask | (1 << irq));
+    x86_i8259_SetMask((uint16_t)picMask | (uint16_t)(1 << irq));
 }
 
 void x86_i8259_Unmask(uint8_t irq)
@@ -118,7 +117,7 @@ static const PIC_Driver picDriver = {
     .Unmask = &x86_i8259_Unmask
 };
 
-const PIC_Driver* x86_i8259_GetDriver()
+const PIC_Driver* x86_i8259_GetDriver(void)
 {
     return &picDriver;
 }

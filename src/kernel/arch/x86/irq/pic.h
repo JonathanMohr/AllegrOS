@@ -6,10 +6,10 @@
 typedef struct PIC_Driver {
     const char* name;
 
-    bool (*Probe)();
+    bool (*Probe)(void);
     
     void (*Initialize)(uint8_t offsetPic1, uint8_t offsetPic2, bool autoEoi);
-    void (*Disable)();
+    void (*Disable)(void);
 
     void (*SendEndOfInterrupt)(uint8_t irq);
     void (*Mask)(uint8_t irq);

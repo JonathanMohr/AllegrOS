@@ -58,7 +58,7 @@ typedef struct VFS_Node_Cache_Entry
 typedef struct VFS_Node_Cache
 {
     VFS_Node_Cache_Entry** buckets;
-    uint64_t bucketCount;
+    uintptr_t bucketCount;
     uint64_t entryCount;
 } VFS_Node_Cache;
 

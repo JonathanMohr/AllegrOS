@@ -66,7 +66,7 @@ static void ata_ioWait(uint16_t ctrlBase)
 
 static int ata_identify(uint16_t ioBase, uint16_t ctrlBase, uint8_t slave, uint16_t* buffer /* 256 uint16_t */)
 {
-    x86_outb(ioBase + ATA_REG_HDDEVSEL, ATA_DRIVE_SELECT_BASE | (slave << 4));
+    x86_outb(ioBase + ATA_REG_HDDEVSEL, (uint8_t)ATA_DRIVE_SELECT_BASE | (uint8_t)(slave << 4));
     ata_ioWait(ctrlBase);
 
     x86_outb(ioBase + ATA_REG_SECCOUNT0, 0);
@@ -100,7 +100,7 @@ static uint16_t ata_read28(uint16_t ioBase, uint16_t ctrlBase, uint8_t slave, ui
 {
     ata_waitBusy(ioBase);
 
-    x86_outb(ioBase + ATA_REG_HDDEVSEL, ATA_DRIVE_SELECT_LBA_BASE | (slave << 4) | ((lba >> 24) & 0x0F));
+    x86_outb(ioBase + ATA_REG_HDDEVSEL, (uint8_t)ATA_DRIVE_SELECT_LBA_BASE | (uint8_t)(slave << 4) | (uint8_t)((lba >> 24) & 0x0F));
     ata_ioWait(ctrlBase);
 
     x86_outb(ioBase + ATA_REG_SECCOUNT0, sectorCount);
@@ -128,7 +128,7 @@ static uint32_t ata_read48(uint16_t ioBase, uint16_t ctrlBase, uint8_t slave, ui
 {
     ata_waitBusy(ioBase);
 
-    x86_outb(ioBase + ATA_REG_HDDEVSEL, ATA_DRIVE_SELECT_LBA_BASE | (slave << 4));
+    x86_outb(ioBase + ATA_REG_HDDEVSEL, (uint8_t)ATA_DRIVE_SELECT_LBA_BASE | (uint8_t)(slave << 4));
     ata_ioWait(ctrlBase);
 
     x86_outb(ioBase + ATA_REG_SECCOUNT0, sectorCount >> 8);
@@ -161,7 +161,7 @@ static uint16_t ata_write28(uint16_t ioBase, uint16_t ctrlBase, uint8_t slave, u
 {
     ata_waitBusy(ioBase);
 
-    x86_outb(ioBase + ATA_REG_HDDEVSEL, ATA_DRIVE_SELECT_LBA_BASE | (slave << 4) | ((lba >> 24) & 0x0F));
+    x86_outb(ioBase + ATA_REG_HDDEVSEL, (uint8_t)ATA_DRIVE_SELECT_LBA_BASE | (uint8_t)(slave << 4) | (uint8_t)((lba >> 24) & 0x0F));
     ata_ioWait(ctrlBase);
 
     x86_outb(ioBase + ATA_REG_SECCOUNT0, sectorCount);
@@ -189,7 +189,7 @@ static uint32_t ata_write48(uint16_t ioBase, uint16_t ctrlBase, uint8_t slave, u
 {
     ata_waitBusy(ioBase);
 
-    x86_outb(ioBase + ATA_REG_HDDEVSEL, ATA_DRIVE_SELECT_LBA_BASE | (slave << 4));
+    x86_outb(ioBase + ATA_REG_HDDEVSEL, (uint8_t)ATA_DRIVE_SELECT_LBA_BASE | (uint8_t)(slave << 4));
     ata_ioWait(ctrlBase);
 
     x86_outb(ioBase + ATA_REG_SECCOUNT0, sectorCount >> 8);

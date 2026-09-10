@@ -156,7 +156,7 @@ bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, Addres
     newTask->state = TASK_READY;
 
     newTask->kernelStackTop = (uintptr_t)newStack + KERNEL_STACK_SIZE;
-    newTask->savedStack = Task_Create(newTask->kernelStackTop, spawnFunction, arg);
+    newTask->savedStack = Task_Create(newTask->kernelStackTop, (void*)spawnFunction, arg);
 
     newTask->addressSpace = addressSpace;
 

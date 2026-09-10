@@ -33,7 +33,7 @@ typedef struct IDTDescriptor {
 
 void CDECL x86_IDT_Load(IDTDescriptor* descriptor);
 
-void x86_IDT_Initialize();
+void x86_IDT_Initialize(void);
 void x86_IDT_EnableGate(uint8_t interrupt);
 void x86_IDT_DisableGate(uint8_t interrupt);
 void x86_IDT_AddFlags(uint8_t interrupt, uint8_t flags);

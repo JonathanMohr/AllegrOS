@@ -61,9 +61,9 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
     // map page directory to 0xFFFFF000
     page_directory_phys[1023] = (uint32_t)page_directory_phys | 0x3;
     x86_invlpg((void*)0xFFFFF000);
-    uint32_t* page_directory = (uint32_t*)0xFFFFF000;
+    uint32_t* pageDirectoryVirtual = (uint32_t*)0xFFFFF000;
 
-    uint32_t remainingKernelPages = ((kernelInfo.size + 0xFFF) & ~0xFFF) / 0x1000;
+    uint32_t remainingKernelPages = ((kernelInfo.size + 0xFFF) & ~0xFFFu) / 0x1000;
     uint32_t remainingPageInfoPages = (uint32_t)((addresses.pageInfoSize + 0xFFF) / 0x1000);
 
     uint32_t kernelPhysCursor = (uint32_t)addresses.kernelAddress;
@@ -74,7 +74,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         uint32_t ptPhysAddr = (uint32_t)addresses.pageTableAddress + i * 0x1000;
         uint32_t* pageTable = (uint32_t*)(0xFFC00000 + (768 + i) * 0x1000);
 
-        page_directory[768 + i] = ptPhysAddr | 0x3;
+        pageDirectoryVirtual[768 + i] = ptPhysAddr | 0x3;
         x86_invlpg(pageTable);
 
         for (uint32_t j = 0; j < 1024; j++)
@@ -98,9 +98,9 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         }
     }
 
-    bootParams.Memory.physPageArray = (void*)((uintptr_t)(0xc0000000 + ((kernelInfo.size + 0xFFF) & ~0xFFF)));
-    bootParams.Memory.startOfFree = bootParams.Memory.physPageArray + ((addresses.pageInfoSize + 0xFFF) & ~0xFFF);
-    bootParams.Memory.initialAddressSpace = (uphysptr_t)page_directory;
+    bootParams.Memory.physPageArray = (void*)((uintptr_t)(0xc0000000 + ((kernelInfo.size + 0xFFF) & ~0xFFFu)));
+    bootParams.Memory.startOfFree = (uint8_t*)bootParams.Memory.physPageArray + ((addresses.pageInfoSize + 0xFFF) & ~0xFFFu);
+    bootParams.Memory.initialAddressSpace = (uphysptr_t)pageDirectoryVirtual;
 
     uint8_t* kernelEntry = ELF_Load(&partition, "/sys/kernel.elf");
 

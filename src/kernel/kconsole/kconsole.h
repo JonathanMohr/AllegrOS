@@ -8,9 +8,9 @@ typedef struct KernelConsole {
     void* context;
 } KernelConsole;
 
-KernelConsole* KernelConsole_GetVGA();
-KernelConsole* KernelConsole_GetDebug();
-KernelConsole* KernelConsole_GetOutput();
+KernelConsole* KernelConsole_GetVGA(void);
+KernelConsole* KernelConsole_GetDebug(void);
+KernelConsole* KernelConsole_GetOutput(void);
 
 void KernelConsole_ClearScreen(KernelConsole* kconsole);
 void KernelConsole_PutChar(KernelConsole* kconsole, char c);

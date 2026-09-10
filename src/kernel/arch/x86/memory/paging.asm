@@ -12,7 +12,7 @@ x86_invlpg:
     ret
 
 ;
-; void CDECL x86_reload_cr3();
+; void CDECL x86_reload_cr3(void);
 ;
 global x86_reload_cr3
 x86_reload_cr3:

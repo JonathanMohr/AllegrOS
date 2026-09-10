@@ -73,7 +73,7 @@ bool FAT_Initialize(Partition* partition)
     if (sectorsPerFat == 0)
     {
         isFat32 = true;
-        sectorsPerFat = FAT_Data.BS.bootSector.EBR32.SectorsPerFat;
+        sectorsPerFat = FAT_Data.BS.bootSector.ebr.EBR32.SectorsPerFat;
     }
 
     uint32_t rootDirLba;
@@ -81,7 +81,7 @@ bool FAT_Initialize(Partition* partition)
     if (isFat32)
     {
         dataSectionLba = FAT_Data.BS.bootSector.ReservedSectors + sectorsPerFat * FAT_Data.BS.bootSector.FatCount;
-        rootDirLba = FAT_ClusterToLba(FAT_Data.BS.bootSector.EBR32.RootDirectoryCluster);
+        rootDirLba = FAT_ClusterToLba(FAT_Data.BS.bootSector.ebr.EBR32.RootDirectoryCluster);
         rootDirSize = 0;
     }
     else
@@ -190,22 +190,28 @@ uint32_t FAT_NextCluster(Partition* partition, uint32_t currentCluster)
     uint32_t nextCluster;
     if (fatType == 12)
     {
+        uint16_t tmp;
+        memcpy(&tmp, FAT_Data.fatCache + fatIndex, sizeof(tmp));
+        
         if (currentCluster % 2 == 0)
-            nextCluster = (*(uint16_t*)(FAT_Data.fatCache + fatIndex)) & 0x0FFF;
+            nextCluster = tmp & 0x0FFF;
         else
-            nextCluster = (*(uint16_t*)(FAT_Data.fatCache + fatIndex)) >> 4;
+            nextCluster = tmp >> 4;
 
         if (nextCluster >= 0xFF8)
             nextCluster |= 0x0FFFF000;
     }
     else if (fatType == 16)
     {
-        nextCluster = *(uint16_t*)(FAT_Data.fatCache + fatIndex);
+        uint16_t tmp;
+        memcpy(&tmp, FAT_Data.fatCache + fatIndex, sizeof(tmp));
+        nextCluster = tmp;
+
         if (nextCluster >= 0xFFF8)
             nextCluster |= 0x0FFF0000;
     }
     else /* 32 */
-        nextCluster = *(uint32_t*)(FAT_Data.fatCache + fatIndex);
+        memcpy(&nextCluster, FAT_Data.fatCache + fatIndex, sizeof(nextCluster));
 
     return nextCluster;
 }
@@ -274,7 +280,7 @@ uint32_t FAT_Read(Partition* partition, FAT_File* file, uint32_t byteCount, void
         }
     }
 
-    return dataOut - (uint8_t*)buffer;
+    return (uint32_t)(dataOut - (uint8_t*)buffer);
 }
 
 bool FAT_ReadEntry(Partition* partition, FAT_File* file, FAT_DirectoryEntry* dirEntry)
@@ -357,7 +363,7 @@ FAT_File* FAT_Open(Partition* partition, const char* path)
         const char* delim = strchr(path, '/');
         if (delim)
         {
-            memcpy(name, path, delim - path);
+            memcpy(name, path, (uintptr_t)delim - (uintptr_t)path);
             name[delim - path] = '\0';
             path = delim + 1;
         }

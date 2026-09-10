@@ -58,6 +58,6 @@ typedef struct GDTDescriptor {
 void CDECL x86_GDT_Load(GDTDescriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
 void CDECL x86_TSS_Load(uint16_t selector);
 
-void x86_GDT_Initialize();
+void x86_GDT_Initialize(void);
 
 void x86_GDT_ChangeStack(void* stackPointer);

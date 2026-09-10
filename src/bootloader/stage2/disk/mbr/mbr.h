@@ -20,5 +20,5 @@ typedef struct MBR_Bootsector {
 
 } __attribute__((packed)) MBR_Bootsector;
 
-uint32_t MBR_GetFSStart();
-uint32_t MBR_GetFSSize();
+uint32_t MBR_GetFSStart(void);
+uint32_t MBR_GetFSSize(void);

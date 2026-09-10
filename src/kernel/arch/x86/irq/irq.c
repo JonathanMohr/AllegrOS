@@ -15,7 +15,7 @@ static const PIC_Driver* picDriver = NULL;
 
 void x86_IRQ_Handler(const Registers* regs)
 {
-    const uint32_t irq = regs->interrupt - PIC_REMAP_OFFSET;
+    const uint8_t irq = (uint8_t)(regs->interrupt - PIC_REMAP_OFFSET);
 
     if (irq > 15)
     {
@@ -41,7 +41,7 @@ void x86_IRQ_Send_EOI(uint8_t irq)
     picDriver->SendEndOfInterrupt(irq);
 }
 
-void x86_IRQ_Initialize()
+void x86_IRQ_Initialize(void)
 {
     const PIC_Driver* drivers[] = {
         x86_i8259_GetDriver()

@@ -75,7 +75,7 @@ GDTDescriptor gdtDescriptor = {
     .ptr = (uint32_t)&gdt
 };
 
-void x86_GDT_Initialize()
+void x86_GDT_Initialize(void)
 {
     uint32_t tssBase = (uint32_t)&tss;
     uint32_t tssLimit = sizeof(TSS) - 1;
