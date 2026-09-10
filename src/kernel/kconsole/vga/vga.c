@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "../../arch/x86/x86.h"
+#include "../../memory/physical.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25

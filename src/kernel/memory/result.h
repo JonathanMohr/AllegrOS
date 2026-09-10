@@ -15,6 +15,8 @@ typedef uint8_t Memory_Result;
 #define MEMORY_ERROR_NOT_ENOUGH_PAGES 9
 #define MEMORY_ERROR_NOT_ALIGNED 10
 #define MEMORY_ERROR_DOMAIN 11
+#define MEMORY_ERROR_ALREADY_RESERVED 12
+#define MEMORY_ERROR_NOT_RESERVED 13
 
 typedef uint8_t Memory_Flags;
 #define MEMORY_WRITABLE 0x1

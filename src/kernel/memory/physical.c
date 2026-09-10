@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "arch.h"
 #include "result.h"
+#include "stdint.h"
 #include <stddef.h>
 #include <memory.h>
 #include <stdbool.h>
@@ -47,6 +48,45 @@ static bool GetPageReferences(uphysptr_t physicalAddress, uint32_t** out)
 
     *out = &pageReferences[pageIndex];
     return true;
+}
+
+static bool RemoveFromFreeList(uphysptr_t physicalAddress)
+{
+    if (!freeListHead)
+        return false;
+
+    if (freeListHead == physicalAddress)
+    {
+        struct FreePage* head = (struct FreePage*)Arch_TemporaryMap(freeListHead);
+        freeListHead = head->next;
+        Arch_TemporaryUnmap((uintptr_t)head);
+        return true;
+    }
+
+    uphysptr_t current = freeListHead;
+    while (current)
+    {
+        struct FreePage* currentPage = (struct FreePage*)Arch_TemporaryMap(current);
+        uphysptr_t next = currentPage->next;
+        Arch_TemporaryUnmap((uintptr_t)currentPage);
+
+        if (next == physicalAddress)
+        {
+            struct FreePage* target = (struct FreePage*)Arch_TemporaryMap(physicalAddress);
+            uphysptr_t targetNext = target->next;
+            Arch_TemporaryUnmap((uintptr_t)target);
+
+            struct FreePage* currentPageAgain = (struct FreePage*)Arch_TemporaryMap(current);
+            currentPageAgain->next = targetNext;
+            Arch_TemporaryUnmap((uintptr_t)currentPageAgain);
+
+            return true;
+        }
+
+        current = next;
+    }
+
+    return false;
 }
 
 
@@ -161,6 +201,64 @@ Memory_Result Memory_Physical_PutPage(uphysptr_t page)
 
     if (--(*references) == 0)
         FreePage(page);
+
+    return MEMORY_SUCCESS;
+}
+
+
+Memory_Result Memory_Physical_Reserve(uphysptr_t pageStart, uphysptr_t count)
+{
+    for (uphysptr_t i = 0; i < count; i++)
+    {
+        uphysptr_t currentAddress = pageStart + i * memoryLayout.pageSize;
+
+        uint32_t* references;
+        if (!GetPageReferences(currentAddress, &references))
+            return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+        if (*references != 0)
+            return MEMORY_ERROR_ALREADY_RESERVED;
+    }
+
+    for (uphysptr_t i = 0; i < count; i++)
+    {
+        uphysptr_t currentAddress = pageStart + i * memoryLayout.pageSize;
+
+        if (!RemoveFromFreeList(currentAddress))
+            return MEMORY_ERROR_INTERNAL;
+
+        uint32_t* references;
+        (void)GetPageReferences(currentAddress, &references);
+        *references = REFERENCES_NOT_COUNTED;
+    }
+
+    return MEMORY_SUCCESS;
+}
+
+Memory_Result Memory_Physical_Unreserve(uphysptr_t pageStart, uphysptr_t count)
+{
+    for (uphysptr_t i = 0; i < count; i++)
+    {
+        uphysptr_t currentAddress = pageStart + i * memoryLayout.pageSize;
+
+        uint32_t* references;
+        if (!GetPageReferences(currentAddress, &references))
+            return MEMORY_ERROR_OUT_OF_BOUNDS;
+
+        if (*references != REFERENCES_NOT_COUNTED)
+            return MEMORY_ERROR_NOT_RESERVED;
+    }
+
+    for (uphysptr_t i = 0; i < count; i++)
+    {
+        uphysptr_t currentAddress = pageStart + i * memoryLayout.pageSize;
+
+        uint32_t* references;
+        (void)GetPageReferences(currentAddress, &references);
+        *references = 0;
+
+        FreePage(currentAddress);
+    }
 
     return MEMORY_SUCCESS;
 }
