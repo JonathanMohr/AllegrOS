@@ -86,12 +86,6 @@ def main() -> bool:
     elif (os_uname == "linux"): hostOS = OS.Linux
     else: raise ValueError("Unknown architecture")
 
-    hostArch: ARCH
-    cpu_arch = platform.machine().lower()
-    if (cpu_arch in ["x86_64", "amd64"]): hostArch = ARCH.x86_64
-    elif (cpu_arch in ["arm64", "aarch64"]): hostArch = ARCH.ARM64
-    else: raise ValueError("Unknown architecture")
-
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -149,8 +143,9 @@ def main() -> bool:
 
 
     try:
-        result = build.build(hostOS, hostArch, logger, debug)
+        result = build.build(logger, debug)
         if not result:
+            logger.error("Build failed")
             return False
         
     except Exception as e:

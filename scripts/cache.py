@@ -40,11 +40,15 @@ class BuildCache:
             return False
         return self.get(target) == hash_value
     
-def hash_files(files: list[Path]) -> str:
+def hash_files(files: list[Path], strings: list[str], logger: logging.Logger) -> str:
     hasher = hashlib.new("sha256")
+
+    for string in strings:
+        hasher.update(string.encode())
 
     for file in sorted(files, key=lambda f: str(f)):
         if not file.exists():
+            logger.warning(f"{file} does not exist")
             continue
 
         with file.open("rb") as f:

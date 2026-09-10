@@ -7,6 +7,7 @@ class Language(Enum):
     UNKNOWN = 0
     ASSEMBLY = 1
     C = 2
+    CPP = 3
 
 class CompileCommands:
     @dataclass
