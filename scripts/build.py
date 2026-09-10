@@ -2,28 +2,54 @@ from scripts.defs import OS, ARCH
 import scripts.cache as cache
 import scripts.compile_commands as compile_commands
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import shutil
 import logging
 
-@dataclass
-class Toolchain:
-    LFS: str
+from scripts.toolchain.toolchain import Toolchain, BuildContext, BuildMode, Architecture, Baseline, OPTIMIZATION
+from scripts.toolchain.get import Get_Toolchain
 
-    Assembler: str
-    Compiler_C: str
-    Linker: str
-    ObjectCopy: str
-    Archiver: str
+def Build_Sources_To_Objects(logger: logging.Logger, toolchain: Toolchain, mode: BuildMode, src_dir: Path, build_dir: Path, doCompileCommands: bool) -> list[Path]:
+    patterns = ["*.c", "*.cpp", "*.asm"]
 
-    Assembler_Flags: list[str] = field(default_factory=list)
-    Compiler_C_Flags: list[str] = field(default_factory=list)
-    Linker_Flags: list[str] = field(default_factory=list)
+    files: list[Path] = []
+    for pattern in patterns:
+        files.extend(src_dir.rglob(pattern))
 
-    Library_Directories: list[Path] = field(default_factory=list)
-    Libraries: list[str] = field(default_factory=list)
+    objects: list[Path] = []
+    for file in files:
+        try:
+            if file.suffix == ".c":
+                object = toolchain.Compile_C_Source(mode, file, file.relative_to(src_dir), build_dir, doCompileCommands)
+            elif file.suffix == ".cpp":
+                object = toolchain.Compile_CPP_Source(mode, file, file.relative_to(src_dir), build_dir, doCompileCommands)
+            elif file.suffix == ".asm":
+                object = toolchain.Compile_Assembly_Source(mode, file, file.relative_to(src_dir), build_dir, doCompileCommands)
+            else:
+                logger.warning(f"Invalid source extension of file {file}")
+                continue
+
+        except Exception as e:
+            logger.error(f"Compilation of {file} failed: {e}")
+            raise e
+
+        objects.append(object)
+
+    return objects
+
+def Build_Static_Library(logger: logging.Logger, toolchain: Toolchain, mode: BuildMode, src_dir: Path, build_dir: Path, name: str, doCompileCommands: bool) -> Path:
+    objects = Build_Sources_To_Objects(logger, toolchain, mode, src_dir, build_dir, doCompileCommands)
+
+    try:
+        lib = toolchain.Archive_Objects(mode, objects, name, build_dir)
+
+    except Exception as e:
+        logger.error(f"Archiving static library {name} failed: {e}")
+        raise e
+
+    return lib
 
 def build_assembly_sources(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, build_dir: Path, source_dir: Path) -> list[Path]:
     files: list[Path] = source_dir.rglob("*.asm")
@@ -205,6 +231,14 @@ def compile_libk(logger: logging.Logger, toolchain: Toolchain, buildCache: cache
 
     return out
 
+def Build_Binary(logger: logging.Logger, toolchain: Toolchain, mode: BuildMode, libraries: list[Path], src_dir: Path, build_dir: Path, linker_script: Path, name: str) -> tuple[Path, Path, Path]:
+    objects = Build_Sources_To_Objects(logger, toolchain, mode, src_dir, build_dir, True)
+
+    executable, executable_map = toolchain.Link_Executable(mode, objects, libraries, linker_script, name, build_dir)
+    binary = toolchain.Extract_Binary(mode, executable, name, build_dir)
+
+    return executable, executable_map, binary
+
 def compile_bootloader_stage1(logger: logging.Logger, toolchain: Toolchain, buildCache: cache.BuildCache, compileCommands: compile_commands.CompileCommands, src_dir: Path, build_dir: Path) -> tuple[Path, Path]:
     src = src_dir / "bootloader/stage1"
     build = build_dir / "bootloader/stage1"
@@ -324,77 +358,47 @@ def build(hostOS: OS, hostArch: ARCH, logger: logging.Logger, debug: bool) -> Bu
     buildCache = cache.BuildCache(Path(".buildcache.json"), logger)
     compileCommands = compile_commands.CompileCommands()
 
-    try:
-        toolchain: Toolchain = Toolchain(
-            LFS = require_tool("phx-lfs"),
+    project_root = Path(".")
 
-            Assembler = require_tool("nasm"),
-            Assembler_Flags = [
-                "-f", "elf32"
-            ],
+    buildContext = BuildContext(logger, buildCache, compileCommands, str(project_root.resolve()))
+    toolchain = Get_Toolchain(buildContext)
+    build_mode = BuildMode(
+        Architecture.x86,
+        Baseline.i386,
+        False,
+        False,
+        OPTIMIZATION.SPEED,
+        False,
+        False
+    )
 
-            Compiler_C = require_tool("clang"),
-            Compiler_C_Flags = [
-                "-target", "i386-pc-none-elf",
-                "-m32",
+    src_dir = project_root / "src"
+    build_root_dir = project_root / "build"
 
-                "-fno-pic",
+    build_dir = build_root_dir
 
-                "-ffreestanding", "-nostdinc",
+    bootloader_src = src_dir / "bootloader"
+    bootloader_build = build_dir / "bootloader"
 
-                "-mno-sse", "-mno-sse2",
+    kernel_src = src_dir / "kernel"
+    kernel_build = build_dir / "kernel"
 
-                "-fno-builtin",
+    libk_src = src_dir / "libk"
+    libk_build = build_dir / "libk"
 
-                "-fno-stack-protector",
-            ],
+    userspace_dir = src_dir / "userspace"
 
-            Linker = require_tool("ld.lld"),
-            Linker_Flags = [
-                "-nostdlib",
+    toolchain.Add_Include_Directory(libk_src)
 
-                "-z", "noexecstack"
-            ],
+    libk_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, libk_src, libk_build, True)
+    libk = toolchain.Archive_Objects(build_mode, libk_objects, "k", libk_build)
 
-            ObjectCopy = require_tool("llvm-objcopy"),
+    stage1_elf, stage1_map, stage1_bin = Build_Binary(logger, toolchain, build_mode, [], bootloader_src / "stage1", bootloader_build / "stage1", bootloader_src / "stage1" / "linker.ld", "stage1")
+    stage2_elf, stage2_map, stage2_bin = Build_Binary(logger, toolchain, build_mode, [libk], bootloader_src / "stage2", bootloader_build / "stage2", bootloader_src / "stage2" / "linker.ld", "stage2")
 
-            Archiver = require_tool("llvm-ar")
-        )
-    
-    except ToolchainError as e:
-        logger.error(f"Toolchain setup failed: {e}")
-        return None
-    
-    if debug:
-        toolchain.Assembler_Flags.extend([
-            "-g",
-            "-F", "dwarf"
-        ])
+    buildCache.save()
 
-        toolchain.Compiler_C_Flags.extend([
-            "-O0",
-            "-g",
-            "-gdwarf-4"
-        ])
-
-    else:
-        toolchain.Compiler_C_Flags.extend([
-            "-O2"
-        ])
-
-        toolchain.Linker_Flags.extend([
-            "--gc-sections",
-            "--strip-all"
-        ])
-
-    
-    src_dir = Path("src")
-    build_root_dir = Path("build")
-
-    if debug:
-        build_dir = build_root_dir / "debug"
-    else:
-        build_dir = build_root_dir / "release"
+    return None
 
     # Libk
     toolchain.Library_Directories.append(build_dir)

@@ -152,6 +152,7 @@ def main() -> bool:
     try:
         result = build.build(hostOS, hostArch, logger, debug)
         if not result:
+            logger.error("Build failed")
             return False
         
     except Exception as e:
