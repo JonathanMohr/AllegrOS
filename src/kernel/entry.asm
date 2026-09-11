@@ -19,6 +19,7 @@ kentry:
 section .bss
 global stack_top
 
+align 16
 stack_bottom:
     resb 1024 * 16 ; 16 KiB
 stack_top:
