@@ -104,7 +104,7 @@ static Scheduler_Task* Scheduler_Next(void)
 
 void Scheduler_Schedule(void)
 {
-    __asm__ volatile ("cli"); // TODO: Actual spin lock
+    __asm__ volatile ("cli" ::: "memory"); // TODO: Actual spin lock
 
     if (pendingFree)
     {
@@ -129,7 +129,7 @@ void Scheduler_Schedule(void)
     else
         Task_SwitchTo(&prev->savedStack, next->savedStack);
 
-    __asm__ volatile ("sti"); // TODO: Actual spin lock
+    __asm__ volatile ("sti" ::: "memory"); // TODO: Actual spin lock
 }
 
 void Scheduler_Exit(void)
@@ -160,7 +160,7 @@ bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, Addres
 
     newTask->addressSpace = addressSpace;
 
-    __asm__ volatile ("cli"); // TODO: Actual spin lock
+    __asm__ volatile ("cli" ::: "memory"); // TODO: Actual spin lock
 
     if (!head)
     {
@@ -173,7 +173,7 @@ bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, Addres
         head = newTask;
     }
 
-    __asm__ volatile ("sti"); // TODO: Actual spin lock
+    __asm__ volatile ("sti" ::: "memory"); // TODO: Actual spin lock
 
     return true;
 }
