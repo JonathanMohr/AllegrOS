@@ -1,5 +1,7 @@
 #include "format.h"
 
+#include "../memory/result.h"
+
 static const char hexChars[] = "0123456789abcdef";
 
 static void PrintUnsigned(KernelConsole* kconsole, uint64_t number, uint8_t radix)
@@ -108,6 +110,22 @@ void KernelConsole_PrintFormatV(KernelConsole* kconsole, const char* fmt, va_lis
                                     PrintUnsigned(kconsole, va_arg(args, uint64_t), radix);
                                 else
                                     PrintSigned(kconsole, va_arg(args, int64_t), radix);
+                                break;
+                        }
+
+                        break;
+                    }
+
+                    case 'r': case 'R':
+                    {
+                        fmt++;
+                        if (!*fmt) break;
+                        const char resultType = *fmt;
+
+                        switch (resultType)
+                        {
+                            case 'm': case 'M':
+                                PrintUnsigned(kconsole, (Memory_Result)va_arg(args, Memory_Result_VaArg), 10);
                                 break;
                         }
 

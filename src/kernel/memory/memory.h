@@ -12,6 +12,8 @@ typedef struct AddressSpace AddressSpace;
 #define MemoryLayout memoryLayout
 extern Memory_Layout memoryLayout;
 
+#define MEMORY_PAGE_SIZE memoryLayout.pageSize
+
 #define MEMORY_KERNEL NULL
 
 Memory_Result Memory_Initialize(MemoryInfo* memoryInfo);

@@ -216,7 +216,7 @@ Memory_Result Memory_Physical_Reserve(uphysptr_t pageStart, uphysptr_t count)
         if (!GetPageReferences(currentAddress, &references))
             return MEMORY_ERROR_OUT_OF_BOUNDS;
 
-        if (*references != 0)
+        if (*references != 0 && *references != REFERENCES_NOT_COUNTED)
             return MEMORY_ERROR_ALREADY_RESERVED;
     }
 
@@ -224,8 +224,7 @@ Memory_Result Memory_Physical_Reserve(uphysptr_t pageStart, uphysptr_t count)
     {
         uphysptr_t currentAddress = pageStart + i * memoryLayout.pageSize;
 
-        if (!RemoveFromFreeList(currentAddress))
-            return MEMORY_ERROR_INTERNAL;
+        (void)RemoveFromFreeList(currentAddress);
 
         uint32_t* references;
         (void)GetPageReferences(currentAddress, &references);

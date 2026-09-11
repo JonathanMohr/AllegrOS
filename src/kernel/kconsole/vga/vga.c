@@ -4,38 +4,40 @@
 
 #include "../../arch/x86/x86.h"
 #include "../../memory/physical.h"
+#include "../../memory/memory.h"
+#include "../../panic/panic.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
-const uint8_t DEFAULT_COLOR = 0x7;
+const static uint8_t DEFAULT_COLOR = 0x7;
 
-uint16_t* VGA_Buffer = (uint16_t*)0xB8000; // TODO: Map
-uint8_t VGA_screenX = 0;
-uint8_t VGA_screenY = 0;
+static uint16_t* VGA_Buffer = NULL;
+static uint8_t VGA_screenX = 0;
+static uint8_t VGA_screenY = 0;
 
-void VGA_RawPutCharacter(uint8_t c, uint8_t x, uint8_t y)
+static void VGA_RawPutCharacter(uint8_t c, uint8_t x, uint8_t y)
 {
     VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] =
         (VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] & 0xFF00) | (c & 0xFF);
 }
 
-void VGA_RawPutColor(uint8_t color, uint8_t x, uint8_t y)
+static void VGA_RawPutColor(uint8_t color, uint8_t x, uint8_t y)
 {
     VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] =
         (uint16_t)(color << 8) | (VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] & 0x00FF);
 }
 
-uint8_t VGA_RawGetCharacter(uint8_t x, uint8_t y)
+static uint8_t VGA_RawGetCharacter(uint8_t x, uint8_t y)
 {
     return VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] & 0x00FF;
 }
 
-uint8_t VGA_RawGetColor(uint8_t x, uint8_t y)
+static uint8_t VGA_RawGetColor(uint8_t x, uint8_t y)
 {
     return VGA_Buffer[((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x] >> 8;
 }
 
-void VGA_SetCursor(uint8_t x, uint8_t y)
+static void VGA_SetCursor(uint8_t x, uint8_t y)
 {
     uint16_t cursorPosition = ((uint16_t)y * SCREEN_WIDTH) + (uint16_t)x;
 
@@ -46,7 +48,7 @@ void VGA_SetCursor(uint8_t x, uint8_t y)
     x86_outb(0x3D5, (uint8_t)((cursorPosition >> 8) & 0xFF));
 }
 
-void VGA_Scrollback(uint8_t lines)
+static void VGA_Scrollback(uint8_t lines)
 {
     for (uint8_t y = lines; y < SCREEN_HEIGHT; y++)
     {
@@ -69,8 +71,55 @@ void VGA_Scrollback(uint8_t lines)
     VGA_screenY -= lines;
 }
 
+bool VGA_Initialize(void)
+{
+    const uphysptr_t start = 0xB8000;
+    const uphysptr_t end = start + 2 * SCREEN_WIDTH * SCREEN_HEIGHT;
+    
+    const uphysptr_t startPage = start / MEMORY_PAGE_SIZE;
+    const uphysptr_t endPage = (end + MEMORY_PAGE_SIZE - 1) / MEMORY_PAGE_SIZE;
+    const uphysptr_t pageCount = endPage - startPage;
+
+    if (Memory_Physical_Reserve(startPage * MEMORY_PAGE_SIZE, pageCount) != MEMORY_SUCCESS)
+        return false;
+
+    uintptr_t virtualAddress;
+    if (Memory_Kernel_AllocateVirtual(pageCount, &virtualAddress) != MEMORY_SUCCESS)
+    {
+        if (Memory_Physical_Unreserve(startPage * MEMORY_PAGE_SIZE, pageCount) != MEMORY_SUCCESS)
+            PanicMessageInfo("VGA_Initialize", "Memory_Physical_Unreserve(%q, %q) failed\n", startPage * MEMORY_PAGE_SIZE, pageCount);
+        return false;
+    }
+
+    for (uphysptr_t i = 0; i < pageCount; i++)
+    {
+        if (Memory_LinkRaw(MEMORY_KERNEL, virtualAddress + i * MEMORY_PAGE_SIZE, startPage * MEMORY_PAGE_SIZE + i * MEMORY_PAGE_SIZE, MEMORY_WRITABLE) != MEMORY_SUCCESS)
+        {
+            if (i > 0 && Memory_Unlink(MEMORY_KERNEL, virtualAddress, i) != MEMORY_SUCCESS)
+            {
+                PanicMessageInfo("VGA_Initialize", "Memory_Unlink(MEMORY_KERNEL, %p, %p) failed\n", virtualAddress, i);
+                return false;
+            }
+
+            if (Memory_Kernel_FreeVirtual(virtualAddress, pageCount) != MEMORY_SUCCESS)
+                PanicMessageInfo("VGA_Initialize", "Memory_Kernel_FreeVirtual(MEMORY_KERNEL, %p, %p) failed\n", virtualAddress, pageCount);
+
+            if (Memory_Physical_Unreserve(startPage * MEMORY_PAGE_SIZE, pageCount) != MEMORY_SUCCESS)
+                PanicMessageInfo("VGA_Initialize", "Memory_Physical_Unreserve(%q, %q) failed\n", startPage * MEMORY_PAGE_SIZE, pageCount);
+
+            return false;
+        }
+    }
+
+    VGA_Buffer = (uint16_t*)(virtualAddress + start % MEMORY_PAGE_SIZE);
+
+    return true;
+}
+
 void VGA_ClearScreen(void* context)
 {
+    if (!VGA_Buffer) return;
+
     (void)context;
 
     for (uint8_t y = 0; y < SCREEN_HEIGHT; y++)
@@ -89,6 +138,8 @@ void VGA_ClearScreen(void* context)
 
 void VGA_PutChar(void* context, char c)
 {
+    if (!VGA_Buffer) return;
+
     switch (c)
     {
         case '\n':

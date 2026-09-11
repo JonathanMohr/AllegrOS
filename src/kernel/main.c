@@ -2,35 +2,30 @@
 #include <abi.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include <minmax.h>
-#include "arch/x86/irq/irq.h"
-#include "arch/x86/isr.h"
-#include "filesystem/filesystem.h"
-#include "panic/panic.h"
 
-#include "kconsole/kconsole.h"
-#include "kconsole/format.h"
+#include "arch/x86/irq/irq.h"
+#include "arch/x86/x86.h"
 
 #include "memory/memory.h"
 
-#include "arch/x86/x86.h"
+#include "kconsole/vga/vga.h"
+#include "kconsole/kconsole.h"
+#include "kconsole/format.h"
 
+#include "panic/panic.h"
+
+#include "scheduler/scheduler.h"
+#include "lock.h"
 
 #include "pci/pci.h"
 
-
 #include "device/disk/ata/ata.h"
-
 #include "device/partition/mbr.h"
-
 #include "device/device.h"
 
-#include "filesystem/fat/fat.h"
 #include "filesystem/vfs.h"
-#include "scheduler/scheduler.h"
-
-#include "lock.h"
+#include "filesystem/fat/fat.h"
 
 bool Timer_Handler(const Registers* regs);
 static void Spawn(void* arg);
@@ -55,11 +50,17 @@ void CDECL kmain(BootParams* bParams)
     bootParams = *bParams;
 
     x86_Initialize();
-    x86_PIT_Timer_Initialize(250, Timer_Handler);
 
-    if (Memory_Initialize(&bootParams.Memory) != MEMORY_SUCCESS)
+    const Memory_Result memoryInitializeResult = Memory_Initialize(&bootParams.Memory);
+    if (memoryInitializeResult != MEMORY_SUCCESS)
     {
-        PanicMessage("[KERNEL] Could not initialize memory\n");
+        PanicMessage("[KERNEL] Could not initialize memory: %rm\n");
+        Panic();
+    }
+
+    if (!VGA_Initialize())
+    {
+        PanicMessage("[KERNEL] Could not initialize VGA\n");
         Panic();
     }
 
@@ -70,7 +71,7 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
-    __asm__ volatile("sti");
+    x86_PIT_Timer_Initialize(250, Timer_Handler);
 
     Kernel_Lock();
     mux_console = KernelConsole_GetOutput();

@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 typedef uint8_t Memory_Result;
+typedef int Memory_Result_VaArg;
 #define MEMORY_SUCCESS 0
 #define MEMORY_ERROR_INTERNAL 1
 #define MEMORY_ERROR_OUT_OF_MEMORY 2
