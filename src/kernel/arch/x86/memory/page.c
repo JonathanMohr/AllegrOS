@@ -71,6 +71,7 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
 
     IRQ_PopDisable();
 }
+
 static Memory_Result MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
 {
     for (uint16_t i = 768; i < 1023; i++)

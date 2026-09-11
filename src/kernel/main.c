@@ -285,7 +285,7 @@ static void Spawn(void* arg)
     Kernel_Lock();
     KernelConsole_PutString(mux_console, "Spawning Task 1...\n");
 
-    AddressSpace* toolAddressSpace;
+    AddressSpace* toolAddressSpace = NULL;
     Memory_Result addressSpaceResult = Memory_AddressSpace_Create(&toolAddressSpace);
     if (addressSpaceResult != MEMORY_SUCCESS)
     {
@@ -324,7 +324,7 @@ static void Process(void* arg)
     Memory_Result stackResult = AllocateUserStack(Memory_CurrentAddressSpace(), &stackTop);
     if (stackResult != MEMORY_SUCCESS)
     {
-        PanicMessage("Stack creation for %s failed: %me\n", filePath, stackResult);
+        PanicMessage("Stack creation for %s failed: %rm\n", filePath, stackResult);
         Scheduler_Exit();
     }
 
