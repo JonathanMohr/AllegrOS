@@ -1,4 +1,5 @@
 [bits 32]
+CPU 386
 
 %define ENDL 0x0D, 0x0A
 

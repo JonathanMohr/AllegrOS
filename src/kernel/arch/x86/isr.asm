@@ -1,4 +1,5 @@
 [bits 32]
+CPU 386
 
 section .text
 

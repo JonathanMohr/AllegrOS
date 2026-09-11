@@ -1,4 +1,5 @@
 [bits 32]
+CPU 386
 
 extern kmain
 extern Arch_Idle

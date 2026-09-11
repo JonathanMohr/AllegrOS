@@ -1,3 +1,5 @@
+CPU 386
+
 %macro x86_EnterRealMode 0
     [bits 32]
     jmp word 18h:.pmode16         ; 1 - jump to 16-bit protected mode segment
@@ -83,10 +85,50 @@ x86_inb:
     ret
 
 ;
-; void CDECL x86_invlpg(void* addr)
+; void CDECL (*x86_invlpg)(void* addr)
 ;
-global x86_invlpg
-x86_invlpg:
+invlp_start:
+    pushfd
+    pop eax
+    mov ecx, eax
+    xor eax, 0x200000
+    push eax
+    popfd
+
+    pushfd
+    pop eax
+    push ecx
+    popfd
+    xor eax, ecx
+    jnz .has_cpuid
+
+.no_cpuid:
+    mov dword [x86_invlpg], flush
+    jmp flush
+
+.has_cpuid:
+    mov dword [x86_invlpg], invlp
+    ; Fallthrough to invlp
+
+;
+; void CDECL (*x86_invlpg)(void* addr)
+;
+CPU 486
+invlp:
     mov eax, [esp + 4]
     invlpg [eax]
     ret
+
+;
+; void CDECL (*x86_invlpg)(void* addr)
+;
+CPU 386
+flush:
+    mov eax, cr3
+    mov cr3, eax
+    ret
+
+section .data
+
+global x86_invlpg
+x86_invlpg dd invlp_start

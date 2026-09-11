@@ -1,3 +1,5 @@
+CPU 386
+
 section .text
     global EnableA20
     global LoadGDT

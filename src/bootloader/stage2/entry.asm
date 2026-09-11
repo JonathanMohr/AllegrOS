@@ -1,3 +1,5 @@
+CPU 386
+
 extern __bss_start
 extern __end
 

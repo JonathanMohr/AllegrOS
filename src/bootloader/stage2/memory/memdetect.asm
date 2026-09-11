@@ -1,4 +1,5 @@
 [bits 16]
+CPU 386
 
 %define ENDL 0x0D, 0x0A
 %define MAX_REGIONS 256
