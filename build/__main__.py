@@ -1,4 +1,4 @@
-from build.defs import OS
+from build.defs import OS, Architecture, Baseline, architecture_strings, baseline_strings, architecture_baselines, baseline_architectures
 import build.build as build
 import build.logger as cLogger
 
@@ -9,6 +9,7 @@ import platform
 import logging
 import time
 import subprocess
+import argparse
 
 def run_debugger(stage1: Path, stage2: Path, kernel: Path):
     try:
@@ -56,38 +57,68 @@ def run_qemu(image: Path, hostOS: OS, debugMode: False):
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Running QEMU with {image} failed: {e}")
 
-def printHelp():
-    print(
-        "usage: "
-        f"python{sys.version_info.major}.{sys.version_info.minor} "
-        "-h "
-        "-d "
-        "(commands)"
-    )
-
-    print()
-
-    print("commands:")
-    print("  run               Run the OS using QEMU")
-    print("  debug             Run the OS using QEMU with debug mode")
-    print("  debugger          Run the debugger")
-
-    print()
-
-    print("options:")
-    print("  -h, --help        Show this help message and exit")
-    print("  -d, --debug       Enable debug build")
-
 def main() -> bool:
     hostOS: OS
     os_uname = platform.system().lower()
     if (os_uname == "windows"): hostOS = OS.Windows
     elif (os_uname == "darwin"): hostOS = OS.macOS
     elif (os_uname == "linux"): hostOS = OS.Linux
-    else: raise ValueError("Unknown architecture")
+    else:
+        print(f"Unknown uname: {os_uname}")
+        return False
 
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
+
+    argparser = argparse.ArgumentParser()
+
+    argparser.add_argument(
+        "-d",
+        dest="debug_build",
+        action="store_true",
+        help="Run debug build"
+    )
+
+    argparser.add_argument(
+        "--architecture", "-a",
+        dest="architecture",
+        type=str,
+        choices=architecture_strings.keys(),
+        default=None,
+        help="Set architecture"
+    )
+
+    argparser.add_argument(
+        "--baseline", "-b",
+        dest="baseline",
+        type=str,
+        choices=baseline_strings.keys(),
+        default=None,
+        help="Set baseline"
+    )
+
+    argparser.add_argument(
+        "--run", "-r",
+        dest="run",
+        action="store_true",
+        help="Run"
+    )
+
+    argparser.add_argument(
+        "--debug", "-g",
+        dest="debug",
+        action="store_true",
+        help="Run with debugger support"
+    )
+
+    argparser.add_argument(
+        "--debugger", "-e",
+        dest="debugger",
+        action="store_true",
+        help="Run debugger"
+    )
+
+    args = argparser.parse_args()
 
     logger = logging.getLogger("ci")
     logger.setLevel(logging.DEBUG)
@@ -115,35 +146,52 @@ def main() -> bool:
     logger.debug(f"========== NEW RUN {current_time} ==========")
 
 
-    debug: bool = False
-    command_run: bool = False
-    command_debug: bool = False
-    command_debugger: bool = False
-
-    try:
-        for arg in sys.argv[1:]:
-            if arg in ("-h", "--help"):
-                printHelp()
-                return True
-
-            if arg in ("-d", "--debug"):
-                debug = True
-            elif arg == "run":
-                command_run = True
-            elif arg == "debug":
-                command_debug = True
-            elif arg == "debugger":
-                command_debugger = True
-            else:
-                raise ValueError(f"Invalid argument: {arg}")
-    
-    except Exception as e:
-        logger.error(f"Parsing Arguments failed: {e}")
+    if args.baseline is None and args.architecture is None:
+        logger.error("No baseline and architecture set")
         return False
 
+    if args.baseline is not None and args.architecture is None:
+        baseline = baseline_strings.get(args.baseline)
+        if baseline is None:
+            logger.error(f"Invalid baseline: {args.baseline}")
+            return False
+
+        architecture = baseline_architectures.get(baseline)
+        if architecture is None:
+            logger.error(f"Could not find architecture for baseline {baseline.name}")
+            return False
+    elif args.baseline is None and args.architecture is not None:
+        architecture = architecture_strings.get(args.architecture)
+        if architecture is None:
+            logger.error(f"Invalid architecture: {args.architecture}")
+            return False
+
+        baseline = architecture_baselines.get(architecture)
+        if baseline is None:
+            logger.error(f"Could not find default baseline for architecture {architecture.name}")
+            return False
+    else: # args.baseline is not None and args.architecture is not None
+        architecture = architecture_strings.get(args.architecture)
+        if architecture is None:
+            logger.error(f"Invalid architecture: {args.architecture}")
+            return False
+
+        baseline = baseline_strings.get(args.baseline)
+        if baseline is None:
+            logger.error(f"Invalid baseline: {args.baseline}")
+            return False
+
+        if baseline_architectures.get(baseline) != architecture:
+            logger.error(f"Invalid architecture {architecture.name} for baseline {baseline.name}")
+            return False
+
+    command_run: bool = args.run
+    command_debug: bool = args.debug
+    command_debugger: bool = args.debugger
+
 
     try:
-        result = build.build(logger, debug)
+        result = build.build(logger, baseline, architecture, args.debug_build)
         if not result:
             logger.error("Build failed")
             return False

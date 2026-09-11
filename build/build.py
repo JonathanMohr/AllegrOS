@@ -1,4 +1,4 @@
-from build.defs import OS, ARCH
+from build.defs import baseline_architectures
 import build.cache as cache
 import build.compile_commands as compile_commands
 
@@ -110,7 +110,7 @@ class BuildResult:
     Stage2: Path
     Kernel: Path
 
-def build(logger: logging.Logger, debug: bool) -> BuildResult | None:
+def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture, debug: bool) -> BuildResult | None:
     buildCache = cache.BuildCache(Path(".buildcache.json"), logger)
     compileCommands = compile_commands.CompileCommands()
 
@@ -121,8 +121,8 @@ def build(logger: logging.Logger, debug: bool) -> BuildResult | None:
 
     if debug:
         build_mode = BuildMode(
-            Architecture.x86,
-            Baseline.i386,
+            architecture,
+            baseline,
             False,
             False,
             OPTIMIZATION.NONE,
@@ -131,8 +131,8 @@ def build(logger: logging.Logger, debug: bool) -> BuildResult | None:
         )
     else:
         build_mode = BuildMode(
-            Architecture.x86,
-            Baseline.i386,
+            architecture,
+            baseline,
             False,
             True,
             OPTIMIZATION.SPEED,
@@ -150,13 +150,6 @@ def build(logger: logging.Logger, debug: bool) -> BuildResult | None:
         mode_path = "debug"
     else:
         mode_path = "release"
-
-    baseline_architectures = {
-        Baseline.i386: Architecture.x86,
-        Baseline.i486: Architecture.x86,
-        Baseline.i586: Architecture.x86,
-        Baseline.i686: Architecture.x86
-    }
 
     if baseline_architectures.get(build_mode.baseline) != build_mode.target_arch:
         raise RuntimeError(f"Invalid combination of baseline {build_mode.baseline.name} and architecture {build_mode.target_arch.name}")

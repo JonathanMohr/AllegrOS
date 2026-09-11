@@ -5,17 +5,9 @@ from pathlib import Path
 import logging
 import shutil
 
+from build.defs import Architecture, Baseline
 from build.cache import BuildCache
 from build.compile_commands import CompileCommands
-
-class Baseline(Enum):
-    i386 = 1
-    i486 = 2
-    i586 = 3
-    i686 = 4
-
-class Architecture(Enum):
-    x86 = 1
 
 class OPTIMIZATION(Enum):
     NONE = 1
