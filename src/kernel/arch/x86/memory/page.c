@@ -283,6 +283,85 @@ Memory_Result Arch_TranslatePage(uphysptr_t addressSpace, uintptr_t virtualAddr,
     return MEMORY_SUCCESS;
 }
 
+Memory_Result Arch_ChangeFlags(uphysptr_t addressSpace, uintptr_t virtualAddr, Memory_Flags flags)
+{
+    uint32_t pflags = PAGEF_PRESENT;
+    if (flags & MEMORY_WRITABLE)
+        pflags |= PAGEF_WRITABLE;
+    if (flags & MEMORY_USER)
+        pflags |= PAGEF_USER;
+    if (flags & MEMORY_GLOBAL)
+        pflags |= PAGEF_GLOBAL;
+
+    const bool current = addressSpace == currentAddressSpace;
+
+    const uint32_t dirIndex = virtualAddr >> 22;
+    const uint32_t tableIndex = (virtualAddr >> 12) & 0x3FF;
+
+    uint32_t* pageDirectory = current ? (uint32_t*)0xFFFFF000 : (uint32_t*)Arch_TemporaryMap(addressSpace);
+    const uint32_t dirEntry = pageDirectory[dirIndex];
+    if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
+
+    if ((dirEntry & PAGEF_PRESENT) == 0)
+        return MEMORY_ERROR_NOT_MAPPED;
+
+    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
+
+    uint32_t* pageTable = current ? (uint32_t*)(0xFFC00000 + dirIndex * 0x1000) : (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
+    const uint32_t tableEntry = pageTable[tableIndex];
+
+    if ((tableEntry & PAGEF_PRESENT) == 0)
+    {
+        if (!current) Arch_TemporaryUnmap((uintptr_t)pageTable);
+        return MEMORY_ERROR_NOT_MAPPED;
+    }
+
+    const uint32_t managedMask = PAGEF_PRESENT | PAGEF_WRITABLE | PAGEF_USER | PAGEF_GLOBAL;
+    pageTable[tableIndex] = (tableEntry & ~managedMask) | pflags;
+    
+    if (!current) Arch_TemporaryUnmap((uintptr_t)pageTable);
+
+    if (current)
+        x86_invlpg(virtualAddr);
+
+    return MEMORY_SUCCESS;
+}
+
+Memory_Result Arch_GetFlags(uphysptr_t addressSpace, uintptr_t virtualAddr, Memory_Flags* out)
+{
+    const bool current = addressSpace == currentAddressSpace;
+
+    const uint32_t dirIndex   = virtualAddr >> 22;
+    const uint32_t tableIndex = (virtualAddr >> 12) & 0x3FF;
+
+    uint32_t* pageDirectory = current ? (uint32_t*)0xFFFFF000 : (uint32_t*)Arch_TemporaryMap(addressSpace);
+    const uint32_t dirEntry = pageDirectory[dirIndex];
+    if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
+
+    if ((dirEntry & PAGEF_PRESENT) == 0)
+        return MEMORY_ERROR_NOT_MAPPED;
+
+    const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
+
+    uint32_t* pageTable = current ? (uint32_t*)(0xFFC00000 + dirIndex * 0x1000) : (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
+    const uint32_t tableEntry = pageTable[tableIndex];
+    if (!current) Arch_TemporaryUnmap((uintptr_t)pageTable);
+
+    if ((tableEntry & PAGEF_PRESENT) == 0)
+        return MEMORY_ERROR_NOT_MAPPED;
+
+    Memory_Flags flags = 0;
+    if (tableEntry & PAGEF_WRITABLE)
+        flags |= MEMORY_WRITABLE;
+    if (tableEntry & PAGEF_USER)
+        flags |= MEMORY_USER;
+    if (tableEntry & PAGEF_GLOBAL)
+        flags |= MEMORY_GLOBAL;
+
+    *out = flags;
+    return MEMORY_SUCCESS;
+}
+
 
 Memory_Result Arch_SyncKernel(uphysptr_t addressSpace, uphysptr_t newAddressSpace)
 {

@@ -22,6 +22,7 @@ Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAdd
 Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr);
 Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out);
 
+AddressSpace* Memory_CurrentAddressSpace(void);
 
 Memory_Result Memory_AddressSpace_Create(AddressSpace** outAddressSpace);
 Memory_Result Memory_AddressSpace_Get(AddressSpace* addressSpace);
@@ -33,6 +34,8 @@ Memory_Result Memory_Link(AddressSpace* addressSpace, uintptr_t virtualAddress, 
 Memory_Result Memory_LinkRaw(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t physicalAddress, Memory_Flags flags);
 Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount);
 Memory_Result Memory_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress);
+Memory_Result Memory_GetFlags(AddressSpace* addressSpace, uintptr_t virtualAddress, Memory_Flags* outFlags);
+Memory_Result Memory_ChangeFlags(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount, Memory_Flags newFlags);
 
 #define Memory_Kernel_AllocateVirtual(pageCount, out) Memory_KernelVirtual_AllocatePages(pageCount, out)
 #define Memory_Kernel_FreeVirtual(address, pageCount) Memory_KernelVirtual_FreePages(address, pageCount)

@@ -30,7 +30,7 @@ def run_debugger(stage1: Path, stage2: Path, kernel: Path):
         raise RuntimeError(f"Running debugger failed: {e}")
 
 
-def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debugMode: False):
+def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debug: bool, debugMode: bool):
     if hostOS == OS.macOS:
         displayBackend = "cocoa"
     else:
@@ -52,6 +52,13 @@ def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debugMode: False):
             "-display", f"{displayBackend}",
             "-debugcon", "stdio"
         ]
+
+        if debug:
+            qemu_args.extend([
+                "-no-reboot", "-no-shutdown",
+                "-d", "int,cpu_reset",
+                "-D", "logs/qemu.log"
+            ])
 
         if debugMode:
             qemu_args.extend(["-S", "-s"])
@@ -211,7 +218,7 @@ def main() -> bool:
     
     if command_run:
         try:
-            run_qemu(result.Image, hostOS, baseline, False)
+            run_qemu(result.Image, hostOS, baseline, args.debug_build, False)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
@@ -219,7 +226,7 @@ def main() -> bool:
     
     if command_debug:
         try:
-            run_qemu(result.Image, hostOS, baseline, True)
+            run_qemu(result.Image, hostOS, baseline, args.debug_build, True)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")

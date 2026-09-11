@@ -1,5 +1,6 @@
 #include "format.h"
 
+#include "../elf/result.h"
 #include "../memory/result.h"
 
 static const char hexChars[] = "0123456789abcdef";
@@ -126,6 +127,10 @@ void KernelConsole_PrintFormatV(KernelConsole* kconsole, const char* fmt, va_lis
                         {
                             case 'm': case 'M':
                                 PrintUnsigned(kconsole, (Memory_Result)va_arg(args, Memory_Result_VaArg), 10);
+                                break;
+
+                            case 'e': case 'E':
+                                PrintUnsigned(kconsole, (ELF_Result)va_arg(args, ELF_Result_VaArg), 10);
                                 break;
                         }
 

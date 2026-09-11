@@ -45,12 +45,32 @@ static Scheduler_Task* Scheduler_Next(void)
     if (!currentTask)
         return head;
 
+    Scheduler_Task* prevInList = currentTask;
+
     if (currentTask->state == TASK_ZOMBIE)
+    {
+        if (head == currentTask)
+        {
+            head = currentTask->next;
+            prevInList = NULL;
+        }
+        else
+        {
+            Scheduler_Task* previous = head;
+            while (previous && previous->next != currentTask)
+                previous = previous->next;
+
+            if (previous)
+                previous->next = currentTask->next;
+
+            prevInList = previous;
+        }
+
         pendingFree = currentTask;
+    }
 
     Scheduler_Task* idleFallback = (currentTask->state == TASK_IDLE) ? currentTask : NULL;
 
-    Scheduler_Task* prevInList = currentTask;
     Scheduler_Task* candidate = currentTask->next;
     if (!candidate)
         candidate = head;
@@ -101,6 +121,11 @@ static Scheduler_Task* Scheduler_Next(void)
     return candidate;
 }
 
+
+Scheduler_Task* Scheduler_Current(void)
+{
+    return currentTask;
+}
 
 void Scheduler_Schedule(void)
 {

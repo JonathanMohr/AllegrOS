@@ -7,12 +7,14 @@
 #include "arch/x86/irq/irq.h"
 #include "arch/x86/x86.h"
 
+#include "elf/elf.h"
 #include "memory/memory.h"
 
 #include "kconsole/vga/vga.h"
 #include "kconsole/kconsole.h"
 #include "kconsole/format.h"
 
+#include "memory/result.h"
 #include "panic/panic.h"
 
 #include "scheduler/scheduler.h"
@@ -71,9 +73,10 @@ void CDECL kmain(BootParams* bParams)
         Panic();
     }
 
+    Kernel_Lock();
+
     x86_PIT_Timer_Initialize(250, Timer_Handler);
 
-    Kernel_Lock();
     mux_console = KernelConsole_GetOutput();
 
     KernelConsole_ClearScreen(mux_console);
@@ -272,7 +275,7 @@ bool Timer_Handler(const Registers* regs)
     return false;
 }
 
-static void Greet(void* arg);
+static void Process(void* arg);
 
 static void Spawn(void* arg)
 {
@@ -280,37 +283,19 @@ static void Spawn(void* arg)
 
     Kernel_Lock();
     KernelConsole_PutString(mux_console, "Spawning Task 1...\n");
-    Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Hello!", MEMORY_KERNEL))
+    AddressSpace* toolAddressSpace;
+    Memory_Result addressSpaceResult = Memory_AddressSpace_Create(&toolAddressSpace);
+    if (addressSpaceResult != MEMORY_SUCCESS)
     {
-        Kernel_Lock();
-        KernelConsole_PutString(mux_console, "Could not spawn Greet task 1\n");
-        Kernel_Unlock();
+        KernelConsole_PutString(mux_console, "Could not create address space for tool\n");
         goto end;
     }
-
-    Kernel_Lock();
-    KernelConsole_PutString(mux_console, "Spawning Task 2...\n");
     Kernel_Unlock();
 
-    if (!Scheduler_AddTask(Greet, "Good morning!", MEMORY_KERNEL))
+    if (!Scheduler_AddTask(Process, "/bin/tool", toolAddressSpace))
     {
-        Kernel_Lock();
-        KernelConsole_PutString(mux_console, "Could not spawn Greet task 2\n");
-        Kernel_Unlock();
-        goto end;
-    }
-
-    Kernel_Lock();
-    KernelConsole_PutString(mux_console, "Spawning Task 3...\n");
-    Kernel_Unlock();
-
-    if (!Scheduler_AddTask(Greet, "Greetings!", MEMORY_KERNEL))
-    {
-        Kernel_Lock();
-        KernelConsole_PutString(mux_console, "Could not spawn Greet task 3\n");
-        Kernel_Unlock();
+        KernelConsole_PutString(mux_console, "Could not spawn Process task\n");
         goto end;
     }
 
@@ -318,14 +303,33 @@ end:
     Scheduler_Exit();
 }
 
-static void Greet(void* arg)
+static void Process(void* arg)
 {
-    const char* str = arg;
-    while (1)
+    const char* filePath = arg;
+    Kernel_Lock();
+
+    KernelConsole_PrintFormat(mux_console, "Opening %s\n", filePath);
+    
+    VFS_File* file = VFS_File_Open(&vfs, NULL, filePath);
+    if (!file)
     {
-        Kernel_Lock();
-        KernelConsole_PutString(mux_console, str);
-        KernelConsole_PutChar(mux_console, '\n');
-        Kernel_Unlock();
+        PanicMessage("%s does not exist\n", filePath);
+        Scheduler_Exit();
     }
+
+    KernelConsole_PrintFormat(mux_console, "Parsing ELF for %s\n", filePath);
+
+    uintptr_t entryPoint;
+    ELF_Result loadResult = ELF_Load(file, Scheduler_Current()->addressSpace, true, &entryPoint);
+    if (loadResult != ELF_SUCCESS)
+    {
+        PanicMessage("ELF_Load for %s failed: %re\n", filePath, loadResult);
+        Scheduler_Exit();
+    }
+
+    VFS_File_Close(file);
+
+    Kernel_Unlock();
+    
+    Scheduler_Exit();
 }

@@ -23,6 +23,7 @@ typedef struct Scheduler_Task
 
 TaskState* Scheduler_Initialize(void);
 
+Scheduler_Task* Scheduler_Current(void);
 void Scheduler_Schedule(void);
 void Scheduler_Exit(void);
 bool Scheduler_AddTask(Scheduler_Spawn_Function spawnFunction, void* arg, AddressSpace* addressSpace);

@@ -97,6 +97,35 @@ Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out)
     return Arch_TranslatePage(current, virtualAddr, out);
 }
 
+static Memory_Result Memory_ChangeFlagsKernel(uintptr_t virtualAddr, Memory_Flags newFlags)
+{
+    const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
+
+    Memory_Result result;
+    if ((result = Arch_ChangeFlags(current, virtualAddr, newFlags)) != MEMORY_SUCCESS)
+        return result;
+
+    AddressSpace* currentAS = headAddressSpace;
+    while (currentAS)
+    {
+        if (currentAS->addressSpace == current) continue;
+        Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
+        (void)r;
+
+        // TODO: Check
+
+        currentAS = currentAS->next;
+    }
+
+    return MEMORY_SUCCESS;
+}
+
+static Memory_Result Memory_GetFlagsKernel(uintptr_t virtualAddr, Memory_Flags* out)
+{
+    const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
+    return Arch_GetFlags(current, virtualAddr, out);
+}
+
 
 static bool checkAddresses(AddressSpace* addressSpace, uintptr_t address, uintptr_t count)
 {
@@ -113,6 +142,11 @@ static bool checkAddresses(AddressSpace* addressSpace, uintptr_t address, uintpt
         return false;
 
     return true;
+}
+
+AddressSpace* Memory_CurrentAddressSpace(void)
+{
+    return currentAddressSpace;
 }
 
 #define MAX_ADDRESSSPACE_REFERENCES 0xFFFFFFFF
@@ -376,7 +410,7 @@ Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress
             if (addressSpace == MEMORY_KERNEL)
                 PanicMessageInfo("Memory_Unlink", "Memory_UnmapPageKernel(%p) failed\n", addr);
             else
-                PanicMessageInfo("Memory_Unlink", "Arch_UnmapPage(%p, %p, %p) failed\n", addressSpace->addressSpace, addr);
+                PanicMessageInfo("Memory_Unlink", "Arch_UnmapPage(%p, %p) failed\n", addressSpace->addressSpace, addr);
             continue;
         }
 
@@ -392,4 +426,66 @@ Memory_Result Memory_Translate(AddressSpace* addressSpace, uintptr_t virtualAddr
     return (addressSpace == MEMORY_KERNEL)
            ? Memory_TranslateKernel(virtualAddress, outPhysicalAddress)
            : Arch_TranslatePage(addressSpace->addressSpace, virtualAddress, outPhysicalAddress);
+}
+
+Memory_Result Memory_GetFlags(AddressSpace* addressSpace, uintptr_t virtualAddress, Memory_Flags* outFlags)
+{
+    return (addressSpace == MEMORY_KERNEL)
+           ? Memory_GetFlagsKernel(virtualAddress, outFlags)
+           : Arch_GetFlags(addressSpace->addressSpace, virtualAddress, outFlags);
+}
+
+Memory_Result Memory_ChangeFlags(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount, Memory_Flags newFlags)
+{
+    if (!checkAddresses(addressSpace, virtualAddress, pageCount))
+        return MEMORY_ERROR_DOMAIN;
+
+    if (virtualAddress % memoryLayout.pageSize != 0)
+        return MEMORY_ERROR_NOT_ALIGNED;
+    
+    Memory_Flags* savedFlags = Memory_KernelAllocate(pageCount * sizeof(Memory_Flags));
+    if (!savedFlags)
+        return MEMORY_ERROR_OUT_OF_MEMORY;
+
+    uintptr_t changed = 0;
+    Memory_Result finalResult = MEMORY_SUCCESS;
+
+    while (changed < pageCount)
+    {
+        const uintptr_t addr = virtualAddress + changed * MEMORY_PAGE_SIZE;
+
+        finalResult = Memory_GetFlags(addressSpace, addr, &savedFlags[changed]);
+        if (finalResult != MEMORY_SUCCESS)
+            break;
+
+        finalResult = (addressSpace == MEMORY_KERNEL)
+                      ? Memory_ChangeFlagsKernel(addr, newFlags)
+                      : Arch_ChangeFlags(addressSpace->addressSpace, addr, newFlags);
+
+        if (finalResult != MEMORY_SUCCESS)
+            break;
+
+        changed++;
+    }
+    
+    if (finalResult != MEMORY_SUCCESS)
+    {
+        for (uintptr_t j = 0; j < changed; j++)
+        {
+            const uintptr_t rollbackAddr = virtualAddress + j * MEMORY_PAGE_SIZE;
+            if ((addressSpace == MEMORY_KERNEL)
+                ? Memory_ChangeFlagsKernel(rollbackAddr, savedFlags[j])
+                : Arch_ChangeFlags(addressSpace->addressSpace, rollbackAddr, savedFlags[j]) != MEMORY_SUCCESS)
+            {
+                if (addressSpace == MEMORY_KERNEL)
+                    PanicMessageInfo("Memory_Unlink", "Memory_ChangeFlagsKernel(%p, %udd) failed\n", rollbackAddr, savedFlags[j]);
+                else
+                    PanicMessageInfo("Memory_Unlink", "Arch_ChangeFlags(%p, %p, %udd) failed\n", addressSpace->addressSpace, rollbackAddr, savedFlags[j]);
+                continue;
+            }
+        }
+    }
+
+    Memory_KernelFree(savedFlags);
+    return MEMORY_SUCCESS;
 }

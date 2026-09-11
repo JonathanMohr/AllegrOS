@@ -49,7 +49,7 @@ def Build_Binary(logger: logging.Logger, toolchain: Toolchain, mode: BuildMode, 
     return executable, executable_map, binary
 
 
-def Create_Root(logger: logging.Logger, fs_root: Path, kernel: Path, out_root: Path):
+def Create_Root(logger: logging.Logger, fs_root: Path, kernel: Path, executables: list[Path], out_root: Path):
     if out_root.exists():
         shutil.rmtree(str(out_root))
     out_root.mkdir(parents=True, exist_ok=True)
@@ -61,6 +61,14 @@ def Create_Root(logger: logging.Logger, fs_root: Path, kernel: Path, out_root: P
     ## kernel.elf
     kernel_path = system_dir / "kernel.elf"
     shutil.copy2(str(kernel), str(kernel_path))
+
+    # bin/
+    bin_dir = out_root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
+    for executable in executables:
+        out = bin_dir / executable.name
+        shutil.copy2(str(executable), str(out))
 
     # fs_root
     shutil.copytree(str(fs_root), str(out_root), dirs_exist_ok=True)
@@ -172,6 +180,10 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
     libk_build = build_dir / "libk"
 
     userspace_dir = src_dir / "userspace"
+    userspace_build = build_dir / "userspace"
+
+    userspace_bin = userspace_dir / "bin"
+    userspace_bin_build = userspace_build / "bin"
 
     root_build = build_dir / "root"
 
@@ -189,7 +201,10 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
         kernel_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, kernel_src, kernel_build, True)
         kernel, kernel_map = toolchain.Link_Executable(build_mode, kernel_objects, [libk], kernel_src / "linker.ld", "kernel", kernel_build)
 
-        Create_Root(logger, fs_root, kernel, root_build)
+        tool_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, userspace_bin / "tool", userspace_bin_build / "tool", True)
+        tool, tool_map = toolchain.Link_Executable(build_mode, tool_objects, [], userspace_dir / "linker.ld", "tool", userspace_bin_build / "tool")
+
+        Create_Root(logger, fs_root, kernel, [tool], root_build)
 
         image = Create_Disk_Image(logger, buildCache, root_build, build_dir, stage1_bin, stage2_bin)
 
