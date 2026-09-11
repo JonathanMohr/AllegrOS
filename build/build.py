@@ -111,10 +111,16 @@ class BuildResult:
     Kernel: Path
 
 def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture, debug: bool) -> BuildResult | None:
-    buildCache = cache.BuildCache(Path(".buildcache.json"), logger)
-    compileCommands = compile_commands.CompileCommands()
-
     project_root = Path(".")
+
+    compileCommandsPath = project_root / "compile_commands.json"
+    
+    fs_root = project_root / "fs_root"
+    src_dir = project_root / "src"
+    build_root_dir = project_root / ".build"
+
+    buildCache = cache.BuildCache(build_root_dir / "cache.json", logger)
+    compileCommands = compile_commands.CompileCommands()
 
     buildContext = BuildContext(logger, buildCache, compileCommands, str(project_root.resolve()))
     toolchain = Get_Toolchain(buildContext)
@@ -139,12 +145,6 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
             False,
             False
         )
-
-    compileCommandsPath = project_root / "compile_commands.json"
-
-    fs_root = project_root / "fs_root"
-    src_dir = project_root / "src"
-    build_root_dir = project_root / ".build"
 
     if debug:
         mode_path = "debug"

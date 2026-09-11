@@ -2,7 +2,5 @@
 logs/
 
 __pycache__/
-.venv
 
-.buildcache.json
 compile_commands.json
