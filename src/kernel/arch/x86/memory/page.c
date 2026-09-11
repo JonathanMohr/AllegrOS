@@ -42,6 +42,8 @@ static __attribute__((aligned(4096))) uint8_t scratchPageBuffer[4096];
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress)
 {
+    __asm__ volatile ("cli" ::: "memory");
+
     if (allocated)
     {
         PanicMessage("Arch_TemporaryMap called with Arch_TemporaryUnmap\n");
@@ -65,6 +67,8 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
 {
     (void)virtualMapAddress;
     allocated = 0;
+
+    __asm__ volatile ("sti\n\tnop" ::: "memory");
 }
 
 static void MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
