@@ -1,6 +1,7 @@
 #include "../../../memory/arch.h"
 #include "../../../panic/panic.h"
 #include "../../../memory/physical.h"
+#include "../../../lock.h"
 
 #include "paging.h"
 #include <memory.h>
@@ -42,7 +43,7 @@ static __attribute__((aligned(4096))) uint8_t scratchPageBuffer[4096];
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress)
 {
-    __asm__ volatile ("cli" ::: "memory");
+    IRQ_PushDisable();
 
     if (allocated)
     {
@@ -68,7 +69,7 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
     (void)virtualMapAddress;
     allocated = 0;
 
-    __asm__ volatile ("sti\n\tnop" ::: "memory");
+    IRQ_PopDisable();
 }
 
 static void MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)

@@ -129,7 +129,7 @@ Scheduler_Task* Scheduler_Current(void)
 
 void Scheduler_Schedule(void)
 {
-    __asm__ volatile ("cli" ::: "memory"); // TODO: Actual spin lock
+    IRQ_PushDisable(); // TODO: Actual spin lock
 
     if (pendingFree)
     {
@@ -154,7 +154,7 @@ void Scheduler_Schedule(void)
     else
         Task_SwitchTo(&prev->savedStack, next->savedStack);
 
-    __asm__ volatile ("sti" ::: "memory"); // TODO: Actual spin lock
+    IRQ_PopDisable(); // TODO: Actual spin lock
 }
 
 void Scheduler_Exit(void)
