@@ -147,7 +147,8 @@ void Scheduler_Schedule(void)
     currentTask = next;
     x86_GDT_ChangeStack((void*)next->kernelStackTop);
 
-    Memory_AddressSpace_Use(next->addressSpace);
+    if (next->addressSpace)
+        Memory_AddressSpace_Use(next->addressSpace);
 
     if (!prev)
         Task_JumpTo(next->savedStack);
@@ -160,6 +161,7 @@ void Scheduler_Schedule(void)
 void Scheduler_Exit(void)
 {
     currentTask->state = TASK_ZOMBIE;
+    (void)Memory_AddressSpace_Put(currentTask->addressSpace);
     Scheduler_Schedule();
 }
 

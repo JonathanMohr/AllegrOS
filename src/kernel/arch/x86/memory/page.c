@@ -71,11 +71,34 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
 
     IRQ_PopDisable();
 }
-
-static void MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
+static Memory_Result MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
 {
     for (uint16_t i = 768; i < 1023; i++)
-        pageDirectory[i] = newPageDirectory[i];
+    {
+        const uint32_t oldEntry = pageDirectory[i];
+        const uint32_t newEntry = newPageDirectory[i];
+
+        if ((newEntry & PAGEF_PRESENT) && (oldEntry & PAGEF_PRESENT) && (oldEntry & ~0xFFFu) == (newEntry & ~0xFFFu))
+            continue;
+
+        if (newEntry & PAGEF_PRESENT)
+        {
+            const uphysptr_t newTable = newEntry & ~0xFFFu;
+            if (Memory_Physical_GetPage(newTable) != MEMORY_SUCCESS)
+                return MEMORY_ERROR_REFERENCE_LIMIT;
+        }
+
+        pageDirectory[i] = newEntry;
+
+        if (oldEntry & PAGEF_PRESENT)
+        {
+            const uphysptr_t oldTable = oldEntry & ~0xFFFu;
+            if (Memory_Physical_PutPage(oldTable) != MEMORY_SUCCESS)
+                PanicMessageInfo("MirrorKernel", "Memory_Physical_PutPage(%q) failed\n", oldTable);
+        }
+    }
+
+    return MEMORY_SUCCESS;
 }
 
 Memory_Result Arch_CreateAddressSpace(uphysptr_t* out)
@@ -90,7 +113,13 @@ Memory_Result Arch_CreateAddressSpace(uphysptr_t* out)
 
     memset(tmp, 0, PAGE_SIZE);
 
-    MirrorKernel(tmp, (uint32_t*)0xFFFFF000);
+    if ((result = MirrorKernel(tmp, (uint32_t*)0xFFFFF000)) != MEMORY_SUCCESS)
+    {
+        Arch_TemporaryUnmap((uintptr_t)tmp);
+        if (Memory_Physical_PutPage(pageDirectory) != MEMORY_SUCCESS)
+            PanicMessageInfo("Arch_CreateAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageDirectory);
+        return result;
+    }
 
     tmp[PAGE_DIRECTORY_INDEX] = pageDirectory | PAGEF_PRESENT | PAGEF_WRITABLE;
 
@@ -124,6 +153,16 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
         }
         Arch_TemporaryUnmap((uintptr_t)pageTable);
 
+        if (Memory_Physical_PutPage(pageTablePhysical) != MEMORY_SUCCESS)
+            PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageTablePhysical);
+    }
+
+    for (uint16_t i = 768; i < 1023; i++)
+    {
+        if ((pageDirectory[i] & PAGEF_PRESENT) == 0)
+            continue;
+
+        const uphysptr_t pageTablePhysical = pageDirectory[i] & ~0xFFFu;
         if (Memory_Physical_PutPage(pageTablePhysical) != MEMORY_SUCCESS)
             PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageTablePhysical);
     }
@@ -376,16 +415,22 @@ Memory_Result Arch_SyncKernel(uphysptr_t addressSpace, uphysptr_t newAddressSpac
     if (addressSpaceCurrent)
     {
         uint32_t* newPageDirectory = (uint32_t*)Arch_TemporaryMap(newAddressSpace);
-        MirrorKernel((uint32_t*)0xFFFFF000, newPageDirectory);
+        const Memory_Result result = MirrorKernel((uint32_t*)0xFFFFF000, newPageDirectory);
         Arch_TemporaryUnmap((uintptr_t)newPageDirectory);
+
+        if (result != MEMORY_SUCCESS)
+            return result;
 
         x86_reload_cr3();
     }
     else if (newAddressSpaceCurrent)
     {
         uint32_t* currentPageDirectory = (uint32_t*)Arch_TemporaryMap(addressSpace);
-        MirrorKernel(currentPageDirectory, (uint32_t*)0xFFFFF000);
+        const Memory_Result result = MirrorKernel(currentPageDirectory, (uint32_t*)0xFFFFF000);
         Arch_TemporaryUnmap((uintptr_t)currentPageDirectory);
+
+        if (result != MEMORY_SUCCESS)
+            return result;
     }
     else
     {
@@ -396,7 +441,35 @@ Memory_Result Arch_SyncKernel(uphysptr_t addressSpace, uphysptr_t newAddressSpac
         Arch_TemporaryUnmap((uintptr_t)newPageDirectory);
 
         uint32_t* currentPageDirectory = (uint32_t*)Arch_TemporaryMap(addressSpace);
-        memcpy(&currentPageDirectory[768], kernelEntries, sizeof(kernelEntries));
+
+        for (uint16_t i = 0; i < 1023 - 768; i++)
+        {
+            const uint32_t oldEntry = currentPageDirectory[768 + i];
+            const uint32_t newEntry = kernelEntries[i];
+
+            if ((newEntry & PAGEF_PRESENT) && (oldEntry & PAGEF_PRESENT) && (oldEntry & ~0xFFFu) == (newEntry & ~0xFFFu))
+                continue;
+
+            if (newEntry & PAGEF_PRESENT)
+            {
+                const uphysptr_t newTable = newEntry & ~0xFFFu;
+                if (Memory_Physical_GetPage(newTable) != MEMORY_SUCCESS)
+                {
+                    Arch_TemporaryUnmap((uintptr_t)currentPageDirectory);
+                    return MEMORY_ERROR_REFERENCE_LIMIT;
+                }
+            }
+
+            currentPageDirectory[768 + i] = newEntry;
+
+            if (oldEntry & PAGEF_PRESENT)
+            {
+                const uphysptr_t oldTable = oldEntry & ~0xFFFu;
+                if (Memory_Physical_PutPage(oldTable) != MEMORY_SUCCESS)
+                    PanicMessageInfo("Arch_SyncKernel", "Memory_Physical_PutPage(%q) failed\n", oldTable);
+            }
+        }
+
         Arch_TemporaryUnmap((uintptr_t)currentPageDirectory);
     }
 

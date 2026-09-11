@@ -9,6 +9,7 @@
 
 #include "elf/elf.h"
 #include "memory/memory.h"
+#include "memory/stack.h"
 
 #include "kconsole/vga/vga.h"
 #include "kconsole/kconsole.h"
@@ -314,6 +315,16 @@ static void Process(void* arg)
     if (!file)
     {
         PanicMessage("%s does not exist\n", filePath);
+        Scheduler_Exit();
+    }
+
+    KernelConsole_PrintFormat(mux_console, "Creating stack for %s\n", filePath);
+
+    uintptr_t stackTop;
+    Memory_Result stackResult = AllocateUserStack(Memory_CurrentAddressSpace(), &stackTop);
+    if (stackResult != MEMORY_SUCCESS)
+    {
+        PanicMessage("Stack creation for %s failed: %me\n", filePath, stackResult);
         Scheduler_Exit();
     }
 
