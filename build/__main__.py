@@ -30,15 +30,24 @@ def run_debugger(stage1: Path, stage2: Path, kernel: Path):
         raise RuntimeError(f"Running debugger failed: {e}")
 
 
-def run_qemu(image: Path, hostOS: OS, debugMode: False):
+def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debugMode: False):
     if hostOS == OS.macOS:
         displayBackend = "cocoa"
     else:
         displayBackend = "sdl,gl=on"
 
+    match baseline:
+        case Baseline.i386: qemu_cpu = "486"
+        case Baseline.i486: qemu_cpu = "486"
+        case Baseline.i586: qemu_cpu = "pentium"
+        case Baseline.i686: qemu_cpu = "pentium2"
+        case _:
+            raise ValueError("Invalid baseline")
+
     try:
         qemu_args = [
             "-m", "32",
+            "-cpu", qemu_cpu,
     #       "-spice", "port=5930,disable-ticketing",
             "-display", f"{displayBackend}",
             "-debugcon", "stdio"
@@ -202,7 +211,7 @@ def main() -> bool:
     
     if command_run:
         try:
-            run_qemu(result.Image, hostOS, False)
+            run_qemu(result.Image, hostOS, baseline, False)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
@@ -210,7 +219,7 @@ def main() -> bool:
     
     if command_debug:
         try:
-            run_qemu(result.Image, hostOS, True)
+            run_qemu(result.Image, hostOS, baseline, True)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
