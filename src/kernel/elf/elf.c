@@ -189,7 +189,7 @@ ELF_Result ELF_Load(VFS_File* file, AddressSpace* addressSpace, bool currentAddr
         const uintptr_t alignedEnd = ((programHeader.virtualAddress + programHeader.memorySize + MEMORY_PAGE_SIZE - 1) / MEMORY_PAGE_SIZE) * MEMORY_PAGE_SIZE;
         const uintptr_t segmentPageCount = (alignedEnd - alignedStart) / MEMORY_PAGE_SIZE;
 
-        Memory_Flags flags = 0;
+        Memory_Flags flags = MEMORY_USER;
         if (programHeader.flags & ELF_PROGRAM_HEADER_FLAGS_WRITABLE)
             flags |= MEMORY_WRITABLE;
         if (programHeader.flags & ELF_PROGRAM_HEADER_FLAGS_EXECUTABLE)

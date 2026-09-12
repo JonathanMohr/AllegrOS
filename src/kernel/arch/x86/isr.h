@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <abi.h>
 
@@ -21,3 +22,4 @@ void x86_ISR_InitializeGates(void);
 
 void x86_ISR_Initialize(void);
 void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler);
+void x86_ISR_SetUser(uint8_t interrupt, bool allow);

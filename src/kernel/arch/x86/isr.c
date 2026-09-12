@@ -60,3 +60,11 @@ void CDECL x86_ISR_Handler(const Registers* r)
         Panic();
     }
 }
+
+void x86_ISR_SetUser(uint8_t interrupt, bool allow)
+{
+    if (allow)
+        x86_IDT_AddFlags(interrupt, IDT_FLAGS_RING3);
+    else
+        x86_IDT_RemoveFlags(interrupt, IDT_FLAGS_RING3);
+}

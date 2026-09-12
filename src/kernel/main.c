@@ -5,7 +5,9 @@
 #include <minmax.h>
 
 #include "arch/x86/irq/irq.h"
+#include "arch/x86/isr.h"
 #include "arch/x86/x86.h"
+#include "arch/x86/usermode.h"
 
 #include "elf/elf.h"
 #include "memory/memory.h"
@@ -30,7 +32,8 @@
 #include "filesystem/vfs.h"
 #include "filesystem/fat/fat.h"
 
-bool Timer_Handler(const Registers* regs);
+static void Syscall_Handler(const Registers* regs);
+static bool Timer_Handler(const Registers* regs);
 static void Spawn(void* arg);
 
 BootParams bootParams;
@@ -251,6 +254,9 @@ void CDECL kmain(BootParams* bParams)
         goto end;
     }
 
+    x86_ISR_RegisterHandler(0x80, Syscall_Handler);
+    x86_ISR_SetUser(0x80, true);
+
     Kernel_Unlock();
 
     if (!Scheduler_AddTask(Spawn, NULL, MEMORY_KERNEL))
@@ -266,7 +272,18 @@ end_before_vfs:
     return;
 }
 
-bool Timer_Handler(const Registers* regs)
+static void Syscall_Handler(const Registers* regs)
+{
+    (void)regs;
+
+    Kernel_Lock();
+
+    KernelConsole_PrintFormat(mux_console, "Syscall!\n");
+
+    Kernel_Unlock();
+}
+
+static bool Timer_Handler(const Registers* regs)
 {
     (void)regs;
 
@@ -341,6 +358,6 @@ static void Process(void* arg)
     VFS_File_Close(file);
 
     Kernel_Unlock();
-    
-    Scheduler_Exit();
+
+    Arch_JumpToUserMode(entryPoint, stackTop);
 }
