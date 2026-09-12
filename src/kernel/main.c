@@ -192,13 +192,13 @@ void CDECL kmain(BootParams* bParams)
                         if (Device_PartitionTable_CreateBlockDevice(device, &blockDevices[blockDeviceCount], nameBuffer, start, count))
                         {
                             if (count > 1)
-                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udq for sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, blockDeviceCount + 1, start, start + count - 1, count);
+                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udd for sectors %uxqh - (including) %uxqh | Count: %uxqh\n", j + 1, blockDeviceCount + 1, start, start + count - 1, count);
                             else
-                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udq for sector %uxqh\n", j + 1, blockDeviceCount + 1, start);
+                                KernelConsole_PrintFormat(mux_console, "    %udq: Created block device %udd for sector %uxqh\n", j + 1, blockDeviceCount + 1, start);
                             blockDeviceCount++;
                         }
                         else
-                            KernelConsole_PrintFormat(mux_console, "    %udq: Could not create block device %udq for partition\n", j + 1, blockDeviceCount + 1, j + 1);
+                            KernelConsole_PrintFormat(mux_console, "    %udq: Could not create block device %udd for partition\n", j + 1, blockDeviceCount + 1, j + 1);
                     }
                     else
                         KernelConsole_PutString(mux_console, "Warning: Limit of logical block devices reached\n");
@@ -217,7 +217,7 @@ void CDECL kmain(BootParams* bParams)
 
         KernelConsole_PrintFormat(mux_console, "  Type: %s\n", device->type);
 
-        KernelConsole_PrintFormat(mux_console, "  Block-Size: %uxqh\n", device->sectorSize);
+        KernelConsole_PrintFormat(mux_console, "  Block-Size: %uxdh\n", device->sectorSize);
         KernelConsole_PrintFormat(mux_console, "  Block-Count: %uxqh\n", device->sectorCount);
     }
 
