@@ -2,7 +2,7 @@
 
 #include "../../arch/x86/x86.h"
 
-static const char clearScreenMessage[] = "Screen clear\n";
+static const char clearScreenMessage[] = "\n<--- Screen clear --->\n\n";
 
 void Debug_ClearScreen(void* context)
 {
