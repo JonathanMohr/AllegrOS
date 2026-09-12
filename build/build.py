@@ -109,6 +109,8 @@ def Create_Disk_Image(logger: logging.Logger, buildCache: cache.BuildCache, root
             "--root", str(root)
         ], check=True)
 
+        buildCache.update(image, content_hash)
+
     return image
 
 @dataclass
