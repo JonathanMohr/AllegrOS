@@ -413,6 +413,9 @@ Memory_Result Arch_SyncKernel(uphysptr_t addressSpace, uphysptr_t newAddressSpac
     const bool addressSpaceCurrent = addressSpace == currentAddressSpace;
     const bool newAddressSpaceCurrent = newAddressSpace == currentAddressSpace;
 
+    if (addressSpaceCurrent == newAddressSpaceCurrent)
+        return MEMORY_SUCCESS;
+
     if (addressSpaceCurrent)
     {
         uint32_t* newPageDirectory = (uint32_t*)Arch_TemporaryMap(newAddressSpace);

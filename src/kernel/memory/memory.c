@@ -7,6 +7,7 @@
 #include "result.h"
 
 #include "../panic/panic.h"
+#include "../lock.h"
 
 struct AddressSpace
 {
@@ -47,6 +48,8 @@ Memory_Result Memory_Initialize(MemoryInfo* memoryInfo)
 
 Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags)
 {
+    IRQ_PushDisable();
+
     const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
 
     Memory_Result result;
@@ -67,11 +70,15 @@ Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAdd
         currentAS = currentAS->next;
     }
 
+    IRQ_PopDisable();
+
     return MEMORY_SUCCESS;
 }
 
 Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
 {
+    IRQ_PushDisable();
+
     const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
 
     Memory_Result result;
@@ -81,7 +88,7 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
     AddressSpace* currentAS = headAddressSpace;
     while (currentAS)
     {
-        if (currentAS->addressSpace == current)
+        if (currentAS->addressSpace != current)
         {
             Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
             (void)r;
@@ -91,6 +98,8 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
 
         currentAS = currentAS->next;
     }
+
+    IRQ_PopDisable();
 
     return MEMORY_SUCCESS;
 }
@@ -103,6 +112,8 @@ Memory_Result Memory_TranslateKernel(uintptr_t virtualAddr, uphysptr_t* out)
 
 static Memory_Result Memory_ChangeFlagsKernel(uintptr_t virtualAddr, Memory_Flags newFlags)
 {
+    IRQ_PushDisable();
+
     const uphysptr_t current = currentAddressSpace ? currentAddressSpace->addressSpace : initialAddressSpace;
 
     Memory_Result result;
@@ -112,14 +123,18 @@ static Memory_Result Memory_ChangeFlagsKernel(uintptr_t virtualAddr, Memory_Flag
     AddressSpace* currentAS = headAddressSpace;
     while (currentAS)
     {
-        if (currentAS->addressSpace == current) continue;
-        Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
-        (void)r;
+        if (currentAS->addressSpace != current)
+        {
+            Memory_Result r = Arch_SyncKernel(currentAS->addressSpace, current);
+            (void)r;
+        }
 
         // TODO: Check
 
         currentAS = currentAS->next;
     }
+
+    IRQ_PopDisable();
 
     return MEMORY_SUCCESS;
 }
@@ -223,6 +238,11 @@ void Memory_AddressSpace_Use(AddressSpace* addressSpace)
 {
     if (addressSpace == MEMORY_KERNEL)
         return;
+
+    if (addressSpace == currentAddressSpace)
+        return;
+
+    currentAddressSpace = addressSpace;
 
     Arch_SwitchAddressSpace(addressSpace->addressSpace);
 }
