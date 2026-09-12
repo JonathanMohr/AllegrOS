@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <abi.h>
 
+#include <syscall_nums.h>
+
 typedef struct Registers {
     uint32_t ds, es, fs, gs;
 
@@ -16,7 +18,7 @@ typedef struct Registers {
     uint32_t eip, cs, eflags, esp, ss;
 } __attribute__((packed)) Registers;
 
-typedef void (*ISR_Handler)(const Registers* regs);
+typedef syscall_t (*ISR_Handler)(const Registers* regs);
 
 void x86_ISR_InitializeGates(void);
 

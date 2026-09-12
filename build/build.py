@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import shutil
 import logging
+import copy
 
 from build.toolchain.toolchain import Toolchain, Require_Tool, BuildContext, BuildMode, Architecture, Baseline, OPTIMIZATION
 from build.toolchain.get import Get_Toolchain
@@ -137,7 +138,7 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
         build_mode = BuildMode(
             architecture,
             baseline,
-            False,
+            True,
             False,
             OPTIMIZATION.NONE,
             True,
@@ -147,7 +148,7 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
         build_mode = BuildMode(
             architecture,
             baseline,
-            False,
+            True,
             True,
             OPTIMIZATION.SPEED,
             False,
@@ -170,6 +171,8 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
 
     build_dir = build_root_dir / mode_path / target_path
 
+    shared_dir = src_dir / "shared"
+
     bootloader_src = src_dir / "bootloader"
     bootloader_build = build_dir / "bootloader"
 
@@ -182,27 +185,49 @@ def build(logger: logging.Logger, baseline: Baseline, architecture: Architecture
     userspace_dir = src_dir / "userspace"
     userspace_build = build_dir / "userspace"
 
+    userspace_core = userspace_dir / "core"
+    userspace_core_build = userspace_build / "core"
+    userspace_core_src = userspace_core / "src"
+    userspace_core_src_build = userspace_core_build / "src"
+    userspace_core_runtime_src = userspace_core / "runtime"
+    userspace_core_runtime_build = userspace_core_build / "runtime"
+    userspace_core_include = userspace_core / "include"
+
     userspace_bin = userspace_dir / "bin"
     userspace_bin_build = userspace_build / "bin"
 
     root_build = build_dir / "root"
 
-    toolchain.Add_Include_Directory(libk_src)
+    os_toolchain = copy.deepcopy(toolchain)
+    os_toolchain.context = toolchain.context
+    os_toolchain.Add_Include_Directory(shared_dir)
+    os_toolchain.Add_Include_Directory(libk_src)
+
+    user_toolchain = copy.deepcopy(toolchain)
+    user_toolchain.context = toolchain.context
+    user_toolchain.Add_Include_Directory(shared_dir)
+    user_toolchain.Add_Include_Directory(userspace_core_include)
 
     result = None
 
     try:
-        libk_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, libk_src, libk_build, True)
-        libk = toolchain.Archive_Objects(build_mode, libk_objects, "k", libk_build)
+        libk_objects = Build_Sources_To_Objects(logger, os_toolchain, build_mode, libk_src, libk_build, True)
+        libk = os_toolchain.Archive_Objects(build_mode, libk_objects, "k", libk_build)
 
-        stage1_elf, stage1_map, stage1_bin = Build_Binary(logger, toolchain, build_mode, [], bootloader_src / "stage1", bootloader_build / "stage1", bootloader_src / "stage1" / "linker.ld", "stage1")
-        stage2_elf, stage2_map, stage2_bin = Build_Binary(logger, toolchain, build_mode, [libk], bootloader_src / "stage2", bootloader_build / "stage2", bootloader_src / "stage2" / "linker.ld", "stage2")
+        stage1_elf, stage1_map, stage1_bin = Build_Binary(logger, os_toolchain, build_mode, [], bootloader_src / "stage1", bootloader_build / "stage1", bootloader_src / "stage1" / "linker.ld", "stage1")
+        stage2_elf, stage2_map, stage2_bin = Build_Binary(logger, os_toolchain, build_mode, [libk], bootloader_src / "stage2", bootloader_build / "stage2", bootloader_src / "stage2" / "linker.ld", "stage2")
 
-        kernel_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, kernel_src, kernel_build, True)
-        kernel, kernel_map = toolchain.Link_Executable(build_mode, kernel_objects, [libk], kernel_src / "linker.ld", "kernel", kernel_build)
+        kernel_objects = Build_Sources_To_Objects(logger, os_toolchain, build_mode, kernel_src, kernel_build, True)
+        kernel, kernel_map = os_toolchain.Link_Executable(build_mode, kernel_objects, [libk], kernel_src / "linker.ld", "kernel", kernel_build)
 
-        tool_objects = Build_Sources_To_Objects(logger, toolchain, build_mode, userspace_bin / "tool", userspace_bin_build / "tool", True)
-        tool, tool_map = toolchain.Link_Executable(build_mode, tool_objects, [], userspace_dir / "linker.ld", "tool", userspace_bin_build / "tool")
+        userspace_core_objects = Build_Sources_To_Objects(logger, user_toolchain, build_mode, userspace_core_src, userspace_core_src_build, True)
+        userspace_core_lib = user_toolchain.Archive_Objects(build_mode, userspace_core_objects, "userspacecore", userspace_core_build)
+        userspace_core_runtime = Build_Sources_To_Objects(logger, user_toolchain, build_mode, userspace_core_runtime_src, userspace_core_runtime_build, True)
+        def Userspace_Link(build_mode: BuildMode, objects: list[Path], libraries: list[Path], name: str, out: Path) -> tuple[Path, Path]:
+            return user_toolchain.Link_Executable(build_mode, [*objects, *userspace_core_runtime], [*libraries, userspace_core_lib], userspace_dir / "linker.ld", name, out)
+
+        tool_objects = Build_Sources_To_Objects(logger, user_toolchain, build_mode, userspace_bin / "tool", userspace_bin_build / "tool", True)
+        tool, tool_map = Userspace_Link(build_mode, tool_objects, [], "tool", userspace_bin_build / "tool")
 
         Create_Root(logger, fs_root, kernel, [tool], root_build)
 

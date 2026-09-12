@@ -13,7 +13,7 @@
 static IRQ_Handler irqHandlers[16] = {0};
 static const PIC_Driver* picDriver = NULL;
 
-void x86_IRQ_Handler(const Registers* regs)
+syscall_t x86_IRQ_Handler(const Registers* regs)
 {
     const uint8_t irq = (uint8_t)(regs->interrupt - PIC_REMAP_OFFSET);
 
@@ -34,6 +34,8 @@ void x86_IRQ_Handler(const Registers* regs)
         PanicMessage("[KERNEL] Unhandled IRQ %udd\n", irq);
         picDriver->SendEndOfInterrupt(irq);
     }
+
+    return regs->eax;
 }
 
 void x86_IRQ_Send_EOI(uint8_t irq)

@@ -342,25 +342,19 @@ ELF_Result ELF_Load(VFS_File* file, AddressSpace* addressSpace, bool currentAddr
 
     if (currentAddressSpace)
     {
-        if (!VFS_File_Seek(file, header.programHeaderTableOffset))
-            copyResult = ELF_ERROR_IO;
-
         for (uint32_t i = 0; copyResult == ELF_SUCCESS && i < header.programHeaderCount; i++)
         {
-            struct ELF32_ProgramHeader programHeader;
-            if (VFS_File_Read(file, sizeof(struct ELF32_ProgramHeader), &programHeader) != sizeof(struct ELF32_ProgramHeader))
+            if (!VFS_File_Seek(file, header.programHeaderTableOffset + i * header.programHeaderSize))
             {
                 copyResult = ELF_ERROR_IO;
                 break;
             }
 
-            if (header.programHeaderSize > sizeof(struct ELF32_ProgramHeader))
+            struct ELF32_ProgramHeader programHeader;
+            if (VFS_File_Read(file, sizeof(struct ELF32_ProgramHeader), &programHeader) != sizeof(struct ELF32_ProgramHeader))
             {
-                if (!VFS_File_Seek(file, header.programHeaderTableOffset + (i + 1) * header.programHeaderSize))
-                {
-                    copyResult = ELF_ERROR_IO;
-                    break;
-                }
+                copyResult = ELF_ERROR_IO;
+                break;
             }
 
             if (programHeader.type != ELF_PROGRAM_HEADER_TYPE_LOAD)
@@ -393,25 +387,19 @@ ELF_Result ELF_Load(VFS_File* file, AddressSpace* addressSpace, bool currentAddr
 
         copyResult = ELF_SUCCESS;
 
-        if (!VFS_File_Seek(file, header.programHeaderTableOffset))
-            copyResult = ELF_ERROR_IO;
-
         for (uint32_t i = 0; copyResult == ELF_SUCCESS && i < header.programHeaderCount; i++)
         {
-            struct ELF32_ProgramHeader programHeader;
-            if (VFS_File_Read(file, sizeof(struct ELF32_ProgramHeader), &programHeader) != sizeof(struct ELF32_ProgramHeader))
+            if (!VFS_File_Seek(file, header.programHeaderTableOffset + i * header.programHeaderSize))
             {
                 copyResult = ELF_ERROR_IO;
                 break;
             }
 
-            if (header.programHeaderSize > sizeof(struct ELF32_ProgramHeader))
+            struct ELF32_ProgramHeader programHeader;
+            if (VFS_File_Read(file, sizeof(struct ELF32_ProgramHeader), &programHeader) != sizeof(struct ELF32_ProgramHeader))
             {
-                if (!VFS_File_Seek(file, header.programHeaderTableOffset + (i + 1) * header.programHeaderSize))
-                {
-                    copyResult = ELF_ERROR_IO;
-                    break;
-                }
+                copyResult = ELF_ERROR_IO;
+                break;
             }
 
             if (programHeader.type != ELF_PROGRAM_HEADER_TYPE_LOAD)

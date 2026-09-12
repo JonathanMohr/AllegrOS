@@ -19,7 +19,7 @@ void x86_ISR_RegisterHandler(uint8_t interrupt, ISR_Handler handler)
     isrHandlers[interrupt] = handler;
 }
 
-void CDECL x86_ISR_Handler(const Registers* r)
+void CDECL x86_ISR_Handler(Registers* r)
 {
     Registers regs = *r;
     if (regs.marker == 0xFFFFFFFF)
@@ -47,7 +47,7 @@ void CDECL x86_ISR_Handler(const Registers* r)
     }
 
     if (isrHandlers[regs.interrupt] != NULL)
-        isrHandlers[regs.interrupt](&regs);
+        regs.eax = isrHandlers[regs.interrupt](&regs);
 
     else if (regs.interrupt >= 32)
     {
@@ -59,6 +59,8 @@ void CDECL x86_ISR_Handler(const Registers* r)
         PanicMessage("[KERNEL] Unhandled exception 0x%uxd\n", regs.interrupt);
         Panic();
     }
+
+    r->eax = regs.eax;
 }
 
 void x86_ISR_SetUser(uint8_t interrupt, bool allow)

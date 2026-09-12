@@ -202,8 +202,6 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
             PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageTablePhysical);
     }
 
-    return;
-
     for (uint16_t i = 768; i < 1023; i++)
     {
         if ((directoryCopy[i] & PAGEF_PRESENT) == 0)

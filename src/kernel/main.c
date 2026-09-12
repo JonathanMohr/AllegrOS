@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <minmax.h>
 
+#include <syscall_nums.h>
+
 #include "arch/x86/irq/irq.h"
 #include "arch/x86/isr.h"
 #include "arch/x86/x86.h"
@@ -32,7 +34,7 @@
 #include "filesystem/vfs.h"
 #include "filesystem/fat/fat.h"
 
-static void Syscall_Handler(const Registers* regs);
+static syscall_t Syscall_Handler(const Registers* regs);
 static bool Timer_Handler(const Registers* regs);
 static void Spawn(void* arg);
 
@@ -254,6 +256,8 @@ void CDECL kmain(BootParams* bParams)
         goto end;
     }
 
+    KernelConsole_ClearScreen(mux_console);
+
     x86_ISR_RegisterHandler(0x80, Syscall_Handler);
     x86_ISR_SetUser(0x80, true);
 
@@ -272,15 +276,51 @@ end_before_vfs:
     return;
 }
 
-static void Syscall_Handler(const Registers* regs)
+static syscall_t Syscall_Handler(const Registers* regs)
 {
-    (void)regs;
-
     Kernel_Lock();
 
-    KernelConsole_PrintFormat(mux_console, "Syscall!\n");
+    const uint32_t number = regs->eax;
+    const uint32_t arg1 = regs->ecx;
+    const uint32_t arg2 = regs->edx;
+    const uint32_t arg3 = regs->ebx;
+    const uint32_t arg4 = regs->esi;
+    const uint32_t arg5 = regs->edi;
+    const uint32_t arg6 = regs->ebp;
+
+    (void)arg1;
+    (void)arg2;
+    (void)arg3;
+    (void)arg4;
+    (void)arg5;
+    (void)arg6;
+
+    uint32_t return_value = regs->eax;
+    switch (number)
+    {
+        case SYSCALL_EXIT:
+            KernelConsole_PrintFormat(mux_console, "Exit syscall: %udd\n", arg1);
+            Scheduler_Exit();
+            break;
+
+        case SYSCALL_WRITE:
+            if (arg1 == 0)
+            {
+                const char* data = (const char*)arg2;
+                for (uint32_t i = 0; i < arg3; i++)
+                    KernelConsole_PutChar(mux_console, data[i]);
+                return_value = arg3;
+            }
+            else return_value = 0;
+            break;
+
+        default:
+            KernelConsole_PrintFormat(mux_console, "Unknown syscall %udd!\n", number);
+    }
 
     Kernel_Unlock();
+
+    return return_value;
 }
 
 static bool Timer_Handler(const Registers* regs)
@@ -356,6 +396,8 @@ static void Process(void* arg)
     }
 
     VFS_File_Close(file);
+
+    KernelConsole_PrintFormat(mux_console, "Jumping to entry of %s\n", filePath);
 
     Kernel_Unlock();
 
