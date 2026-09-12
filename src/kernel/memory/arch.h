@@ -8,6 +8,8 @@ void Arch_Memory_Initialize(Memory_Layout* layout, MemoryInfo* memoryInfo);
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress);
 void Arch_TemporaryUnmap(uintptr_t virtualMapAddress);
+uintptr_t Arch_TemporaryMap2(uphysptr_t physicalMapAddress);
+void Arch_TemporaryUnmap2(uintptr_t virtualMapAddress);
 
 Memory_Result Arch_CreateAddressSpace(uphysptr_t* out);
 void Arch_DestroyAddressSpace(uphysptr_t addressSpace);

@@ -21,10 +21,10 @@ static uphysptr_t pageCount = 0;
 
 static void FreePage(uphysptr_t physicalAddress)
 {
-    struct FreePage* temp = (struct FreePage*)Arch_TemporaryMap(physicalAddress);
+    struct FreePage* temp = (struct FreePage*)Arch_TemporaryMap2(physicalAddress);
     temp->next = freeListHead;
     freeListHead = physicalAddress;
-    Arch_TemporaryUnmap((uintptr_t)temp);
+    Arch_TemporaryUnmap2((uintptr_t)temp);
 }
 
 static bool GetFreePage(uphysptr_t* out)
@@ -33,9 +33,9 @@ static bool GetFreePage(uphysptr_t* out)
         return false;
 
     *out = freeListHead;
-    struct FreePage* temp = (struct FreePage*)Arch_TemporaryMap(freeListHead);
+    struct FreePage* temp = (struct FreePage*)Arch_TemporaryMap2(freeListHead);
     freeListHead = temp->next;
-    Arch_TemporaryUnmap((uintptr_t)temp);
+    Arch_TemporaryUnmap2((uintptr_t)temp);
 
     return true;
 }
@@ -57,28 +57,28 @@ static bool RemoveFromFreeList(uphysptr_t physicalAddress)
 
     if (freeListHead == physicalAddress)
     {
-        struct FreePage* head = (struct FreePage*)Arch_TemporaryMap(freeListHead);
+        struct FreePage* head = (struct FreePage*)Arch_TemporaryMap2(freeListHead);
         freeListHead = head->next;
-        Arch_TemporaryUnmap((uintptr_t)head);
+        Arch_TemporaryUnmap2((uintptr_t)head);
         return true;
     }
 
     uphysptr_t current = freeListHead;
     while (current)
     {
-        struct FreePage* currentPage = (struct FreePage*)Arch_TemporaryMap(current);
+        struct FreePage* currentPage = (struct FreePage*)Arch_TemporaryMap2(current);
         uphysptr_t next = currentPage->next;
-        Arch_TemporaryUnmap((uintptr_t)currentPage);
+        Arch_TemporaryUnmap2((uintptr_t)currentPage);
 
         if (next == physicalAddress)
         {
-            struct FreePage* target = (struct FreePage*)Arch_TemporaryMap(physicalAddress);
+            struct FreePage* target = (struct FreePage*)Arch_TemporaryMap2(physicalAddress);
             uphysptr_t targetNext = target->next;
-            Arch_TemporaryUnmap((uintptr_t)target);
+            Arch_TemporaryUnmap2((uintptr_t)target);
 
-            struct FreePage* currentPageAgain = (struct FreePage*)Arch_TemporaryMap(current);
+            struct FreePage* currentPageAgain = (struct FreePage*)Arch_TemporaryMap2(current);
             currentPageAgain->next = targetNext;
-            Arch_TemporaryUnmap((uintptr_t)currentPageAgain);
+            Arch_TemporaryUnmap2((uintptr_t)currentPageAgain);
 
             return true;
         }

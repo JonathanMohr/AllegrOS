@@ -1,4 +1,5 @@
 #include "../../../memory/arch.h"
+#include "../../../memory/memory.h"
 #include "../../../panic/panic.h"
 #include "../../../memory/physical.h"
 #include "../../../lock.h"
@@ -40,6 +41,8 @@ void Arch_Memory_Initialize(Memory_Layout* layout, MemoryInfo* memoryInfo)
 
 static int allocated = 0;
 static __attribute__((aligned(4096))) uint8_t scratchPageBuffer[4096];
+static int allocated2 = 0;
+static __attribute__((aligned(4096))) uint8_t scratchPageBuffer2[4096];
 
 uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress)
 {
@@ -47,7 +50,7 @@ uintptr_t Arch_TemporaryMap(uphysptr_t physicalMapAddress)
 
     if (allocated)
     {
-        PanicMessage("Arch_TemporaryMap called with Arch_TemporaryUnmap\n");
+        PanicMessage("Arch_TemporaryMap called without Arch_TemporaryUnmap\n");
         Panic();
     }
 
@@ -71,6 +74,38 @@ void Arch_TemporaryUnmap(uintptr_t virtualMapAddress)
 
     IRQ_PopDisable();
 }
+
+uintptr_t Arch_TemporaryMap2(uphysptr_t physicalMapAddress)
+{
+    IRQ_PushDisable();
+
+    if (allocated2)
+    {
+        PanicMessage("Arch_TemporaryMap2 called without Arch_TemporaryUnmap2\n");
+        Panic();
+    }
+
+    const uintptr_t scratchVirtualAddr = (uintptr_t)scratchPageBuffer2;
+    const uint32_t dirIndex = scratchVirtualAddr >> 22;
+    const uint32_t tableIndex = (scratchVirtualAddr >> 12) & 0x3FF;
+
+    uint32_t* recursiveTable = (uint32_t*)(0xFFC00000 + dirIndex * 0x1000);
+
+    allocated2 = 1;
+    recursiveTable[tableIndex] = (physicalMapAddress & ~0xFFFu) | PAGEF_PRESENT | PAGEF_WRITABLE;
+    x86_invlpg(scratchVirtualAddr);
+
+    return scratchVirtualAddr;
+}
+
+void Arch_TemporaryUnmap2(uintptr_t virtualMapAddress)
+{
+    (void)virtualMapAddress;
+    allocated2 = 0;
+
+    IRQ_PopDisable();
+}
+
 
 static Memory_Result MirrorKernel(uint32_t* pageDirectory, uint32_t* newPageDirectory)
 {
@@ -133,14 +168,23 @@ Memory_Result Arch_CreateAddressSpace(uphysptr_t* out)
 
 void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
 {
+    uint32_t* directoryCopy = Memory_KernelAllocate(PAGE_SIZE);
+    if (!directoryCopy)
+    {
+        PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_KernelAllocate failed\n", 0);
+        return;
+    }
+
     uint32_t* pageDirectory = (uint32_t*)Arch_TemporaryMap(addressSpace);
+    memcpy(directoryCopy, pageDirectory, PAGE_SIZE);
+    Arch_TemporaryUnmap((uintptr_t)pageDirectory);
 
     for (uint16_t i = 0; i < 768; i++)
     {
-        if ((pageDirectory[i] & PAGEF_PRESENT) == 0)
+        if ((directoryCopy[i] & PAGEF_PRESENT) == 0)
             continue;
 
-        const uphysptr_t pageTablePhysical = pageDirectory[i] & ~0xFFFu;
+        const uphysptr_t pageTablePhysical = directoryCopy[i] & ~0xFFFu;
 
         uint32_t* pageTable = (uint32_t*)Arch_TemporaryMap(pageTablePhysical);
         for (uint16_t j = 0; j < 1024; j++)
@@ -158,17 +202,19 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
             PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageTablePhysical);
     }
 
+    return;
+
     for (uint16_t i = 768; i < 1023; i++)
     {
-        if ((pageDirectory[i] & PAGEF_PRESENT) == 0)
+        if ((directoryCopy[i] & PAGEF_PRESENT) == 0)
             continue;
 
-        const uphysptr_t pageTablePhysical = pageDirectory[i] & ~0xFFFu;
+        const uphysptr_t pageTablePhysical = directoryCopy[i] & ~0xFFFu;
         if (Memory_Physical_PutPage(pageTablePhysical) != MEMORY_SUCCESS)
             PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", pageTablePhysical);
     }
 
-    Arch_TemporaryUnmap((uintptr_t)pageDirectory);
+    Memory_KernelFree(directoryCopy);
 
     if (Memory_Physical_PutPage(addressSpace) != MEMORY_SUCCESS)
         PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", addressSpace);
