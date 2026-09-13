@@ -79,10 +79,32 @@ struct ELF_MappedPage
 static void UnmapPages(AddressSpace* addressSpace, struct ELF_MappedPage* pages, uintptr_t upToEntry, uintptr_t upToPageInEntry)
 {
     for (uintptr_t entryIndex = 0; entryIndex < upToEntry; entryIndex++)
+    {
         Memory_Unlink(addressSpace, pages[entryIndex].virtualAddress, pages[entryIndex].pageCount);
+        Memory_FreeVirtual(addressSpace, pages[entryIndex].virtualAddress, pages[entryIndex].pageCount, true);
+    }
 
     if (upToPageInEntry > 0)
+    {
         Memory_Unlink(addressSpace, pages[upToEntry].virtualAddress, upToPageInEntry);
+        Memory_FreeVirtual(addressSpace, pages[upToEntry].virtualAddress, upToPageInEntry, true);
+    }
+}
+
+static ELF_Result ReserveVirtualPages(AddressSpace* addressSpace, struct ELF_MappedPage* pages, uintptr_t pageEntryCount)
+{
+    for (uintptr_t entryIndex = 0; entryIndex < pageEntryCount; entryIndex++)
+    {
+        if (Memory_ReserveVirtual(addressSpace, pages[entryIndex].virtualAddress, pages[entryIndex].pageCount, pages[entryIndex].flags) != MEMORY_SUCCESS)
+        {
+            for (uintptr_t undo = 0; undo < entryIndex; undo++)
+                Memory_FreeVirtual(addressSpace, pages[undo].virtualAddress, pages[undo].pageCount, true);
+
+            return ELF_ERROR_ALREADY_MAPPED;
+        }
+    }
+
+    return ELF_SUCCESS;
 }
 
 static ELF_Result MapPages(AddressSpace* addressSpace, struct ELF_MappedPage* pages, uintptr_t pageEntryCount)
@@ -333,9 +355,19 @@ ELF_Result ELF_Load(VFS_File* file, AddressSpace* addressSpace, bool currentAddr
     pages = merged;
     pageEntryCount = mergedCount;
 
+    const ELF_Result reserveResult = ReserveVirtualPages(addressSpace, pages, pageEntryCount);
+    if (reserveResult != ELF_SUCCESS)
+    {
+        Memory_KernelFree(pages);
+        return reserveResult;
+    }
+
     const ELF_Result mapResult = MapPages(addressSpace, pages, pageEntryCount);
     if (mapResult != ELF_SUCCESS)
     {
+        for (uintptr_t entryIndex = 0; entryIndex < pageEntryCount; entryIndex++)
+            Memory_FreeVirtual(addressSpace, pages[entryIndex].virtualAddress, pages[entryIndex].pageCount, true);
+
         Memory_KernelFree(pages);
         return mapResult;
     }

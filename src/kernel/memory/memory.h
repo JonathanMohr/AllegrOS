@@ -7,7 +7,26 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef struct AddressSpace AddressSpace;
+typedef struct Virtual_Memory_Area
+{
+    struct Virtual_Memory_Area* next;
+    uintptr_t start;
+    uintptr_t pageCount;
+    
+    Memory_Flags flags;
+} Virtual_Memory_Area;
+
+typedef struct AddressSpace
+{
+    uphysptr_t addressSpace;
+
+    Virtual_Memory_Area* VMAs;
+    
+    struct AddressSpace* before;
+    struct AddressSpace* next;
+
+    uint32_t references;
+} AddressSpace;
 
 #define MemoryLayout memoryLayout
 extern Memory_Layout memoryLayout;
@@ -40,6 +59,10 @@ Memory_Result Memory_ChangeFlags(AddressSpace* addressSpace, uintptr_t virtualAd
 #define Memory_Kernel_AllocateVirtual(pageCount, out) Memory_KernelVirtual_AllocatePages(pageCount, out)
 #define Memory_Kernel_FreeVirtual(address, pageCount) Memory_KernelVirtual_FreePages(address, pageCount)
 
+Memory_Result Memory_AllocateVirtual(AddressSpace* addressSpace, uintptr_t pageCount, Memory_Flags flags, uintptr_t* out);
+Memory_Result Memory_FreeVirtual(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount, bool strict);
+Memory_Result Memory_ReserveVirtual(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount, Memory_Flags flags);
+Memory_Result Memory_GetVirtual(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t* outStart, uintptr_t* outSize, Memory_Flags* outFlags);
 
 void* Memory_KernelAllocate(uintptr_t size);
 void* Memory_KernelZallocate(uintptr_t size);

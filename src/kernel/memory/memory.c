@@ -9,16 +9,6 @@
 #include "../panic/panic.h"
 #include "../lock.h"
 
-struct AddressSpace
-{
-    uphysptr_t addressSpace;
-
-    struct AddressSpace* before;
-    struct AddressSpace* next;
-
-    uint32_t references;
-};
-
 static AddressSpace* currentAddressSpace = NULL;
 static AddressSpace* headAddressSpace = NULL;
 
@@ -389,6 +379,8 @@ Memory_Result Memory_LinkRaw(AddressSpace* addressSpace, uintptr_t virtualAddres
     return link(addressSpace, virtualAddress, physicalAddress, flags, false);
 }
 
+#define strict false
+
 Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress, uintptr_t pageCount)
 {
     if (!checkAddresses(addressSpace, virtualAddress, pageCount))
@@ -399,15 +391,19 @@ Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress
 
     Memory_Result result;
     uphysptr_t physicalAddress;
-    for (uintptr_t i = 0; i < pageCount; i++)
+    
+    if (strict)
     {
-        const uintptr_t addr = virtualAddress + i * memoryLayout.pageSize;
+        for (uintptr_t i = 0; i < pageCount; i++)
+        {
+            const uintptr_t addr = virtualAddress + i * memoryLayout.pageSize;
 
-        result = (addressSpace == MEMORY_KERNEL)
-                 ? Memory_TranslateKernel(addr, &physicalAddress)
-                 : Arch_TranslatePage(addressSpace->addressSpace, addr, &physicalAddress);
-        if (result != MEMORY_SUCCESS)
-            return result;
+            result = (addressSpace == MEMORY_KERNEL)
+                    ? Memory_TranslateKernel(addr, &physicalAddress)
+                    : Arch_TranslatePage(addressSpace->addressSpace, addr, &physicalAddress);
+            if (result != MEMORY_SUCCESS)
+                return result;
+        }
     }
 
     for (uintptr_t i = 0; i < pageCount; i++)
@@ -417,7 +413,9 @@ Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress
         result = (addressSpace == MEMORY_KERNEL)
                  ? Memory_TranslateKernel(addr, &physicalAddress)
                  : Arch_TranslatePage(addressSpace->addressSpace, addr, &physicalAddress);
-        if (result != MEMORY_SUCCESS)
+        if (result == MEMORY_ERROR_NOT_MAPPED && !strict)
+            continue;
+        else if (result != MEMORY_SUCCESS)
         {
             if (addressSpace == MEMORY_KERNEL)
                 PanicMessageInfo("Memory_Unlink", "Memory_TranslateKernel(%p, %p) failed after working before\n", addr, &physicalAddress);
@@ -444,6 +442,8 @@ Memory_Result Memory_Unlink(AddressSpace* addressSpace, uintptr_t virtualAddress
 
     return MEMORY_SUCCESS;
 }
+
+#undef strict
 
 Memory_Result Memory_Translate(AddressSpace* addressSpace, uintptr_t virtualAddress, uphysptr_t* outPhysicalAddress)
 {
