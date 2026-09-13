@@ -299,11 +299,18 @@ static syscall_t Syscall_Handler(const Registers* regs)
     switch (number)
     {
         case SYSCALL_EXIT:
+            // arg1: exit code
+
             KernelConsole_PrintFormat(mux_console, "Exit syscall: %udd\n", arg1);
             Scheduler_Exit();
             break;
 
         case SYSCALL_WRITE:
+            // returns: written
+            // arg1: fd
+            // arg2: data
+            // arg3: len
+
             if (arg1 == 0)
             {
                 const char* data = (const char*)arg2;
@@ -313,6 +320,106 @@ static syscall_t Syscall_Handler(const Registers* regs)
             }
             else return_value = 0;
             break;
+
+        case SYSCALL_ALLOCATE_PAGES:
+            // returns: addr (0 if error)
+            // arg1: addr (0 if dynamic)
+            // arg2: len
+            // arg3: flags
+        {
+            uintptr_t addr = arg1;
+            const uintptr_t len = arg2;
+            const syscall_memory_flags_t sFlags = (syscall_memory_flags_t)arg3;
+
+            const uintptr_t pageCount = len / MEMORY_PAGE_SIZE;
+            if (len % MEMORY_PAGE_SIZE != 0)
+            {
+                return_value = 0;
+                break;
+            }
+
+            if (addr % MEMORY_PAGE_SIZE)
+            {
+                return_value = 0;
+                break;
+            }
+
+            Memory_Flags flags = MEMORY_USER;
+            if (sFlags & SYSCALL_MEMORY_READABLE)
+                flags |= MEMORY_READABLE;
+            if (sFlags & SYSCALL_MEMORY_WRITABLE)
+                flags |= MEMORY_WRITABLE;
+            if (sFlags & SYSCALL_MEMORY_EXECUTABLE)
+                flags |= MEMORY_EXECUTABLE;
+
+            if (addr)
+            {
+                Memory_Result result = Memory_ReserveVirtual(Memory_CurrentAddressSpace(), addr, pageCount, flags);
+                if (result != MEMORY_SUCCESS)
+                {
+                    return_value = 0;
+                    break;
+                }
+            }
+
+            if (!addr)
+            {
+                Memory_Result result = Memory_AllocateVirtual(Memory_CurrentAddressSpace(), pageCount, flags, &addr);
+                if (result != MEMORY_SUCCESS)
+                {
+                    return_value = 0;
+                    break;
+                }
+            }
+
+            Memory_Result result = Memory_LinkNew(Memory_CurrentAddressSpace(), addr, flags, pageCount);
+            if (result != MEMORY_SUCCESS)
+            {
+                return_value = 0;
+                result = Memory_FreeVirtual(Memory_CurrentAddressSpace(), addr, pageCount, true);
+                if (result != MEMORY_SUCCESS)
+                    PanicMessageInfo("Syscall_Handler", "Memory_FreeVirtual(Memory_CurrentAddressSpace(), %p, %p, true) failed\n", addr, pageCount);
+                break;
+            }
+
+            return_value = addr;
+
+            break;
+        }
+            
+        case SYSCALL_FREE_PAGES:
+            // returns: zero on success, non-zero on failure
+            // arg1: addr
+            // arg2: len
+        {
+            const uintptr_t addr = arg1;
+            const uintptr_t len = arg2;
+
+            const uintptr_t pageCount = len / MEMORY_PAGE_SIZE;
+            if (len % MEMORY_PAGE_SIZE != 0)
+            {
+                return_value = 1;
+                break;
+            }
+
+            Memory_Result result = Memory_Unlink(Memory_CurrentAddressSpace(), addr, pageCount);
+            if (result != MEMORY_SUCCESS)
+            {
+                return_value = 1;
+                break;
+            }
+
+            result = Memory_FreeVirtual(Memory_CurrentAddressSpace(), addr, pageCount, false);
+            if (result != MEMORY_SUCCESS)
+            {
+                PanicMessageInfo("Syscall_Handler", "Memory_FreeVirtual(Memory_CurrentAddressSpace(), %p, %p, false) failed\n", addr, pageCount);
+            }
+
+            return_value = 0;
+
+            break;
+        }
+
 
         default:
             KernelConsole_PrintFormat(mux_console, "Unknown syscall %udd!\n", number);
