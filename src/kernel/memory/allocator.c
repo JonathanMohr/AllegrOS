@@ -128,7 +128,7 @@ static void* large_alloc(uintptr_t size, int zero)
     if (result != MEMORY_SUCCESS)
         return NULL;
 
-    result = Memory_LinkNew(MEMORY_KERNEL, base, MEMORY_WRITABLE, pages);
+    result = Memory_LinkNew(MEMORY_KERNEL, base, MEMORY_READABLE | MEMORY_WRITABLE, pages);
 
     if (result != MEMORY_SUCCESS)
     {
@@ -253,7 +253,7 @@ static void* slab_alloc(uintptr_t size, bool zero)
         if (Memory_KernelVirtual_AllocatePages(1, &virtualAddr) != MEMORY_SUCCESS)
             return NULL;
 
-        Memory_Result result = Memory_LinkNew(MEMORY_KERNEL, virtualAddr, MEMORY_WRITABLE, 1);
+        Memory_Result result = Memory_LinkNew(MEMORY_KERNEL, virtualAddr, MEMORY_READABLE | MEMORY_WRITABLE, 1);
         if (result != MEMORY_SUCCESS)
         {
             if (Memory_Kernel_FreeVirtual(virtualAddr, 1) != MEMORY_SUCCESS)

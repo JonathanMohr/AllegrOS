@@ -93,7 +93,7 @@ bool VGA_Initialize(void)
 
     for (uphysptr_t i = 0; i < pageCount; i++)
     {
-        if (Memory_LinkRaw(MEMORY_KERNEL, virtualAddress + i * MEMORY_PAGE_SIZE, startPage * MEMORY_PAGE_SIZE + i * MEMORY_PAGE_SIZE, MEMORY_WRITABLE) != MEMORY_SUCCESS)
+        if (Memory_LinkRaw(MEMORY_KERNEL, virtualAddress + i * MEMORY_PAGE_SIZE, startPage * MEMORY_PAGE_SIZE + i * MEMORY_PAGE_SIZE, MEMORY_READABLE | MEMORY_WRITABLE) != MEMORY_SUCCESS)
         {
             if (i > 0 && Memory_Unlink(MEMORY_KERNEL, virtualAddress, i) != MEMORY_SUCCESS)
             {

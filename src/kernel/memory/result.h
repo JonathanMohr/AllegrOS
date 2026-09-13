@@ -20,10 +20,11 @@ typedef int Memory_Result_VaArg;
 #define MEMORY_ERROR_NOT_RESERVED 13
 
 typedef uint8_t Memory_Flags;
-#define MEMORY_WRITABLE   0x1
-#define MEMORY_USER       0x2
-#define MEMORY_GLOBAL     0x4
-#define MEMORY_EXECUTABLE 0x8
+#define MEMORY_READABLE   0x1
+#define MEMORY_WRITABLE   0x2
+#define MEMORY_USER       0x4
+#define MEMORY_GLOBAL     0x8
+#define MEMORY_EXECUTABLE 0x10
 
 typedef struct
 {

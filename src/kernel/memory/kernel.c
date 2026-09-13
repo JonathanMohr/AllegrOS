@@ -150,7 +150,7 @@ Memory_Result Memory_KernelVirtual_AllocatePages(uint32_t pageCount, uintptr_t* 
                         return result;
                     }
 
-                    result = Memory_MapPageKernel(bitmapAddress, physicalPage, MEMORY_WRITABLE);
+                    result = Memory_MapPageKernel(bitmapAddress, physicalPage, MEMORY_READABLE | MEMORY_WRITABLE);
                     if (result != MEMORY_SUCCESS)
                     {
                         if (Memory_Physical_PutPage(physicalPage) != MEMORY_SUCCESS)

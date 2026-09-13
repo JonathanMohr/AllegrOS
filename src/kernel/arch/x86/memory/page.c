@@ -22,6 +22,8 @@
 #define PAGEF_SIZE           0x080
 #define PAGEF_GLOBAL         0x100
 
+#define PAGEF_CUSTOM_1     0x200
+
 
 static uphysptr_t currentAddressSpace;
 
@@ -218,16 +220,51 @@ void Arch_DestroyAddressSpace(uphysptr_t addressSpace)
         PanicMessageInfo("Arch_DestroyAddressSpace", "Memory_Physical_PutPage(%q) failed\n", addressSpace);
 }
 
-Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags)
+static uint32_t GetPflags(Memory_Flags flags)
 {
-    uint32_t pflags = PAGEF_PRESENT;
+    uint32_t pflags = PAGEF_CUSTOM_1;
+
+    if (flags & MEMORY_READABLE || flags & MEMORY_WRITABLE || flags & MEMORY_EXECUTABLE)
+        pflags |= PAGEF_PRESENT;
+
     if (flags & MEMORY_WRITABLE)
         pflags |= PAGEF_WRITABLE;
+
     if (flags & MEMORY_USER)
         pflags |= PAGEF_USER;
+
     if (flags & MEMORY_GLOBAL)
         pflags |= PAGEF_GLOBAL;
 
+    return pflags;
+}
+
+static Memory_Flags GetMFlags(uint32_t pflags, bool* mapped)
+{
+    Memory_Flags flags = 0;
+
+    if (!(pflags & PAGEF_CUSTOM_1))
+    {
+        *mapped = false;
+        return 0;
+    }
+    *mapped = true;
+
+    if (pflags & PAGEF_PRESENT)
+        flags |= MEMORY_READABLE | MEMORY_EXECUTABLE;
+    if (pflags & PAGEF_PRESENT && pflags & PAGEF_WRITABLE)
+        flags |= MEMORY_WRITABLE;
+    if (pflags & PAGEF_USER)
+        flags |= MEMORY_USER;
+    if (pflags & PAGEF_GLOBAL)
+        flags |= MEMORY_GLOBAL;
+
+    return flags;
+}
+
+Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphysptr_t physicalAddr, Memory_Flags flags)
+{
+    const uint32_t pflags = GetPflags(flags);
     const bool current = addressSpace == currentAddressSpace;
 
     const uint32_t dirIndex = virtualAddr >> 22;
@@ -235,10 +272,19 @@ Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphys
 
     uint32_t* pageDirectory = current ? (uint32_t*)0xFFFFF000 : (uint32_t*)Arch_TemporaryMap(addressSpace);
     uint32_t dirEntry = pageDirectory[dirIndex];
-    if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
 
-    if ((dirEntry & PAGEF_PRESENT) == 0)
+    if (dirEntry & PAGEF_PRESENT)
     {
+        if (pflags & PAGEF_USER && !(dirEntry & PAGEF_USER))
+            pageDirectory[dirIndex] |= PAGEF_USER;
+        // Writable already set
+
+        if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
+    }
+    else
+    {
+        if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
+
         Memory_Result result;
 
         uphysptr_t newTablePhysical;
@@ -250,7 +296,7 @@ Memory_Result Arch_MapPage(uphysptr_t addressSpace, uintptr_t virtualAddr, uphys
         Arch_TemporaryUnmap((uintptr_t)newTable);
 
         dirEntry = newTablePhysical | PAGEF_PRESENT | PAGEF_WRITABLE;
-        if (flags & MEMORY_USER)
+        if (pflags & PAGEF_USER)
             dirEntry |= PAGEF_USER;
         
         if (!current)
@@ -374,14 +420,7 @@ Memory_Result Arch_TranslatePage(uphysptr_t addressSpace, uintptr_t virtualAddr,
 
 Memory_Result Arch_ChangeFlags(uphysptr_t addressSpace, uintptr_t virtualAddr, Memory_Flags flags)
 {
-    uint32_t pflags = PAGEF_PRESENT;
-    if (flags & MEMORY_WRITABLE)
-        pflags |= PAGEF_WRITABLE;
-    if (flags & MEMORY_USER)
-        pflags |= PAGEF_USER;
-    if (flags & MEMORY_GLOBAL)
-        pflags |= PAGEF_GLOBAL;
-
+    const uint32_t pflags = GetPflags(flags);
     const bool current = addressSpace == currentAddressSpace;
 
     const uint32_t dirIndex = virtualAddr >> 22;
@@ -389,10 +428,20 @@ Memory_Result Arch_ChangeFlags(uphysptr_t addressSpace, uintptr_t virtualAddr, M
 
     uint32_t* pageDirectory = current ? (uint32_t*)0xFFFFF000 : (uint32_t*)Arch_TemporaryMap(addressSpace);
     const uint32_t dirEntry = pageDirectory[dirIndex];
-    if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
 
     if ((dirEntry & PAGEF_PRESENT) == 0)
+    {
+        if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
         return MEMORY_ERROR_NOT_MAPPED;
+    }
+
+    if (pflags & PAGEF_USER && !(dirEntry & PAGEF_USER))
+        pageDirectory[dirIndex] = dirEntry | PAGEF_USER;
+
+    if (pflags & PAGEF_WRITABLE && !(dirEntry & PAGEF_WRITABLE))
+        pageDirectory[dirIndex] = dirEntry | PAGEF_WRITABLE;
+
+    if (!current) Arch_TemporaryUnmap((uintptr_t)pageDirectory);
 
     const uphysptr_t pageTablePhysical = dirEntry & ~0xFFFu;
 
@@ -436,16 +485,11 @@ Memory_Result Arch_GetFlags(uphysptr_t addressSpace, uintptr_t virtualAddr, Memo
     const uint32_t tableEntry = pageTable[tableIndex];
     if (!current) Arch_TemporaryUnmap((uintptr_t)pageTable);
 
-    if ((tableEntry & PAGEF_PRESENT) == 0)
-        return MEMORY_ERROR_NOT_MAPPED;
+    bool mapped;
+    const Memory_Flags flags = GetMFlags(tableEntry, &mapped);
 
-    Memory_Flags flags = 0;
-    if (tableEntry & PAGEF_WRITABLE)
-        flags |= MEMORY_WRITABLE;
-    if (tableEntry & PAGEF_USER)
-        flags |= MEMORY_USER;
-    if (tableEntry & PAGEF_GLOBAL)
-        flags |= MEMORY_GLOBAL;
+    if (!mapped)
+        return MEMORY_ERROR_NOT_MAPPED;
 
     *out = flags;
     return MEMORY_SUCCESS;
