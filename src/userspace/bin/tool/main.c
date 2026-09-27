@@ -18,6 +18,7 @@ static const char ascii_lower[128] = {
     [0x30]='b', [0x31]='n', [0x32]='m',
     [0x33]=',', [0x34]='.', [0x35]='-',
     [0x37]='*', [0x39]=' ',
+    [0x56]='<',
 };
 
 static const char ascii_upper[128] = {
@@ -35,6 +36,7 @@ static const char ascii_upper[128] = {
     [0x30]='B', [0x31]='N', [0x32]='M',
     [0x33]=';', [0x34]=':', [0x35]='_',
     [0x37]='*', [0x39]=' ',
+    [0x56]='>',
 };
 
 #define KEY_ARROW_UP    (0x48 | 0x80)
