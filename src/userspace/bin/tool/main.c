@@ -89,10 +89,9 @@ void write(void)
     char buffer[MAX_PATH_CHARACTERS] = {0};
     unsigned long current_pos = 0;
 
-    const char msg[] = " - write\nEnter the path of the file [PATH]: ";
-    const unsigned long msg_len = sizeof(msg) - 1;
+    const char path_msg[] = " - write\nEnter the path of the file [PATH]: ";
 
-    syscall_write(0, msg, msg_len);
+    syscall_write(0, path_msg, sizeof(path_msg) - 1);
 
     ev.released = 1;
     while (ev.keycode != KEY_ENTER || ev.released)
