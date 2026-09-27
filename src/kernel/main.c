@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <minmax.h>
 
+#include <memory.h>
 #include <syscall_nums.h>
 
 #include "arch/x86/irq/irq.h"
@@ -33,7 +34,9 @@
 
 #include "filesystem/vfs.h"
 #include "filesystem/fat/fat.h"
+#include "stdbool.h"
 
+static bool Keyboard_Handler(const Registers* regs);
 static syscall_t Syscall_Handler(const Registers* regs);
 static bool Timer_Handler(const Registers* regs);
 static void Spawn(void* arg);
@@ -258,6 +261,8 @@ void CDECL kmain(BootParams* bParams)
 
     KernelConsole_ClearScreen(mux_console);
 
+    x86_IRQ_RegisterHandler(1, Keyboard_Handler);
+
     x86_ISR_RegisterHandler(0x80, Syscall_Handler);
     x86_ISR_SetUser(0x80, true);
 
@@ -274,6 +279,55 @@ end:
 end_before_vfs:
     *taskState = TASK_IDLE;
     return;
+}
+
+
+#define KEYBOARD_RINGBUFFER_SIZE 256
+struct syscall_keyboard_event keyboard_events[KEYBOARD_RINGBUFFER_SIZE];
+volatile size_t keyboard_write_index = 0;
+volatile size_t keyboard_read_index = 0;
+
+static bool extended_pending = false;
+static bool Keyboard_Handler(const Registers* regs)
+{
+    // TODO: Extremely ugly and bad, just redesign later
+    (void)regs;
+
+    IRQ_PushDisable();
+
+    uint8_t scancode = x86_inb(0x60);
+
+    if (scancode == 0xE0)
+    {
+        extended_pending = true;
+        IRQ_PopDisable();
+        return true;
+    }
+
+    const bool released = (scancode & 0x80) != 0;
+    const uint8_t keycode = (scancode & 0x7F) | (extended_pending ? 0x80 : 0x00);
+
+    const size_t next = (keyboard_write_index + 1) % KEYBOARD_RINGBUFFER_SIZE;
+    if (next == keyboard_read_index)
+    {
+        PanicMessage("Keyboard ring buffer full!\n");
+        extended_pending = false;
+        IRQ_PopDisable();
+        return true;
+    }
+    else
+    {
+        struct syscall_keyboard_event event;
+        event.keycode = keycode;
+        event.released = released;
+        keyboard_events[keyboard_write_index] = event;
+        keyboard_write_index = next;
+    }
+
+    extended_pending = false;
+    IRQ_PopDisable();
+
+    return true;
 }
 
 static syscall_t Syscall_Handler(const Registers* regs)
@@ -300,26 +354,206 @@ static syscall_t Syscall_Handler(const Registers* regs)
     {
         case SYSCALL_EXIT:
             // arg1: exit code
-
             KernelConsole_PrintFormat(mux_console, "Exit syscall: %udd\n", arg1);
+
+            Kernel_Unlock();
+
             Scheduler_Exit();
             break;
 
-        case SYSCALL_WRITE:
-            // returns: written
-            // arg1: fd
+        case SYSCALL_OPEN_FILE:
+            // returns: handle
+            // arg1: path
+            // arg2: create (zero if not)
+        {
+            const char* path = (const char*)arg1;
+            const int create = (int)arg2;
+
+            VFS_File* file = VFS_File_Open(&vfs, NULL, path);
+            if (!file && create)
+            {
+                if (VFS_Create(&vfs, NULL, path, FILESYSTEM_ENTRY_FILE, 0))
+                    file = VFS_File_Open(&vfs, NULL, path);
+            }
+
+            if (!file)
+                return_value = 0;
+            else
+                return_value = (syscall_t)file;
+
+            break;
+        }
+
+        case SYSCALL_CLOSE_FILE:
+            // returns: zero on success, non-zero on failure
+            // arg1: handle
+        {
+            VFS_File* handle = (VFS_File*)arg1;
+            VFS_File_Close(handle);
+            return_value = 0;
+
+            break;
+        }
+
+        case SYSCALL_OPEN_DIR:
+            // returns: handle
+            // arg1: path
+        {
+            const char* path = (const char*)arg1;
+
+            VFS_File* file = VFS_Dir_Open(&vfs, NULL, path);
+            if (!file)
+                return_value = 0;
+            else
+                return_value = (syscall_t)file;
+
+            break;
+        }
+
+        case SYSCALL_CLOSE_DIR:
+            // returns: zero on success, non-zero on failure
+            // arg1: handle
+        {
+            VFS_File* handle = (VFS_File*)arg1;
+            VFS_Dir_Close(handle);
+            return_value = 0;
+
+            break;
+        }
+
+        case SYSCALL_READ:
+            // returns: read
+            // arg1: handle
             // arg2: data
             // arg3: len
+        {
+            VFS_File* handle = (VFS_File*)arg1;
+            void* data = (void*)arg2;
+            const uint64_t len = (uint64_t)arg3;
 
             if (arg1 == 0)
             {
-                const char* data = (const char*)arg2;
+                return_value = 0;
+            }
+            else
+            {
+                uint64_t read = VFS_File_Read(handle, len, data);
+                return_value = (syscall_t)read;
+            }
+
+            break;
+        }
+
+        case SYSCALL_WRITE:
+            // returns: written
+            // arg1: handle
+            // arg2: data
+            // arg3: len
+        {
+            VFS_File* handle = (VFS_File*)arg1;
+            const void* data = (const void*)arg2;
+            const uint64_t len = (uint64_t)arg3;
+
+            if (arg1 == 0)
+            {
+                const char* d = data;
                 for (uint32_t i = 0; i < arg3; i++)
-                    KernelConsole_PutChar(mux_console, data[i]);
+                    KernelConsole_PutChar(mux_console, d[i]);
                 return_value = arg3;
             }
-            else return_value = 0;
+            else
+            {
+                uint64_t written = VFS_File_Write(handle, len, data);
+                return_value = (syscall_t)written;
+            }
+
             break;
+        }
+
+        case SYSCALL_READDIR:
+            // returns: zero on success, non-zero on failure or when finished
+            // arg1: handle
+            // arg2: entryOut (Pointer to syscall_entry)
+        {
+            VFS_File* handle = (VFS_File*)arg1;
+            struct syscall_entry* entryOut = (struct syscall_entry*)arg2;
+
+            VFS_Entry* entry = VFS_Dir_Read(handle);
+            if (!entry)
+                return_value = 1;
+            else
+            {
+                memcpy(entryOut->name, entry->name, FILESYSTEM_MAX_NAME);
+                entryOut->name[FILESYSTEM_MAX_NAME] = '\0';
+
+                entryOut->size = (unsigned long)entry->node->node.size;
+
+                switch (entry->node->node.type)
+                {
+                    case FILESYSTEM_ENTRY_FILE: entryOut->type = SYSCALL_ENTRY_FILE; break;
+                    case FILESYSTEM_ENTRY_DIRECTORY: entryOut->type = SYSCALL_ENTRY_DIRECTORY; break;
+                }
+
+                entryOut->attributes = 0;
+                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_READONLY)
+                    entryOut->attributes |= SYSCALL_ENTRY_READONLY;
+                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_EXECUTABLE)
+                    entryOut->attributes |= SYSCALL_ENTRY_EXECUTABLE;
+                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_HIDDEN)
+                    entryOut->attributes |= SYSCALL_ENTRY_HIDDEN;
+                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_SYSTEM)
+                    entryOut->attributes |= SYSCALL_ENTRY_SYSTEM;
+
+                return_value = 0;
+            }
+
+            break;
+        }
+
+        case SYSCALL_MAKEDIR:
+            // returns: zero on success, non-zero on failure or when finished
+            // arg1: path
+        {
+            const char* path = (const char*)arg1;
+
+            if (VFS_Create(&vfs, NULL, path, FILESYSTEM_ENTRY_DIRECTORY, 0))
+                return_value = 0;
+            else
+                return_value = 1;
+
+            break;
+        }
+
+        case SYSCALL_MOVE:
+            // returns: zero on success, non-zero on failure or when finished
+            // arg1: sourcePath
+            // arg2: destinationPath
+        {
+            const char* srcPath = (const char*)arg1;
+            const char* dstPath = (const char*)arg2;
+
+            if (VFS_MoveEntry(&vfs, NULL, srcPath, dstPath, true))
+                return_value = 0;
+            else
+                return_value = 1;
+
+            break;
+        }
+
+        case SYSCALL_REMOVE:
+            // returns: zero on success, non-zero on failure or when finished
+            // arg1: path
+        {
+            const char* path = (const char*)arg1;
+
+            if (VFS_Unlink(&vfs, NULL, path))
+                return_value = 0;
+            else
+                return_value = 1;
+
+            break;
+        }
+
 
         case SYSCALL_ALLOCATE_PAGES:
             // returns: addr (0 if error)
@@ -416,6 +650,27 @@ static syscall_t Syscall_Handler(const Registers* regs)
             }
 
             return_value = 0;
+
+            break;
+        }
+
+        case SYSCALL_READ_KEYBOARD_EVENT:
+            // returns: zero on success, non-zero on failure or when no event is available
+            // arg1: eventOut (Pointer to syscall_keyboard_event)
+        {
+            const uintptr_t eventOut = arg1;
+            struct syscall_keyboard_event* out = (struct syscall_keyboard_event*)eventOut;
+
+            // TODO: Validate pointer
+
+            if (keyboard_read_index == keyboard_write_index)
+                return_value = 1;
+            else
+            {
+                *out = keyboard_events[keyboard_read_index];
+                keyboard_read_index = (keyboard_read_index + 1) % KEYBOARD_RINGBUFFER_SIZE;
+                return_value = 0;
+            }
 
             break;
         }

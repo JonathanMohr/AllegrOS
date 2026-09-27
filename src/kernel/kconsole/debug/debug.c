@@ -14,5 +14,12 @@ void Debug_ClearScreen(void* context)
 void Debug_PutChar(void* context, char c)
 {
     (void)context;
+
+    if (c == '\b')
+    {
+        x86_outb(0xE9, (uint8_t)'\b');
+        x86_outb(0xE9, (uint8_t)' ');
+    }
+
     x86_outb(0xE9, (uint8_t)c);
 }

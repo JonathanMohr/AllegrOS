@@ -156,6 +156,20 @@ void VGA_PutChar(void* context, char c)
             VGA_screenX = 0;
             break;
 
+        case '\b':
+            if (VGA_screenX > 0)
+            {
+                VGA_screenX--;
+            }
+            else if (VGA_screenY > 0)
+            {
+                VGA_screenY--;
+                VGA_screenX = SCREEN_WIDTH - 1;
+            }
+            VGA_RawPutCharacter((uint8_t)'\0', VGA_screenX, VGA_screenY);
+            VGA_RawPutColor(DEFAULT_COLOR, VGA_screenX, VGA_screenY);
+            break;
+
         default:
             VGA_RawPutCharacter((uint8_t)c, VGA_screenX, VGA_screenY);
             VGA_screenX++;

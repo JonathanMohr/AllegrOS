@@ -45,77 +45,114 @@ static Scheduler_Task* Scheduler_Next(void)
     if (!currentTask)
         return head;
 
-    Scheduler_Task* prevInList = currentTask;
+    size_t taskCount = 0;
+    for (Scheduler_Task* t = head; t; t = t->next)
+        taskCount++;
+
+    Scheduler_Task* idleFallback = NULL;
+    Scheduler_Task* candidate = NULL;
+    Scheduler_Task* prevInList = NULL;
 
     if (currentTask->state == TASK_ZOMBIE)
     {
+        Scheduler_Task* next = currentTask->next;
+
         if (head == currentTask)
         {
-            head = currentTask->next;
+            head = next;
             prevInList = NULL;
         }
         else
         {
-            Scheduler_Task* previous = head;
-            while (previous && previous->next != currentTask)
-                previous = previous->next;
+            prevInList = head;
 
-            if (previous)
-                previous->next = currentTask->next;
+            while (prevInList && prevInList->next != currentTask)
+                prevInList = prevInList->next;
 
-            prevInList = previous;
+            if (prevInList)
+                prevInList->next = next;
         }
 
         pendingFree = currentTask;
+
+        candidate = next;
+
+        if (!candidate)
+            candidate = head;
+    }
+    else
+    {
+        prevInList = currentTask;
+
+        if (currentTask->state == TASK_IDLE)
+            idleFallback = currentTask;
+
+        candidate = currentTask->next;
+
+        if (!candidate)
+            candidate = head;
     }
 
-    Scheduler_Task* idleFallback = (currentTask->state == TASK_IDLE) ? currentTask : NULL;
-
-    Scheduler_Task* candidate = currentTask->next;
     if (!candidate)
-        candidate = head;
+    {
+        if (idleFallback)
+            return idleFallback;
+        PanicMessage("[KERNEL] No task left to schedule\n");
+        Panic();
+    }
 
     while (candidate->state != TASK_READY)
     {
+        if (taskCount == 0)
+        {
+            if (idleFallback)
+                return idleFallback;
+            PanicMessage("[KERNEL] No task left to schedule\n");
+            Panic();
+        }
+        taskCount--;
+
         Scheduler_Task* afterCandidate = candidate->next;
         if (!afterCandidate)
             afterCandidate = head;
 
+        const bool isLastNode = (afterCandidate == candidate);
+
         switch (candidate->state)
         {
             case TASK_ZOMBIE:
-                if (candidate == currentTask)
-                {
-                    if (idleFallback)
-                        return idleFallback;
-                    PanicMessage("[KERNEL] No live task left to schedule\n");
-                    Panic();
-                }
-
                 if (candidate == head)
                     head = (afterCandidate == candidate) ? NULL : afterCandidate;
-
-                prevInList->next = (afterCandidate == candidate) ? NULL : afterCandidate;
+                else if (prevInList)
+                    prevInList->next = (afterCandidate == candidate) ? NULL : afterCandidate;
 
                 Memory_KernelFree((void*)(candidate->kernelStackTop - KERNEL_STACK_SIZE));
                 Memory_KernelFree(candidate);
-
+                
+                if (isLastNode)
+                    afterCandidate = NULL;
                 break;
 
             case TASK_IDLE:
                 idleFallback = candidate;
+
                 prevInList = candidate;
-
-                if (candidate == currentTask)
-                    return idleFallback;
-
                 break;
 
             default:
+                prevInList = candidate;
                 break;
         }
 
         candidate = afterCandidate;
+        
+        if (!candidate)
+        {
+            if (idleFallback)
+                return idleFallback;
+            PanicMessage("[KERNEL] No live task left to schedule\n");
+            Panic();
+        }
     }
 
     return candidate;
