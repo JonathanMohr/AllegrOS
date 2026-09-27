@@ -47,6 +47,8 @@ static const char ascii_upper[128] = {
 #define KEY_HOME        (0x47 | 0x80)
 #define KEY_END         (0x4F | 0x80)
 
+#define KEY_ENTER       (0x1C)
+
 /*
     TODO: commands:
 
@@ -60,11 +62,70 @@ static const char ascii_upper[128] = {
         remove      removes a file or empty directory
 */
 
+#define MAX_PATH_CHARACTERS 1028
+
+
+static const char err_msg[] = "\nERROR: TOO MANY CHARACTERS\n";
+static const unsigned long err_msg_len = sizeof(err_msg) - 1;
+
+static int validate_path(char c)
+{
+    if (c >= 'a' && c <= 'z')
+        return 1;
+    if (c >= 'A' && c <= 'Z')
+        return 1;
+    if (c >= '0' && c <= '9')
+        return 1;
+    if (c == '/' || c == ' ')
+        return 1;
+    return 0;
+}
+
+static int shift_held = 0;
+static struct syscall_keyboard_event ev;
+
+void write(void)
+{
+    char buffer[MAX_PATH_CHARACTERS] = {0};
+    unsigned long current_pos = 0;
+
+    const char msg[] = " - write\nEnter the path of the file [PATH]: ";
+    const unsigned long msg_len = sizeof(msg) - 1;
+
+    syscall_write(0, msg, msg_len);
+
+    ev.released = 1;
+    while (ev.keycode != KEY_ENTER || ev.released)
+    {
+        if (syscall_read_keyboard_event(&ev) != 0)
+            continue;
+
+        if (ev.keycode == SC_LSHIFT || ev.keycode == SC_RSHIFT)
+        {
+            shift_held = !ev.released;
+            continue;
+        }
+
+        if (ev.released)
+            continue;
+
+        char c = shift_held ? ascii_upper[ev.keycode] : ascii_lower[ev.keycode];
+        if (!validate_path(c))
+            continue;
+
+        if (current_pos >= MAX_PATH_CHARACTERS)
+        {
+            syscall_write(0, err_msg, err_msg_len);
+            return;
+        }
+
+        buffer[current_pos++] = c;
+        syscall_write(0, &c, 1);
+    }
+}
+
 int main(void)
 {
-    struct syscall_keyboard_event ev;
-    int shift_held = 0;
-
     while (1)
     {
         if (syscall_read_keyboard_event(&ev) != 0)
@@ -92,10 +153,14 @@ int main(void)
         }
 
         char c = shift_held ? ascii_upper[ev.keycode] : ascii_lower[ev.keycode];
-        if (c == 0)
-            continue;
 
-        syscall_write(0, &c, 1);
+        switch (c)
+        {
+            case 'w': case 'W':
+                syscall_write(0, &c, 1);
+                write();
+                break;
+        }
     }
 
     return 0;
