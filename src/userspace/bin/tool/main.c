@@ -47,6 +47,19 @@ static const char ascii_upper[128] = {
 #define KEY_HOME        (0x47 | 0x80)
 #define KEY_END         (0x4F | 0x80)
 
+/*
+    TODO: commands:
+
+        write       create a file and writes to it or overwrite if it already exists
+        read        read from a file
+        
+        list        list entries of a directory
+        mkdir       create directory
+
+        move        moves an entry somewhere else
+        remove      removes a file or empty directory
+*/
+
 int main(void)
 {
     struct syscall_keyboard_event ev;
