@@ -76,7 +76,7 @@ static int validate_path(char c)
         return 1;
     if (c >= '0' && c <= '9')
         return 1;
-    if (c == '/' || c == ' ')
+    if (c == '/' || c == ' ' || c == '\b')
         return 1;
     return 0;
 }
