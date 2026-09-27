@@ -119,7 +119,16 @@ void write(void)
             return;
         }
 
-        buffer[current_pos++] = c;
+        if (c == '\b')
+        {
+            if (current_pos > 0)
+                buffer[--current_pos] = '\0';
+        }
+        else
+        {
+            buffer[current_pos++] = c;
+        }
+
         syscall_write(0, &c, 1);
     }
 }
