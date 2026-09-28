@@ -53,6 +53,9 @@ static const char ascii_upper[128] = {
 #define MAX_PATH_CHARACTERS 1028
 #define MAX_DATA_BYTES 8192
 
+#define stringify_(s) #s
+#define stringify(s) stringify_(s)
+
 static unsigned char data_buffer[MAX_DATA_BYTES] = {0};
 static unsigned long current_data_pos = 0;
 
@@ -174,19 +177,13 @@ static int enter_path_better(const char* msg, syscall_t len)
     return 1;
 }
 
-static int enter_path(void)
-{
-    static const char path_msg[] = "Enter the path of the file [PATH]: ";
-    return enter_path_better(path_msg, sizeof(path_msg) - 1);
-}
+#define enter_path_better(msg) enter_path_better(msg, sizeof(msg) - 1)
 
-static int enter_data(void)
+static int enter_data(const char* data_msg, syscall_t len)
 {
-    static const char data_msg[] = "Enter content of file [BIN]:\n";
-
     current_data_pos = 0;
 
-    syscall_write(0, data_msg, sizeof(data_msg) - 1);
+    syscall_write(0, data_msg, len);
 
     int inHex = 0;
     while (1)
@@ -270,6 +267,25 @@ static int enter_data(void)
     return 1;
 }
 
+#define enter_data(msg) enter_data(msg, sizeof(msg) - 1)
+
+static void print_data(const unsigned char* data, syscall_t len)
+{
+    for (unsigned long i = 0; i < len; i++)
+    {
+        unsigned char c = data[i];
+        if ((validate_data((char)c) && c != '\b') || c == '\n' || c == '\r')
+        {
+            syscall_write(0, &c, 1);
+        }
+        else
+        {
+            syscall_write(0, &inHex_char, 1);
+            // TODO
+        }
+    }
+}
+
 
 void write(void)
 {
@@ -278,10 +294,10 @@ void write(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path())
+    if (!enter_path_better("Enter the path of the file [PATH]: "))
         return;
     
-    if (!enter_data())
+    if (!enter_data("Enter content of file [DATA]:\n"))
         return;
 
     syscall_t file = syscall_open_file(buffer, 1);
@@ -307,7 +323,7 @@ void read(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path())
+    if (!enter_path_better("Enter the path of the file [PATH]: "))
         return;
 
     syscall_t file = syscall_open_file(buffer, 0);
@@ -319,21 +335,64 @@ void read(void)
     syscall_t read;
     while ((read = syscall_read(file, data_buffer, MAX_DATA_BYTES)))
     {
-        for (unsigned long i = 0; i < read; i++)
-        {
-            unsigned char c = data_buffer[i];
-            if (validate_data((char)c) && c != '\b')
-            {
-                syscall_write(0, &c, 1);
-            }
-            else
-            {
-                syscall_write(0, &inHex_char, 1);
-                // TODO
-            }
-        }
+        print_data(data_buffer, read);
     }
     syscall_close_file(file);
+
+    syscall_write(0, end_msg, sizeof(end_msg) - 1);
+}
+
+static char copy_buffer[MAX_PATH_CHARACTERS + 1] = {0};
+void copy(void)
+{
+    static const char move_msg1[] = "Enter the source path [PATH]: ";
+    static const char move_msg2[] = "Enter the destination path [PATH]: ";
+
+    static const char start_msg[] = "Copy:\n";
+    static const char end_msg[] = "Copied file!\n";
+
+    syscall_write(0, start_msg, sizeof(start_msg) - 1);
+
+    if (!enter_path_better(move_msg1))
+        return;
+
+    for (unsigned long i = 0; i < MAX_PATH_CHARACTERS; i++)
+        copy_buffer[i] = buffer[i];
+
+    if (!enter_path_better(move_msg2))
+        return;
+
+    syscall_t src = syscall_open_file(copy_buffer, 0);
+    if (!src)
+    {
+        syscall_write(0, file_err1, file_err1_len);
+        return;
+    }
+
+    syscall_t dst = syscall_open_file(buffer, 1);
+    if (!dst)
+    {
+        syscall_close_file(src);
+        syscall_write(0, file_err1, file_err1_len);
+        return;
+    }
+
+    syscall_t read;
+    while ((read = syscall_read(src, data_buffer, MAX_DATA_BYTES)))
+    {
+        if (syscall_write(dst, data_buffer, read) != read)
+        {
+            syscall_close_file(src);
+            syscall_close_file(dst);
+
+            syscall_remove(buffer);
+            syscall_write(0, file_err2, file_err2_len);
+            return;
+        }
+    }
+
+    syscall_close_file(src);
+    syscall_close_file(dst);
 
     syscall_write(0, end_msg, sizeof(end_msg) - 1);
 }
@@ -346,7 +405,7 @@ void list(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path())
+    if (!enter_path_better("Enter the path of the directory [PATH]: "))
         return;
 
     syscall_t dir = syscall_open_dir(buffer);
@@ -434,7 +493,7 @@ void dir(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path())
+    if (!enter_path_better("Enter the path of the directory [PATH]: "))
         return;
 
     if (syscall_makedir(buffer) != 0)
@@ -447,24 +506,23 @@ void dir(void)
 }
 
 static char move_buffer[MAX_PATH_CHARACTERS + 1] = {0};
-
 void move(void)
 {
-    static const char move_msg1[] = "Enter the source path: ";
-    static const char move_msg2[] = "Enter the destination path: ";
+    static const char move_msg1[] = "Enter the source path [PATH]: ";
+    static const char move_msg2[] = "Enter the destination path [PATH]: ";
 
     static const char start_msg[] = "Move:\n";
     static const char end_msg[] = "Moved entry!\n";
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path_better(move_msg1, sizeof(move_msg1) - 1))
+    if (!enter_path_better(move_msg1))
         return;
 
     for (unsigned long i = 0; i < MAX_PATH_CHARACTERS; i++)
         move_buffer[i] = buffer[i];
 
-    if (!enter_path_better(move_msg2, sizeof(move_msg2) - 1))
+    if (!enter_path_better(move_msg2))
         return;
 
     if (syscall_move(move_buffer, buffer) != 0)
@@ -483,7 +541,7 @@ void remove(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_path())
+    if (!enter_path_better("Enter the path of the file [PATH]: "))
         return;
 
     if (syscall_remove(buffer) != 0)
@@ -493,6 +551,19 @@ void remove(void)
     }
 
     syscall_write(0, end_msg, sizeof(end_msg) - 1);
+}
+
+
+void echo(void)
+{
+    static const char start_msg[] = "Echo:\n";
+
+    syscall_write(0, start_msg, sizeof(start_msg) - 1);
+
+    if (!enter_data("Enter the string [DATA]: "))
+        return;
+
+    print_data(data_buffer, current_data_pos);
 }
 
 
@@ -508,6 +579,17 @@ int main(void)
         "  This is the first program of the OS!\n"
         "  You can manipulate the filesystem with this program.\n"
         "\n"
+        "  PATH:\n"
+        "  - Max. length: " stringify(MAX_PATH_CHARACTERS) " characters \n"
+        "  - Allowed: a-z, A-Z, 0-9, Space, /, _, -, .\n"
+        "  BIN:\n"
+        "  - Max. length: " stringify(MAX_DATA_BYTES) " bytes\n"
+        "  - Allowed: a-z, A-Z, 0-9, Space, Comma, /, _, -, ., :, ;, <, >, !\n"
+        "             \", $, %, &, (, ), =, ?, +, *, #, '\n"
+        "  - Escape: $\n"
+        "    - $: Puts $\n"
+        "    - Enter: Finishes data array\n"
+        "\n"
         "  To enter commands press the corresponding key.\n"
         "  To see all commands with descriptions, press the key 'h'.\n";
 
@@ -517,11 +599,15 @@ int main(void)
         "  h        -- Help     - Show this message\n"
         "\n"
         "  c        -- Clear    - Clear the screen\n"
+        "  o        -- Echo     - Print Text\n"
         "\n"
         "  w        -- Write    - Write content to a file\n"
         "  r        -- Read     - Read content from a file\n"
+        "  p        -- Copy     - Copy a file\n"
+
         "  l        -- List     - List the entries of a directory\n"
         "  d        -- Dir      - Create a new directory\n"
+
         "  m        -- Move     - Move an entry\n"
         "  e        -- Remove   - Remove an entry\n"
         "\n"
@@ -575,6 +661,10 @@ int main(void)
                 syscall_write(0, clear_msg, sizeof(clear_msg) - 1);
                 break;
 
+            case 'o': case 'O':
+                echo();
+                break;
+
 
             case 'w': case 'W':
                 write();
@@ -584,6 +674,11 @@ int main(void)
                 read();
                 break;
 
+            case 'p': case 'P':
+                copy();
+                break;
+
+
             case 'l': case 'L':
                 list();
                 break;
@@ -591,6 +686,7 @@ int main(void)
             case 'd': case 'D':
                 dir();
                 break;
+
 
             case 'm': case 'M':
                 move();
