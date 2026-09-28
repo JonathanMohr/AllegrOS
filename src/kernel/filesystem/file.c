@@ -38,7 +38,10 @@ void VFS_File_Close(VFS_File* file)
     file->node->driver->closeFile(file->node->driver, &file->file);
 
     if (--file->node->openHandleCount == 0 && file->node->node.referenceCount == 0)
+    {
         (void)file->node->driver->removeNode(file->node->driver, &file->node->node);
+        file->node->driver->cleanupNode(file->node->driver, &file->node->node);
+    }
 
     VFS_PutNode(file->vfs, file->node);
 

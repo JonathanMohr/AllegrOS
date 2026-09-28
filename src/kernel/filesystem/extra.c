@@ -348,7 +348,6 @@ bool VFS_Unlink(VFS* vfs, VFS_Entry* wd, const char* path)
 
     VFS_UnlinkEntryFromParent(parentEntry, entry);
     VFS_PutNode(vfs, (entry->mount ? entry->rootNode : entry->node));
-    Memory_KernelFree(entry);
 
     return true;
 }

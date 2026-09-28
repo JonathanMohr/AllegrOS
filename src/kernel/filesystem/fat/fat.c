@@ -967,8 +967,6 @@ static bool FAT_RemoveNode(Filesystem_Driver* driver, Filesystem_Node* node)
         cluster = next;
     }
 
-    Memory_KernelFree(extra);
-
     if (status != FAT_SECTOR_EOC || anyError)
         return false;
 
