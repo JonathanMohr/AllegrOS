@@ -56,7 +56,7 @@ void CDECL x86_ISR_Handler(Registers* r)
 
     else
     {
-        PanicMessage("[KERNEL] Unhandled exception 0x%uxd\n", regs.interrupt);
+        PanicMessage("[KERNEL] Unhandled exception 0x%uxd at 0x%p\n", regs.interrupt, regs.eip);
         Panic();
     }
 

@@ -94,6 +94,7 @@ void VFS_PutNode(VFS* vfs, VFS_Node* node)
 
 const char* VFS_GetLastDelimiter(const char* path)
 {
+    const char* p = path;
     const char* lastDelimiter = NULL;
     const char* tmpCheck = NULL;
     while (*path)
@@ -104,7 +105,7 @@ const char* VFS_GetLastDelimiter(const char* path)
             lastDelimiter = tmpCheck;
         path++;
     }
-    return lastDelimiter ? lastDelimiter : path;
+    return lastDelimiter ? lastDelimiter : p;
 }
 
 const char* VFS_GetName(const char* path, const char* lastDelimiter)

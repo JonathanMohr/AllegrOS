@@ -370,7 +370,7 @@ static syscall_t Syscall_Handler(const Registers* regs)
             const int create = (int)arg2;
 
             VFS_File* file = VFS_File_Open(&vfs, NULL, path);
-            if (!file && create)
+            if (!file && create != 0)
             {
                 if (VFS_Create(&vfs, NULL, path, FILESYSTEM_ENTRY_FILE, 0))
                     file = VFS_File_Open(&vfs, NULL, path);
@@ -486,22 +486,22 @@ static syscall_t Syscall_Handler(const Registers* regs)
                 memcpy(entryOut->name, entry->name, FILESYSTEM_MAX_NAME);
                 entryOut->name[FILESYSTEM_MAX_NAME] = '\0';
 
-                entryOut->size = (unsigned long)entry->node->node.size;
+                entryOut->size = (unsigned long)(entry->mount ? entry->rootNode : entry->node)->node.size;
 
-                switch (entry->node->node.type)
+                switch ((entry->mount ? entry->rootNode : entry->node)->node.type)
                 {
                     case FILESYSTEM_ENTRY_FILE: entryOut->type = SYSCALL_ENTRY_FILE; break;
                     case FILESYSTEM_ENTRY_DIRECTORY: entryOut->type = SYSCALL_ENTRY_DIRECTORY; break;
                 }
 
                 entryOut->attributes = 0;
-                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_READONLY)
+                if ((entry->mount ? entry->rootNode : entry->node)->node.attributes & FILESYSTEM_ATTRIBUTE_READONLY)
                     entryOut->attributes |= SYSCALL_ENTRY_READONLY;
-                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_EXECUTABLE)
+                if ((entry->mount ? entry->rootNode : entry->node)->node.attributes & FILESYSTEM_ATTRIBUTE_EXECUTABLE)
                     entryOut->attributes |= SYSCALL_ENTRY_EXECUTABLE;
-                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_HIDDEN)
+                if ((entry->mount ? entry->rootNode : entry->node)->node.attributes & FILESYSTEM_ATTRIBUTE_HIDDEN)
                     entryOut->attributes |= SYSCALL_ENTRY_HIDDEN;
-                if (entry->node->node.attributes & FILESYSTEM_ATTRIBUTE_SYSTEM)
+                if ((entry->mount ? entry->rootNode : entry->node)->node.attributes & FILESYSTEM_ATTRIBUTE_SYSTEM)
                     entryOut->attributes |= SYSCALL_ENTRY_SYSTEM;
 
                 return_value = 0;

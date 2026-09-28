@@ -36,9 +36,13 @@ syscall2:
 ;
 global syscall3
 syscall3:
-    mov eax, [esp + 4]
-    mov ecx, [esp + 8]
-    mov edx, [esp + 12]
-    mov ebx, [esp + 16]
+    push ebx
+
+    mov eax, [esp + 8]
+    mov ecx, [esp + 12]
+    mov edx, [esp + 16]
+    mov ebx, [esp + 20]
     int 0x80
+    
+    pop ebx
     ret

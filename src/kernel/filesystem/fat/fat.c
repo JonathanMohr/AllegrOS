@@ -2404,9 +2404,15 @@ static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file
 
     while (read < size)
     {
-        uint32_t status = FAT_Cluster(data->fatVersion, cluster);
-        if (status != FAT_SECTOR_NORMAL)
-            break;
+        if (offsetInCluster >= data->bytesPerCluster)
+        {
+            uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
+            if (FAT_Cluster(data->fatVersion, next) != FAT_SECTOR_NORMAL)
+                break;
+
+            cluster = next;
+            offsetInCluster = 0;
+        }
 
         uint32_t chunk = data->bytesPerCluster - offsetInCluster;
         uint64_t remaining = size - read;
@@ -2421,29 +2427,32 @@ static uint64_t FAT_Read(struct Filesystem_Driver* driver, Filesystem_File* file
         read += chunk;
         file->pos += chunk;
         offsetInCluster += chunk;
-
-        if (offsetInCluster >= data->bytesPerCluster)
-        {
-            fileExtra->currentCluster = cluster;
-
-            if (read < size)
-            {
-                uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
-                uint32_t nextStatus = FAT_Cluster(data->fatVersion, next);
-                if (nextStatus != FAT_SECTOR_NORMAL)
-                    break;
-
-                cluster = next;
-                offsetInCluster = 0;
-            }
-        }
-        else
-        {
-            fileExtra->currentCluster = cluster;
-        }
     }
 
+    if (offsetInCluster >= data->bytesPerCluster && file->pos < file->node->size)
+    {
+        uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
+        if (FAT_Cluster(data->fatVersion, next) == FAT_SECTOR_NORMAL)
+            cluster = next;
+    }
+
+    fileExtra->currentCluster = cluster;
+
     return read;
+}
+
+static bool FAT_AppendCluster(FAT_Driver_Data* data, void* parent, uint32_t last, uint32_t* outNew)
+{
+    uint32_t newCluster;
+    if (!FAT_FindFreeClusters(data, parent, 1, &newCluster))
+        return false;
+    if (!FAT_WriteFAT(data, parent, newCluster, 0x0FFFFFFF))
+        return false;
+    if (last != 0 && !FAT_WriteFAT(data, parent, last, newCluster))
+        return false;
+
+    *outNew = newCluster;
+    return true;
 }
 
 static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* file, uint64_t size, const void* buffer)
@@ -2452,40 +2461,40 @@ static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* fil
     FAT_Node_Extra* nodeExtra = file->node->extra;
     FAT_File_Extra* fileExtra = file->extra;
 
-    uint64_t written = 0;
+    if (size == 0)
+        return 0;
+
+    bool startChanged = false;
+    if (nodeExtra->startCluster == 0)
+    {
+        uint32_t first;
+        if (!FAT_AppendCluster(data, driver->parent, 0, &first))
+            return 0;
+
+        nodeExtra->startCluster = first;
+        fileExtra->currentCluster = first;
+        startChanged = true;
+    }
+
     uint32_t cluster = fileExtra->currentCluster;
     uint32_t offsetInCluster = (uint32_t)(file->pos % data->bytesPerCluster);
 
+    if (offsetInCluster == 0 && file->pos > 0 && file->pos == file->node->size)
+        offsetInCluster = data->bytesPerCluster;
+
+    uint64_t written = 0;
+
     while (written < size)
     {
-        uint32_t status = FAT_Cluster(data->fatVersion, cluster);
-
-        if (status != FAT_SECTOR_NORMAL)
+        if (offsetInCluster >= data->bytesPerCluster)
         {
-            uint32_t walk = nodeExtra->startCluster;
-            uint32_t walkStatus = FAT_Cluster(data->fatVersion, walk);
-            if (walkStatus != FAT_SECTOR_NORMAL)
-                break;
-
-            while (1)
+            uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
+            if (FAT_Cluster(data->fatVersion, next) != FAT_SECTOR_NORMAL)
             {
-                uint32_t next = FAT_ReadFAT(data, driver->parent, walk);
-                uint32_t nextStatus = FAT_Cluster(data->fatVersion, next);
-                if (nextStatus != FAT_SECTOR_NORMAL)
+                if (!FAT_AppendCluster(data, driver->parent, cluster, &next))
                     break;
-                walk = next;
             }
-
-            uint32_t newCluster;
-            if (!FAT_FindFreeClusters(data, driver->parent, 1, &newCluster))
-                break;
-
-            if (!FAT_WriteFAT(data, driver->parent, walk, newCluster))
-                break;
-            if (!FAT_WriteFAT(data, driver->parent, newCluster, 0x0FFFFFFF))
-                break;
-
-            cluster = newCluster;
+            cluster = next;
             offsetInCluster = 0;
         }
 
@@ -2505,30 +2514,21 @@ static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* fil
         written += chunk;
         file->pos += chunk;
         offsetInCluster += chunk;
-
-        if (offsetInCluster >= data->bytesPerCluster)
-        {
-            fileExtra->currentCluster = cluster;
-
-            uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
-            uint32_t nextStatus = FAT_Cluster(data->fatVersion, next);
-
-            if (nextStatus == FAT_SECTOR_NORMAL)
-            {
-                cluster = next;
-                offsetInCluster = 0;
-            }
-        }
-        else
-        {
-            fileExtra->currentCluster = cluster;
-        }
     }
 
-    if (written == 0)
+    if (offsetInCluster >= data->bytesPerCluster)
+    {
+        uint32_t next = FAT_ReadFAT(data, driver->parent, cluster);
+        if (FAT_Cluster(data->fatVersion, next) == FAT_SECTOR_NORMAL)
+            cluster = next;
+    }
+
+    fileExtra->currentCluster = cluster;
+
+    if (written == 0 && !startChanged)
         return 0;
 
-    if (file->pos > file->node->size)
+    if (file->pos > file->node->size || startChanged)
     {
         file->node->size = file->pos;
 
@@ -2554,7 +2554,10 @@ static uint64_t FAT_Write(struct Filesystem_Driver* driver, Filesystem_File* fil
         if (readOk)
         {
             entry.fileSize = (uint32_t)file->node->size;
-            FAT_WriteEntries(driver, entryCluster, entryIndex, &entry, 1);
+            entry.firstCluster = (uint16_t)(nodeExtra->startCluster & 0xFFFF);
+            entry.firstClusterHigh = (uint16_t)(nodeExtra->startCluster >> 16);
+            // TODO: Check return
+            (void)FAT_WriteEntries(driver, entryCluster, entryIndex, &entry, 1);
         }
     }
 

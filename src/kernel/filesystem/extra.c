@@ -156,7 +156,7 @@ static uint64_t VFS_CopyMove(VFS_Entry* old, VFS_Entry* newParent, const char* n
     VFS_Node* oldParentDir = old->parent->mount ? old->parent->rootNode : old->parent->node;
     VFS_Node* newParentDir = newParent->mount ? newParent->rootNode : newParent->node;
 
-    return VFS_CopyMoveNode(old->node->driver, &oldParentDir->node, old->name, &old->node->node,
+    return VFS_CopyMoveNode((old->mount ? old->rootNode : old->node)->driver, &oldParentDir->node, old->name, &(old->mount ? old->rootNode : old->node)->node,
                              newParentDir->driver, &newParentDir->node, newName);
 }
 
@@ -198,7 +198,7 @@ bool VFS_MoveEntry(VFS* vfs, VFS_Entry* wd, const char* oldPath, const char* new
     {
         oldParentEntry = VFS_GetEntry(vfs, wd, oldParentPath);
         Memory_KernelFree(oldParentPath);
-        if (!oldParentEntry || oldParentEntry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+        if (!oldParentEntry || (oldParentEntry->mount ? oldParentEntry->rootNode : oldParentEntry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
         {
             if (newParentPathLen) Memory_KernelFree(newParentPath);
             return false;
@@ -209,7 +209,7 @@ bool VFS_MoveEntry(VFS* vfs, VFS_Entry* wd, const char* oldPath, const char* new
     {
         newParentEntry = VFS_GetEntry(vfs, wd, newParentPath);
         Memory_KernelFree(newParentPath);
-        if (!newParentEntry || newParentEntry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+        if (!newParentEntry || (newParentEntry->mount ? newParentEntry->rootNode : newParentEntry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
             return false;
     }
 
@@ -226,7 +226,7 @@ bool VFS_MoveEntry(VFS* vfs, VFS_Entry* wd, const char* oldPath, const char* new
     VFS_Node* newParentDir = newParentEntry->mount ? newParentEntry->rootNode : newParentEntry->node;
 
     uint64_t newNodeNumber;
-    if (oldEntry->node->driver != newParentDir->driver)
+    if ((oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->driver != newParentDir->driver)
     {
         if (allowCrossMounts)
             newNodeNumber = VFS_CopyMove(oldEntry, newParentEntry, newName);
@@ -234,17 +234,17 @@ bool VFS_MoveEntry(VFS* vfs, VFS_Entry* wd, const char* oldPath, const char* new
             return false;
     }
     else
-        newNodeNumber = oldEntry->node->driver->move(oldEntry->node->driver, &oldParentDir->node, oldName, &newParentDir->node, newName);
+        newNodeNumber = (oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->driver->move((oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->driver, &oldParentDir->node, oldName, &newParentDir->node, newName);
 
     if (newNodeNumber == FILESYSTEM_MOVE_ERROR)
         return false;
 
     VFS_UnlinkEntryFromParent(oldEntry->parent, oldEntry);
     // Cannot fail, just returns false when old entry is not found
-    (void)VFS_Cache_Rekey(&vfs->nodeCache, oldEntry->node->driver, oldEntry->node->node.number, newParentDir->driver, newNodeNumber);
-    oldEntry->node->node.number = newNodeNumber;
-    oldEntry->node->driver = newParentDir->driver;
-    VFS_PutNode(vfs, oldEntry->node);
+    (void)VFS_Cache_Rekey(&vfs->nodeCache, (oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->driver, (oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->node.number, newParentDir->driver, newNodeNumber);
+    (oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->node.number = newNodeNumber;
+    (oldEntry->mount ? oldEntry->rootNode : oldEntry->node)->driver = newParentDir->driver;
+    VFS_PutNode(vfs, (oldEntry->mount ? oldEntry->rootNode : oldEntry->node));
     Memory_KernelFree(oldEntry);
 
     // TODO: Optimization: Add to tree to directly
@@ -259,7 +259,7 @@ bool VFS_Link(VFS* vfs, VFS_Entry* wd, const char* path, const char* targetPath)
 
     VFS_Entry* targetEntry = VFS_GetEntry(vfs, wd, targetPath);
     if (!targetEntry) return false;
-    if (targetEntry->node->node.type != FILESYSTEM_ENTRY_FILE) return false;
+    if ((targetEntry->mount ? targetEntry->rootNode : targetEntry->node)->node.type != FILESYSTEM_ENTRY_FILE) return false;
 
     const char* lastDelimiter = VFS_GetLastDelimiter(path);
     const uintptr_t parentPathLen = (uintptr_t)lastDelimiter - (uintptr_t)path;
@@ -279,7 +279,7 @@ bool VFS_Link(VFS* vfs, VFS_Entry* wd, const char* path, const char* targetPath)
     {
         parentEntry = VFS_GetEntry(vfs, wd, parentPath);
         Memory_KernelFree(parentPath);
-        if (!parentEntry || parentEntry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+        if (!parentEntry || (parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
             return false;
     }
 
@@ -318,7 +318,7 @@ bool VFS_Unlink(VFS* vfs, VFS_Entry* wd, const char* path)
     {
         parentEntry = VFS_GetEntry(vfs, wd, parentPath);
         Memory_KernelFree(parentPath);
-        if (!parentEntry || parentEntry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+        if (!parentEntry || (parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
             return false;
     }
 
@@ -328,26 +328,26 @@ bool VFS_Unlink(VFS* vfs, VFS_Entry* wd, const char* path)
 
     VFS_Node* parentDir = parentEntry->mount ? parentEntry->rootNode : parentEntry->node;
 
-    if (entry->node->node.type == FILESYSTEM_ENTRY_DIRECTORY)
+    if ((entry->mount ? entry->rootNode : entry->node)->node.type == FILESYSTEM_ENTRY_DIRECTORY)
     {
-        uint64_t entryCount = entry->node->driver->getEntryCount(entry->node->driver, &entry->node->node);
+        uint64_t entryCount = (entry->mount ? entry->rootNode : entry->node)->driver->getEntryCount((entry->mount ? entry->rootNode : entry->node)->driver, &(entry->mount ? entry->rootNode : entry->node)->node);
         if (entryCount == FILESYSTEM_ENTRY_COUNT_ERROR)
             return false;
         if (entryCount > 2)
             return false;
     }
 
-    uint64_t hardlinksLeft = entry->node->driver->unlink(entry->node->driver, &parentDir->node, name);
+    uint64_t hardlinksLeft = (entry->mount ? entry->rootNode : entry->node)->driver->unlink((entry->mount ? entry->rootNode : entry->node)->driver, &parentDir->node, name);
     if (hardlinksLeft == FILESYSTEM_UNLINK_ERROR)
         return false;
 
-    entry->node->node.referenceCount = hardlinksLeft;
+    (entry->mount ? entry->rootNode : entry->node)->node.referenceCount = hardlinksLeft;
 
-    if (hardlinksLeft == 0 && entry->node->openHandleCount == 0)
-        (void)entry->node->driver->removeNode(entry->node->driver, &entry->node->node);
+    if (hardlinksLeft == 0 && (entry->mount ? entry->rootNode : entry->node)->openHandleCount == 0)
+        (void)(entry->mount ? entry->rootNode : entry->node)->driver->removeNode((entry->mount ? entry->rootNode : entry->node)->driver, &(entry->mount ? entry->rootNode : entry->node)->node);
 
     VFS_UnlinkEntryFromParent(parentEntry, entry);
-    VFS_PutNode(vfs, entry->node);
+    VFS_PutNode(vfs, (entry->mount ? entry->rootNode : entry->node));
     Memory_KernelFree(entry);
 
     return true;

@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <memory.h>
 
+#include "../panic/panic.h"
+
 bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type type, Filesystem_Entry_Attribute attributes)
 {
     if (!wd)
@@ -21,11 +23,12 @@ bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type
     }
 
     VFS_Entry* parentEntry = wd;
+
     if (parentPathLength)
     {
         parentEntry = VFS_GetEntry(vfs, wd, parentPath);
         Memory_KernelFree(parentPath);
-        if (!parentEntry || parentEntry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+        if (!parentEntry || (parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
             return false;
     }
 
@@ -35,10 +38,10 @@ bool VFS_Create(VFS* vfs, VFS_Entry* wd, const char* path, Filesystem_Entry_Type
         return false;
 
     Filesystem_Node outNode;
-    if (!parentEntry->node->driver->createNode(parentEntry->node->driver, &parentEntry->node->node, type, attributes, name, &outNode))
+    if (!(parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->driver->createNode((parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->driver, &(parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->node, type, attributes, name, &outNode))
         return false;
 
-    parentEntry->node->driver->cleanupNode(parentEntry->node->driver, &outNode);
+    (parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->driver->cleanupNode((parentEntry->mount ? parentEntry->rootNode : parentEntry->node)->driver, &outNode);
 
     // TODO: Optimization: Add to tree to directly
 

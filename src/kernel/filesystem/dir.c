@@ -8,23 +8,23 @@ VFS_File* VFS_Dir_Open(VFS* vfs, VFS_Entry* wd, const char* path)
     if (!entry)
         return NULL;
 
-    if (entry->node->node.type != FILESYSTEM_ENTRY_DIRECTORY)
+    if ((entry->mount ? entry->rootNode : entry->node)->node.type != FILESYSTEM_ENTRY_DIRECTORY)
         return NULL;
 
     VFS_File* dir = Memory_KernelAllocate(sizeof(VFS_File));
     if (!dir)
         return NULL;
 
-    if (!entry->node->driver->openFile(entry->node->driver, &entry->node->node, &dir->file))
+    if (!(entry->mount ? entry->rootNode : entry->node)->driver->openFile((entry->mount ? entry->rootNode : entry->node)->driver, &(entry->mount ? entry->rootNode : entry->node)->node, &dir->file))
     {
         Memory_KernelFree(dir);
         return NULL;
     }
-    entry->node->openHandleCount++;
-    entry->node->cacheReferences++;
+    (entry->mount ? entry->rootNode : entry->node)->openHandleCount++;
+    (entry->mount ? entry->rootNode : entry->node)->cacheReferences++;
     
     dir->entry = entry;
-    dir->node = entry->node;
+    dir->node = entry->mount ? entry->rootNode : entry->node;
     dir->vfs = vfs;
 
     return dir;
