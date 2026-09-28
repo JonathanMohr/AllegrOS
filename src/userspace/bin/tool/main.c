@@ -400,7 +400,28 @@ void list(void)
                 continue;
         }
 
-        // TODO: Size
+        char size_buffer[21];
+        unsigned long size = entry.size;
+        unsigned long size_length = 0;
+
+        if (size == 0)
+            size_buffer[size_length++] = '0';
+        else
+        {
+            char reverse_buffer[20];
+            unsigned long reverse_length = 0;
+
+            while (size)
+            {
+                reverse_buffer[reverse_length++] = '0' + (size % 10);
+                size /= 10;
+            }
+
+            while (reverse_length)
+                size_buffer[size_length++] = reverse_buffer[--reverse_length];
+        }
+
+        syscall_write(0, size_buffer, size_length);
         syscall_write(0, after_size_str, sizeof(after_size_str) - 1);
 
         if (entry.attributes & SYSCALL_ENTRY_READONLY)
