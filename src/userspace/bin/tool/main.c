@@ -513,7 +513,7 @@ void echo(void)
 
     syscall_write(0, start_msg, sizeof(start_msg) - 1);
 
-    if (!enter_data("Enter the string [DATA]: "))
+    if (!enter_data("Enter the string [DATA]:\n"))
         return;
 
     print_data(data_buffer, current_data_pos);
@@ -530,7 +530,7 @@ int main(void)
         "  PATH:\n"
         "  - Max. length: " stringify(MAX_PATH_CHARACTERS) " characters \n"
         "  - Allowed: a-z, A-Z, 0-9, Space, /, _, -, .\n"
-        "  BIN:\n"
+        "  DATA:\n"
         "  - Max. length: " stringify(MAX_DATA_BYTES) " bytes\n"
         "  - Allowed: a-z, A-Z, 0-9, Space, Comma, /, _, -, ., :, ;, <, >, !\n"
         "             \", $, %, &, (, ), =, ?, +, *, #, '\n"
