@@ -32,7 +32,7 @@ def run_debugger(stage1: Path, stage2: Path, kernel: Path):
 
 def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debug: bool, debugMode: bool):
     if hostOS == OS.macOS:
-        displayBackend = "cocoa"
+        displayBackend = "cocoa,zoom-to-fit=on,zoom-interpolation=on"
     else:
         displayBackend = "sdl,gl=on"
 
