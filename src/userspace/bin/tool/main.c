@@ -370,10 +370,10 @@ void list(void)
     struct syscall_entry entry;
     while (syscall_readdir(dir, &entry) == 0)
     {
-        static const char file_str[] = "FIL [";
-        static const char directory_str[] = "DIR [";
+        static const char file_str[] = "FIL (";
+        static const char directory_str[] = "DIR (";
 
-        static const char after_size_str[] = "] (";
+        static const char after_attributes_str[] = ") [";
 
         static const char not_readonly_str[] = "-- | ";
         static const char readonly_str[] =     "ro | ";
@@ -381,8 +381,10 @@ void list(void)
         static const char executable_str[] =     "exec | ";
         static const char not_hidden_str[] = "--- | ";
         static const char hidden_str[] =     "hid | ";
-        static const char not_system_str[] = "--- | ";
-        static const char system_str[] =     "sys | ";
+        static const char not_system_str[] = "---";
+        static const char system_str[] =     "sys";
+
+        static const char after_size_str[] = "] ";
 
         static const char no_name_str[] = "?";
 
@@ -399,6 +401,28 @@ void list(void)
             default:
                 continue;
         }
+
+        if (entry.attributes & SYSCALL_ENTRY_READONLY)
+            syscall_write(0, readonly_str, sizeof(readonly_str) - 1);
+        else
+            syscall_write(0, not_readonly_str, sizeof(not_readonly_str) - 1);
+
+        if (entry.attributes & SYSCALL_ENTRY_EXECUTABLE)
+            syscall_write(0, executable_str, sizeof(executable_str) - 1);
+        else
+            syscall_write(0, not_executable_str, sizeof(not_executable_str) - 1);
+
+        if (entry.attributes & SYSCALL_ENTRY_HIDDEN)
+            syscall_write(0, hidden_str, sizeof(hidden_str) - 1);
+        else
+            syscall_write(0, not_hidden_str, sizeof(not_hidden_str) - 1);
+
+        if (entry.attributes & SYSCALL_ENTRY_SYSTEM)
+            syscall_write(0, system_str, sizeof(system_str) - 1);
+        else
+            syscall_write(0, not_system_str, sizeof(not_system_str) - 1);
+
+        syscall_write(0, after_attributes_str, sizeof(after_attributes_str) - 1);
 
         char size_buffer[21];
         unsigned long size = entry.size;
@@ -423,26 +447,6 @@ void list(void)
 
         syscall_write(0, size_buffer, size_length);
         syscall_write(0, after_size_str, sizeof(after_size_str) - 1);
-
-        if (entry.attributes & SYSCALL_ENTRY_READONLY)
-            syscall_write(0, readonly_str, sizeof(readonly_str) - 1);
-        else
-            syscall_write(0, not_readonly_str, sizeof(not_readonly_str) - 1);
-
-        if (entry.attributes & SYSCALL_ENTRY_EXECUTABLE)
-            syscall_write(0, executable_str, sizeof(executable_str) - 1);
-        else
-            syscall_write(0, not_executable_str, sizeof(not_executable_str) - 1);
-
-        if (entry.attributes & SYSCALL_ENTRY_HIDDEN)
-            syscall_write(0, hidden_str, sizeof(hidden_str) - 1);
-        else
-            syscall_write(0, not_hidden_str, sizeof(not_hidden_str) - 1);
-
-        if (entry.attributes & SYSCALL_ENTRY_SYSTEM)
-            syscall_write(0, system_str, sizeof(system_str) - 1);
-        else
-            syscall_write(0, not_system_str, sizeof(not_system_str) - 1);
 
         const char* namePtr = entry.name;
         while (*namePtr)
