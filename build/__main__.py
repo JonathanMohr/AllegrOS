@@ -1,6 +1,7 @@
 from build.defs import OS, Architecture, Baseline, architecture_strings, baseline_strings, architecture_baselines, baseline_architectures
 import build.build as build
 import build.logger as cLogger
+import build.run as run
 
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
@@ -8,70 +9,8 @@ import sys
 import platform
 import logging
 import time
-import subprocess
+import shutil
 import argparse
-
-def run_debugger(stage1: Path, stage2: Path, kernel: Path):
-    try:
-        lldb = "lldb"
-
-        lldb_args = [
-            str(kernel),
-            "-o", "gdb-remote localhost:1234",
-            "-o", f"target modules add {stage1}",
-            "-o", f"target modules add {stage2}"
-        ]
-
-        subprocess.run([
-            lldb, *lldb_args
-        ], check=True)
-
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Running debugger failed: {e}")
-
-
-def run_qemu(image: Path, hostOS: OS, baseline: Baseline, debug: bool, debugMode: bool):
-    if hostOS == OS.macOS:
-        displayBackend = "cocoa,zoom-to-fit=on,zoom-interpolation=on"
-    else:
-        displayBackend = "sdl,gl=on"
-
-    match baseline:
-        case Baseline.i386: qemu_cpu = "486"
-        case Baseline.i486: qemu_cpu = "486"
-        case Baseline.i586: qemu_cpu = "pentium"
-        case Baseline.i686: qemu_cpu = "pentium2"
-        case _:
-            raise ValueError("Invalid baseline")
-
-    try:
-        qemu_args = [
-            "-m", "32",
-            "-cpu", qemu_cpu,
-    #       "-spice", "port=5930,disable-ticketing",
-            "-display", f"{displayBackend}",
-            "-debugcon", "stdio"
-        ]
-
-        if debug:
-            qemu_args.extend([
-                "-no-reboot", "-no-shutdown",
-                "-d", "int,cpu_reset",
-                "-D", "logs/qemu.log"
-            ])
-
-        if debugMode:
-            qemu_args.extend(["-S", "-s"])
-
-        qemu = "qemu-system-i386"
-
-        subprocess.run([
-            qemu, *qemu_args,
-            "-drive", f"format=raw,file={image},if=ide"
-        ], check=True)
-
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Running QEMU with {image} failed: {e}")
 
 def main() -> bool:
     hostOS: OS
@@ -215,10 +154,18 @@ def main() -> bool:
     except Exception as e:
         logger.error(f"Building failed: {e}")
         return False
-    
+
+
+    dist_path = Path(".dist")
+    dist_image = dist_path / "image.img"
+
+    if not dist_path.exists():
+        dist_path.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(result.Image), str(dist_image))
+
     if command_run:
         try:
-            run_qemu(result.Image, hostOS, baseline, args.debug_build, False)
+            run.run(dist_image, hostOS, baseline, args.debug_build, False)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
@@ -226,7 +173,7 @@ def main() -> bool:
     
     if command_debug:
         try:
-            run_qemu(result.Image, hostOS, baseline, args.debug_build, True)
+            run.run(dist_image, hostOS, baseline, args.debug_build, True)
 
         except Exception as e:
             logger.error(f"QEMU failed: {e}")
@@ -234,7 +181,7 @@ def main() -> bool:
         
     if command_debugger:
         try:
-            run_debugger(result.Stage1, result.Stage2, result.Kernel)
+            run.debugger(result.Stage1, result.Stage2, result.Kernel)
 
         except Exception as e:
             logger.error(f"Debugger failed: {e}")

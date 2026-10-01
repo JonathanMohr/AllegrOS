@@ -1,6 +1,17 @@
-.build/
-logs/
+/.build/
+/.dist/
+/logs/
+
+/compile_commands.json
 
 __pycache__/
+*.pyc
+*.pyo
 
-compile_commands.json
+.DS_Store
+.AppleDouble
+.LSOverride
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
