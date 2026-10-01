@@ -1187,7 +1187,7 @@ static bool FAT_ResolveParentNodeNumber(Filesystem_Driver* driver, uint32_t pare
     FAT_Driver_Data* data = driver->data;
 
     bool parentIsRoot = (data->fatVersion == FAT_VERSION_32)
-        ? (parentCluster == data->rootDir.cluster)
+        ? (parentCluster == 0 || parentCluster == data->rootDir.cluster)
         : (parentCluster == 0);
 
     if (parentIsRoot)
