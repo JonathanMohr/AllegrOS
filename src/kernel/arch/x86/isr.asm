@@ -9,7 +9,7 @@ global isr_common
 isr_common:
     push dword [esp + 12] ; marker
 
-    and [esp], 3
+    and dword [esp], 3
     jnz .privilege_ok
 
     sub esp, 8
