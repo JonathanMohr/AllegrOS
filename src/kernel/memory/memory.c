@@ -44,7 +44,10 @@ Memory_Result Memory_MapPageKernel(uintptr_t virtualAddr, uphysptr_t physicalAdd
 
     Memory_Result result;
     if ((result = Arch_MapPage(current, virtualAddr, physicalAddr, flags)) != MEMORY_SUCCESS)
+    {
+        IRQ_PopDisable();
         return result;
+    }
 
     AddressSpace* currentAS = headAddressSpace;
     while (currentAS)
@@ -73,7 +76,10 @@ Memory_Result Memory_UnmapPageKernel(uintptr_t virtualAddr)
 
     Memory_Result result;
     if ((result = Arch_UnmapPage(current, virtualAddr)) != MEMORY_SUCCESS)
+    {
+        IRQ_PopDisable();
         return result;
+    }
 
     AddressSpace* currentAS = headAddressSpace;
     while (currentAS)
@@ -108,7 +114,10 @@ static Memory_Result Memory_ChangeFlagsKernel(uintptr_t virtualAddr, Memory_Flag
 
     Memory_Result result;
     if ((result = Arch_ChangeFlags(current, virtualAddr, newFlags)) != MEMORY_SUCCESS)
+    {
+        IRQ_PopDisable();
         return result;
+    }
 
     AddressSpace* currentAS = headAddressSpace;
     while (currentAS)
@@ -162,7 +171,7 @@ AddressSpace* Memory_CurrentAddressSpace(void)
 
 Memory_Result Memory_AddressSpace_Create(AddressSpace** outAddressSpace)
 {
-    AddressSpace* newAddressSpace = Memory_KernelAllocate(sizeof(AddressSpace));
+    AddressSpace* newAddressSpace = Memory_KernelZallocate(sizeof(AddressSpace));
     if (!newAddressSpace)
         return MEMORY_ERROR_OUT_OF_MEMORY;
 
@@ -201,6 +210,8 @@ Memory_Result Memory_AddressSpace_Get(AddressSpace* addressSpace)
 
 Memory_Result Memory_AddressSpace_Put(AddressSpace* addressSpace)
 {
+    // TODO: Free VMA stuff
+
     if (!addressSpace)
         return MEMORY_ERROR_NOT_REFERENCED;
     
@@ -307,6 +318,8 @@ Memory_Result Memory_LinkNew(AddressSpace* addressSpace, uintptr_t virtualAddres
             return result;
         }
     }
+
+    // TODO: Zero pages
 
     return MEMORY_SUCCESS;
 }
@@ -511,5 +524,5 @@ Memory_Result Memory_ChangeFlags(AddressSpace* addressSpace, uintptr_t virtualAd
     }
 
     Memory_KernelFree(savedFlags);
-    return MEMORY_SUCCESS;
+    return finalResult;
 }
