@@ -69,6 +69,9 @@ void VFS_Cache_Remove(VFS_Node_Cache* cache, Filesystem_Driver* driver, uint64_t
 bool VFS_Cache_Rekey(VFS_Node_Cache* cache, Filesystem_Driver* oldDriver, uint64_t oldNumber, Filesystem_Driver* newDriver, uint64_t newNumber);
 
 
+// TODO: Actually make logic for when filesystem is case insensitive
+
+
 typedef struct VFS
 {
     VFS_Node_Cache nodeCache;
