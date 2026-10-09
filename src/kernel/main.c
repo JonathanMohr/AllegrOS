@@ -274,6 +274,8 @@ void CDECL kmain(BootParams* bParams)
         goto end_before_vfs;
     }
 
+    // TODO: Devices/Objects, handled with reference counter, for everything (block devices, filesystems, terminals, etc.)
+
 end:
     //VFS_Destroy(&vfs);
 end_before_vfs:
