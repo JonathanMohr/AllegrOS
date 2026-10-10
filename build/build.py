@@ -75,7 +75,7 @@ def Create_Root(logger: logging.Logger, fs_root: Path, kernel: Path, executables
     shutil.copytree(str(fs_root), str(out_root), dirs_exist_ok=True)
 
 def Create_Disk_Image(logger: logging.Logger, buildCache: cache.BuildCache, root: Path, out_dir: Path, stage1: Path, stage2: Path) -> Path:
-    PHX_LFS = Require_Tool("phx-lfs")
+    PHX = Require_Tool("phx")
 
     all_root_files = sorted((f for f in root.rglob("*") if f.is_file()), key=lambda p: p.as_posix())
     content_hash = cache.hash_files([stage1, stage2, *all_root_files], [*map(str, all_root_files)], logger)
@@ -85,29 +85,61 @@ def Create_Disk_Image(logger: logging.Logger, buildCache: cache.BuildCache, root
     if not buildCache.is_up_to_date(image, content_hash):
         image.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.build(f"Creating MBR disk image at {image}")
-        subprocess.run([
-            PHX_LFS, "create", str(image), "mbr",
-            "--size", "100M",
-            "--boot", str(stage1)
-        ])
+        if stage2.stat().st_size % 512 != 0:
+            raise RuntimeError(f"Stage 2 size is not aligned to 512")
 
-        logger.build(f"Creating partition 1 of {image}")
+
+        image_size = 1024 * 1024 * 1024
+
+        stage2_start = 1024 * 1024
+        stage2_size = stage2.stat().st_size
+
+        fat_start = 1024 * 1024 + stage2_size
+        fat_size = image_size - stage2_size - 1024 * 1024
+
+
+        logger.build(f"Creating raw disk image at {image}")
         subprocess.run([
-            PHX_LFS, "create", f"{image}:1", "none",
-            "--size", str(stage2.stat().st_size + (512 - (stage2.stat().st_size % 512)))
-        ])
+            PHX, "disk", "create", str(image), "raw", str(image_size)
+        ], check=True)
+
+        logger.build(f"Creating MBR partition table for {image}")
+        subprocess.run([
+            PHX, "partition", "create", str(image), "mbr"
+        ], check=True)
+
+
+        logger.build(f"Inserting stage1 bootloader into MBR partition table at {image}")
+        subprocess.run([
+            PHX, "partition", "bootsector", str(image), str(stage1)
+        ], check=True)
+
+
+        logger.build(f"Adding partition 1 to partition table at {image}")
+        subprocess.run([
+            PHX, "partition", "add", str(image), "unknown", str(stage2_start), str(stage2_size)
+        ], check=True)
 
         logger.build(f"Writing stage 2 to partition 1 of {image}")
         subprocess.run([
-            PHX_LFS, "write", f"{image}:1", str(stage2)
+            PHX, "raw", "write", f"{image}:1", str(stage2)
         ])
 
-        logger.info(f"Creating partition 2 of {image}")
+
+        logger.build(f"Adding partition 2 to partition table at {image}")
         subprocess.run([
-            PHX_LFS, "create", f"{image}:2", "fat32",
-            "--root", str(root)
+            PHX, "partition", "add", str(image), "fat32", str(fat_start), str(fat_size)
         ], check=True)
+
+        logger.build(f"Formatting partition 2 of {image} with fat")
+        subprocess.run([
+            PHX, "filesystem", "format", f"{image}:2", "fat"
+        ])
+
+        logger.build(f"Inserting root to filesystem of partition 2 of {image}")
+        subprocess.run([
+            PHX, "filesystem", "insert", f"{image}:2", "/", str(root)
+        ])
 
         buildCache.update(image, content_hash)
 

@@ -10,6 +10,9 @@ SECTIONS
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }
+
+    .pad                : { BYTE(0) . = ALIGN(512); }
+
     .bss                : { __bss_start = .;        *(.bss)     }
 
     __end = .;

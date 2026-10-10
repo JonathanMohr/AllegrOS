@@ -3,7 +3,7 @@ CPU 386
 
 %define ENDL 0x0D, 0x0A
 
-section .entry
+section .entry  align=1
     global start
 
 start:
@@ -136,7 +136,7 @@ start:
     ; should never happen
     jmp jmp_failed_error
 
-section .text
+section .text   align=1
 
 ;
 ; Error handlers
@@ -326,7 +326,7 @@ disk_reset:
     
     ret
 
-section .data
+section .data   align=1
 
 drive_number            db 0
 extensions_supported    db 0
@@ -346,13 +346,13 @@ extensions_dap:
 STAGE2_LOAD_SEGMENT     equ 0000h
 STAGE2_LOAD_OFFSET      equ 8000h
 
-section .rodata
+section .rodata align=1
 
 msg_read_failed db "Read failed!", ENDL, 0
 msg_too_big     db "Stage 2 is too big! (>59)", ENDL, 0
 msg_jmp_failed  db "Couldn't jump to stage 2", ENDL, 0
 
-section .mbr_partition_table
+section .mbr_partition_table    align=1
 
 MBR_HEADER1:
     .boot           db 0
