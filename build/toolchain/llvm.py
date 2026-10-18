@@ -365,7 +365,11 @@ def Link_Executable(self: Toolchain, mode: BuildMode, objects: list[Path], libra
         "-o", str(executable)
     ])
 
-    content_hash = hash_files([*objects, *lib_deps], args, self.context.logger)
+    hash_objects = [*objects, *lib_deps]
+    if linker_script is not None:
+        hash_objects.append(linker_script)
+
+    content_hash = hash_files(hash_objects, args, self.context.logger)
 
     if not self.context.buildCache.is_up_to_date(executable, content_hash):
         self.context.logger.build(f"Linking {executable}")

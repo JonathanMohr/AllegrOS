@@ -59,8 +59,8 @@ def Create_Root(logger: logging.Logger, fs_root: Path, kernel: Path, executables
     system_dir = out_root / "sys"
     system_dir.mkdir(parents=True, exist_ok=True)
 
-    ## kernel.elf
-    kernel_path = system_dir / "kernel.elf"
+    ## kernel.sys
+    kernel_path = system_dir / "kernel.sys"
     shutil.copy2(str(kernel), str(kernel_path))
 
     # bin/
@@ -86,7 +86,7 @@ def Create_Disk_Image(logger: logging.Logger, buildCache: cache.BuildCache, root
         image.parent.mkdir(parents=True, exist_ok=True)
 
         if stage2.stat().st_size % 512 != 0:
-            raise RuntimeError(f"Stage 2 size is not aligned to 512")
+            raise RuntimeError(f"Stage 2 size {stage2.stat().st_size} is not aligned to 512")
 
 
         image_size = 1024 * 1024 * 1024

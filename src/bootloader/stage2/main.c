@@ -37,7 +37,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
         goto end;
     }
 
-    ELFLoadInfo kernelInfo = ELF_GetSize(&partition, "/sys/kernel.elf");
+    ELFLoadInfo kernelInfo = ELF_GetSize(&partition, "/sys/kernel.sys");
     if (!kernelInfo.size)
     {
         IO_PutStringCritical("Couldn't get kernel size!\n");
@@ -102,7 +102,7 @@ void CDECL start(uint32_t boot_drive, uint32_t* page_directory_phys, x86_E820Mem
     bootParams.Memory.startOfFree = (uint8_t*)bootParams.Memory.physPageArray + ((addresses.pageInfoSize + 0xFFF) & ~0xFFFu);
     bootParams.Memory.initialAddressSpace = (uphysptr_t)pageDirectoryVirtual;
 
-    uint8_t* kernelEntry = ELF_Load(&partition, "/sys/kernel.elf");
+    uint8_t* kernelEntry = ELF_Load(&partition, "/sys/kernel.sys");
 
     enterKernel(&bootParams, kernelEntry);
 
